@@ -33,33 +33,48 @@ class LwDataTable extends LivewireComponent
         return view()->file(__DIR__ . '/lw-data-table.blade.php');
     }
 
-    public function triggerUserAction(string $userAction, ...$params)
+    public function runAction(string $action, ...$params)
     {
-        $this->dataTable->userAction($userAction, ...$params);
+        $this->dataTable->runAction($action, ...$params);
     }
 
     protected function processSearch()
     {
-        // process query string $data and
+        // process query string $data and set it on the DataTable object
     }
 
     protected function processColumnsSearch()
     {
-        // process query string $data and
+        // process query string $data and set it on the DataTable object
     }
 
     protected function processFilters()
     {
-        // process query string $data and
+        // process query string $data and set it on the DataTable object
     }
 
     protected function processSorting()
     {
-        // process query string $data and
+        // process query string $data and set it on the DataTable object
     }
 
     protected function loadDataTable()
     {
-        // process query string $data and
+        // process query string $data and set it on the DataTable object
+    }
+
+    protected function queryString()
+    {
+        return [
+            'search' => [
+                'as' => config('erickcomp-livewire-data-table.query-string-search', 'search'),
+            ],
+            'filters' => [
+                'as' => config('erickcomp-livewire-data-table.query-string-label-filters', 'filters'),
+            ],
+            'columnsSearch' => [
+                'as' => config('erickcomp-livewire-data-table.query-string-param-cols-search-', 'cols-search'),
+            ],
+        ];
     }
 }

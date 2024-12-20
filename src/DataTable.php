@@ -2,6 +2,8 @@
 
 namespace ErickComp\LivewireDataTable;
 
+use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
+use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
 use Illuminate\View\ComponentAttributeBag;
 use Illuminate\Support\Str;
 use Illuminate\View\Component as BladeComponent;
@@ -68,6 +70,21 @@ class DataTable extends BladeComponent implements Wireable
     {
         //return view()->file(Str::replaceEnd('.php', '.blade.php', __FILE__));
         return $this->doRender(...);
+    }
+
+    public function runAction(string $action, ...$params)
+    {
+        try {
+            
+            $return = $this->actions->run($action, ...$params);
+
+            if ($return === false) {
+                return new DataTableActionResponse(isOk: false, message: 'Erro ao executar ');
+            }
+        } catch (ErrorMessageForUserException $e1) {
+            return new DataTableActionResponse(isOk: false, message: $e1->getMessage());
+        }
+        $this->get
     }
 
     protected function doRender(array $data): string
