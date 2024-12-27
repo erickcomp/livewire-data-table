@@ -35,6 +35,9 @@ class DataTable extends BaseDataTableComponent implements Wireable
     public function __construct(
         public ?string $dataSrc = null,
 
+        public bool $withoutDefaultStyles = false,
+        public bool $withSortingIndicators = false,
+
         /** @var BaseColumn[] */
         public array $columns = [],
         public array $filters = [],
@@ -43,6 +46,10 @@ class DataTable extends BaseDataTableComponent implements Wireable
         public array $actions = [],
         public bool $searchable = false,
     ) {
+        if ($withoutDefaultStyles === false) {
+            $this->withSortingIndicators = true;
+        }
+
         $this->dataSrc = $dataSrc;
 
         $this->initComponentAttributeBags();

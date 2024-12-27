@@ -3,10 +3,12 @@
 namespace ErickComp\LivewireDataTable\Livewire;
 
 use ErickComp\LivewireDataTable\ServerExecutor;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use ErickComp\LivewireDataTable\DataTable;
 use Livewire\WithPagination;
+use Illuminate\Support\Uri;
 
 class LwDataTable extends LivewireComponent
 {
@@ -47,7 +49,20 @@ class LwDataTable extends LivewireComponent
         $this->processSorting();
 
         $rows = $this->getTableData();
-        $searchDebounceMs = config('erickcomp-livewire-data-table.search-debounce-ms', 300);
+
+        if ($rows instanceof LengthAwarePaginator) {
+            if ($this->paginators['page'] > $rows->lastPage()) {
+
+                // Forces page reset on URI level
+                $newUri = Uri::of(url()->full())
+                    ->withQuery(['page' => $rows->lastPage()])
+                    ->__tostring();
+
+                $this->redirect($newUri, true);
+            }
+        }
+
+        $searchDebounceMs = config('erickcomp-livewire-data-table.search-debounce-ms', 200);
 
         $viewData = [
             'rows' => $rows,
@@ -57,6 +72,13 @@ class LwDataTable extends LivewireComponent
         return view()
             ->file(\substr(__FILE__, 0, -3) . 'blade.php')
             ->with($viewData);
+    }
+
+    public function updating(string $property, $value)
+    {
+        if (\in_array($property, ['search', 'filters']) || \str_starts_with($property, 'columnsSearch.')) {
+            $this->resetPage();
+        }
     }
 
     public function setSortBy(string $column, ?string $sortDir = null)
