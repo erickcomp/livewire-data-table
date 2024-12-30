@@ -11,6 +11,10 @@ class BaseColumn
 {
     use FillsComponentAttributeBags;
 
+    protected array $defaultThAttributes = [];
+    protected array $defaultThSearchAttributes = [];
+    protected array $defaultTdAttributes = [];
+
     public ComponentAttributeBag $thAttributes;
     public ComponentAttributeBag $thSearchAttributes;
     public ComponentAttributeBag $tdAttributes;
@@ -39,9 +43,9 @@ class BaseColumn
 
     protected function initComponentAttributeBags()
     {
-        $this->thAttributes = new ComponentAttributeBag();
-        $this->thSearchAttributes = new ComponentAttributeBag();
-        $this->tdAttributes = new ComponentAttributeBag();
+        $this->thAttributes = new ComponentAttributeBag($this->defaultThAttributes);
+        $this->thSearchAttributes = new ComponentAttributeBag($this->defaultThSearchAttributes);
+        $this->tdAttributes = new ComponentAttributeBag($this->defaultTdAttributes);
     }
 
     protected function getAttributeBagsMappings(): array
