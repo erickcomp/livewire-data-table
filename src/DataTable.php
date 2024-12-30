@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable;
 
+use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
 use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
 use Illuminate\View\ComponentAttributeBag;
@@ -10,18 +11,23 @@ use Illuminate\View\Component as BladeComponent;
 use Livewire\Wireable;
 use Livewire\ImplicitlyBoundMethod;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
-use ErickComp\LivewireDataTable\DataTable\Col;
+use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 
 class DataTable extends BaseDataTableComponent implements Wireable
 {
+    use FillsComponentAttributeBags;
+
     public string $dataSrcId = 'id';
 
+    public string $sortingClassPrefix = 'lw-dt-sort';
+
+    public ComponentAttributeBag $containerAttributes;
     public ComponentAttributeBag $tableAttributes;
     public ComponentAttributeBag $theadAttributes;
     public ComponentAttributeBag $theadTrAttributes;
     public ComponentAttributeBag $theadSearchTrAttributes;
-    public ComponentAttributeBag $theadSearchTdAttributes;
+    public ComponentAttributeBag $theadSearchThAttributes;
     public ComponentAttributeBag $thAttributes;
     public ComponentAttributeBag $tbodyAttributes;
     public ComponentAttributeBag $tbodyTrAttributes;
@@ -30,7 +36,19 @@ class DataTable extends BaseDataTableComponent implements Wireable
     //public ComponentAttributeBag $tfootTrAttributes;
     //public ComponentAttributeBag $tfootTdAttributes;
 
-    public iterable $rows = [];
+    //public iterable $rows = [];
+
+    protected array $defaultContainerAttributes = ['class' => 'lw-dt-container'];
+    protected array $defaultTableAttributes = [];
+    protected array $defaultTheadAttributes = [];
+    protected array $defaultTheadTrAttributes = [];
+    protected array $defaultTheadSearchTrAttributes = [];
+    protected array $defaultTheadSearchThAttributes = [];
+    protected array $defaultThAttributes = [];
+    protected array $defaultTbodyAttributes = [];
+    protected array $defaultTbodyTrAttributes = [];
+
+    protected string $trAttributesModifierCode;
 
     public function __construct(
         public ?string $dataSrc = null,
@@ -53,17 +71,6 @@ class DataTable extends BaseDataTableComponent implements Wireable
         $this->dataSrc = $dataSrc;
 
         $this->initComponentAttributeBags();
-    }
-
-    public function hasSearchableColumns(): bool
-    {
-        foreach ($this->columns as $col) {
-            if ($col->isSearchable()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -92,8 +99,29 @@ class DataTable extends BaseDataTableComponent implements Wireable
         return ['erickcomp-lw-dt' => \encrypt($this)];
     }
 
+    public function hasSearchableColumns(): bool
+    {
+        foreach ($this->columns as $col) {
+            if ($col->isSearchable()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function getTrAttributesModifierCode(): string
+    {
+        return $this->trAttributesModifierCode;
+    }
+
+    public function setTrAttributesModifierCode(string $trAttributesModifierCode)
+    {
+        $this->trAttributesModifierCode = $trAttributesModifierCode;
+    }
+
     //public function addColumn(ComponentAttributeBag $columnAttributes)
-    public function addColumn(Col $columnComponent)
+    public function addColumn(Column $columnComponent)
     {
         //$this->columns[] = Builders\ColumnFactory::make($this, $columnAttributes);
         $this->columns[] = Builders\ColumnFactory::make($columnComponent);
@@ -161,71 +189,33 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
     protected function initComponentAttributeBags()
     {
-        $this->tableAttributes = new ComponentAttributeBag();
-        $this->theadAttributes = new ComponentAttributeBag();
-        $this->theadTrAttributes = new ComponentAttributeBag();
-        $this->theadSearchTrAttributes = new ComponentAttributeBag();
-        $this->theadSearchTdAttributes = new ComponentAttributeBag();
-        $this->thAttributes = new ComponentAttributeBag();
-        $this->tbodyAttributes = new ComponentAttributeBag();
-        $this->tbodyTrAttributes = new ComponentAttributeBag();
+        $this->containerAttributes = new ComponentAttributeBag($this->defaultContainerAttributes);
+        $this->tableAttributes = new ComponentAttributeBag($this->defaultTableAttributes);
+        $this->theadAttributes = new ComponentAttributeBag($this->defaultTheadAttributes);
+        $this->theadTrAttributes = new ComponentAttributeBag($this->defaultTheadTrAttributes);
+        $this->theadSearchTrAttributes = new ComponentAttributeBag($this->defaultTheadSearchTrAttributes);
+        $this->theadSearchThAttributes = new ComponentAttributeBag($this->defaultTheadSearchThAttributes);
+        $this->thAttributes = new ComponentAttributeBag($this->defaultThAttributes);
+        $this->tbodyAttributes = new ComponentAttributeBag($this->defaultTbodyAttributes);
+        $this->tbodyTrAttributes = new ComponentAttributeBag($this->defaultTbodyTrAttributes);
         //$this->tbodyTdAttributes = new ComponentAttributeBag();
         //$this->tfootAttributes = new ComponentAttributeBag();
         //$this->tfootTrAttributes = new ComponentAttributeBag();
         //$this->tfootTdAttributes = new ComponentAttributeBag();
     }
 
-    protected function fillComponentAttributeBags(ComponentAttributeBag $attributes)
+    protected function getAttributeBagsMappings(): array
     {
-        $tableAttributes = [];
-        $theadAttributes = [];
-        $theadTrAttributes = [];
-        $theadSearchTrAttributes = [];
-        $theadSearchTdAttributes = [];
-        $thAttributes = [];
-        $tbodyAttributes = [];
-        $tbodyTrAttributes = [];
-        //$tbodyTdAttributes = [];
-        //$tfootAttributes = [];
-        //$tfootTrAttributes = [];
-        //$tfootTdAttributes = [];
-
-        foreach ($attributes->all() as $attrName => $attrVal) {
-
-            if (\str_starts_with($attrName, 'thead-')) {
-                $theadAttributes[$attrName] = $attrVal;
-            } elseif (\str_starts_with($attrName, 'thead-tr-')) {
-                $theadTrAttributes[$attrName] = $attrVal;
-            } elseif (\str_starts_with($attrName, 'thead-search-tr-')) {
-                $theadSearchTrAttributes[$attrName] = $attrVal;
-            } elseif (\str_starts_with($attrName, 'thead-search-td-')) {
-                $theadSearchTdAttributes[$attrName] = $attrVal;
-            } elseif (\str_starts_with($attrName, 'th-')) {
-                $thAttributes[$attrName] = $attrVal;
-            } elseif (\str_starts_with($attrName, 'tbody-')) {
-                $tbodyAttributes[$attrName] = $attrVal;
-            } elseif (\str_starts_with($attrName, 'tbody-tr-')) {
-                $tbodyTrAttributes[$attrName] = $attrVal;
-                // } elseif (\str_starts_with($attrName, 'tfoot-')) {
-                //     $theadAttributes[$attrName] = $attrVal;
-                // } elseif (\str_starts_with($attrName, 'tfoot')) {
-                //     $theadAttributes[$attrName] = $attrVal;
-                // } elseif (\str_starts_with($attrName, 'thead-')) {
-                //     $theadAttributes[$attrName] = $attrVal;
-                // } elseif (\str_starts_with($attrName, 'thead-')) {
-                //     $theadAttributes[$attrName] = $attrVal;
-            } else {
-                $tableAttributes[$attrName] = $attrVal;
-            }
-        }
-
-        $this->tableAttributes->setAttributes($tableAttributes);
-        $this->theadAttributes->setAttributes($theadAttributes);
-        $this->theadTrAttributes->setAttributes($theadTrAttributes);
-        $this->theadSearchTrAttributes->setAttributes($theadSearchTrAttributes);
-        $this->theadSearchTdAttributes->setAttributes($theadSearchTdAttributes);
-        $this->thAttributes->setAttributes($thAttributes);
-        $this->tbodyAttributes->setAttributes($tbodyAttributes);
-        $this->tbodyTrAttributes->setAttributes($tbodyTrAttributes);
+        return [
+            0 => 'tableAttributes', //default
+            'container-' => 'containerAttributes',
+            'thead-tr-' => 'theadTrAttributes',
+            'thead-search-tr-' => 'theadSearchTrAttributes',
+            'thead-search-th-' => 'theadSearchThAttributes',
+            'thead-' => 'theadAttributes',
+            'th-' => 'thAttributes',
+            'tbody-tr-' => 'tbodyTrAttributes',
+            'tbody-' => 'tbodyAttributes',
+        ];
     }
 }

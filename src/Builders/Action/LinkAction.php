@@ -3,7 +3,7 @@
 namespace ErickComp\LivewireDataTable\Builders\Action;
 
 use Illuminate\View\ComponentAttributeBag;
-use ErickComp\LivewireDataTable\DataTable\Col;
+use ErickComp\LivewireDataTable\DataTable\Column;
 
 class LinkAction extends BaseAction
 {

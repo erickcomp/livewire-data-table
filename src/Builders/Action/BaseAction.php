@@ -2,7 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Builders\Action;
 
-use ErickComp\LivewireDataTable\DataTable\Col;
+use ErickComp\LivewireDataTable\DataTable\Column;
 use Illuminate\View\ComponentAttributeBag;
 
 class BaseAction

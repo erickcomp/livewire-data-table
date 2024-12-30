@@ -8,7 +8,7 @@ use ErickComp\LivewireDataTable\Builders\Column\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 use ErickComp\LivewireDataTable\DataTable;
 use Illuminate\View\ComponentAttributeBag;
-use ErickComp\LivewireDataTable\DataTable\Col;
+use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\Concerns\GetsConstructorsParamsNames;
 
 class ColumnFactory
@@ -18,7 +18,7 @@ class ColumnFactory
     public static function make(
         //DataTable $__dataTable,
         //ComponentAttributeBag $attributes,
-        Col $columnComponent,
+        Column $columnComponent,
 
     ): BaseColumn {
 

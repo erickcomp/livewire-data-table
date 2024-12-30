@@ -7,7 +7,7 @@ use ErickComp\LivewireDataTable\Builders\Action\LinkAction;
 use ErickComp\LivewireDataTable\Builders\Action\ServerAction;
 use ErickComp\LivewireDataTable\Concerns\GetsConstructorsParamsNames;
 use ErickComp\LivewireDataTable\DataTable\Action;
-use ErickComp\LivewireDataTable\DataTable\Col;
+use ErickComp\LivewireDataTable\DataTable\Column;
 use Illuminate\View\ComponentAttributeBag;
 use Illuminate\Support\Str;
 

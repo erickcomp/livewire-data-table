@@ -2,12 +2,15 @@
 
 namespace ErickComp\LivewireDataTable\Builders\Column;
 
+use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 use ErickComp\LivewireDataTable\DataTable;
 use Illuminate\View\ComponentAttributeBag;
 use Nette\NotImplementedException;
 
 class BaseColumn
 {
+    use FillsComponentAttributeBags;
+
     public ComponentAttributeBag $thAttributes;
     public ComponentAttributeBag $thSearchAttributes;
     public ComponentAttributeBag $tdAttributes;
@@ -41,25 +44,12 @@ class BaseColumn
         $this->tdAttributes = new ComponentAttributeBag();
     }
 
-    protected function fillComponentAttributeBags(ComponentAttributeBag $attributes)
+    protected function getAttributeBagsMappings(): array
     {
-        $thAttributes = [];
-        $thSearchAttributes = [];
-        $tdAttributes = [];
-
-        foreach ($attributes->all() as $attrName => $attrVal) {
-
-            if (\str_starts_with($attrName, 'th-')) {
-                $thAttributes[$attrName] = $attrVal;
-            } elseif (\str_starts_with($attrName, 'th-search-')) {
-                $thSearchAttributes[$attrName] = $attrVal;
-            } else {
-                $tdAttributes[$attrName] = $attrVal;
-            }
-        }
-
-        $this->thAttributes->setAttributes($thAttributes);
-        $this->thSearchAttributes->setAttributes($thSearchAttributes);
-        $this->tdAttributes->setAttributes($tdAttributes);
+        return [
+            0 => 'tdAttributes', // default
+            'th-search-' => 'thSearchAttributes',
+            'th-' => 'thAttributes',
+        ];
     }
 }

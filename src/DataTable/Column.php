@@ -7,7 +7,7 @@ use ErickComp\LivewireDataTable\Builders\ActionFactory;
 use Illuminate\View\ComponentAttributeBag;
 use ErickComp\LivewireDataTable\Builders\Action\BaseAction;
 
-class Col extends BaseDataTableComponent
+class Column extends BaseDataTableComponent
 {
     /**  @var BaseAction[] */
     protected array $actions;
