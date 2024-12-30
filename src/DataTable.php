@@ -173,6 +173,11 @@ class DataTable extends BaseDataTableComponent implements Wireable
     //     return ImplicitlyBoundMethod::call(app(), $callable, $params);
     // }
 
+    protected function viewFile()
+    {
+        return \substr(__FILE__, 0, -3) . 'blade.php';
+    }
+
     protected function doRender(array $data)
     {
         $this->fillComponentAttributeBags($data['attributes']);
