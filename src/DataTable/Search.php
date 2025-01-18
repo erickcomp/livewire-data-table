@@ -7,12 +7,11 @@ use ErickComp\LivewireDataTable\Builders\ActionFactory;
 use Illuminate\View\ComponentAttributeBag;
 use ErickComp\LivewireDataTable\Builders\Action\BaseAction;
 
-class Column extends BaseDataTableComponent
+class Search extends BaseDataTableComponent
 {
     /**  @var BaseAction[] */
     protected array $actions;
     protected string $customRendererCode;
-    protected ComponentAttributeBag $customRendererCodeAttributes;
     protected string $class;
 
     protected function extractPublicProperties()
@@ -49,11 +48,9 @@ class Column extends BaseDataTableComponent
         return $this->customRendererCode;
     }
 
-    public function setCustomRendererCode(string $rendererCode, ?ComponentAttributeBag $attributes = null)
+    public function setCustomRendererCode(string $rendererCode)
     {
-        Fazer benchmark dos raw components com e sem attributes, para ver se vale a pena usar
         $this->customRendererCode = $rendererCode;
-        $this->customRendererCodeAttributes = $attributes ?? new ComponentAttributeBag([]);
     }
 
     public function isActionsColumn()

@@ -5,6 +5,7 @@ namespace ErickComp\LivewireDataTable;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
 use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\View\ComponentAttributeBag;
 use Illuminate\Support\Str;
 use Illuminate\View\Component as BladeComponent;
@@ -13,14 +14,25 @@ use Livewire\ImplicitlyBoundMethod;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
+use Illuminate\Pagination\Paginator;
 
 class DataTable extends BaseDataTableComponent implements Wireable
 {
     use FillsComponentAttributeBags;
 
+    public static string $defaultPaginationView = 'livewire::bootstrap';
+    public static string $defaultPaginationSimpleView = 'livewire::simple-bootstrap';
+
     public string $dataSrcId = 'id';
 
     public string $sortingClassPrefix = 'lw-dt-sort';
+
+    public ?string $paginationView = null;
+    public ?string $paginationCode = null;
+    public ?string $lengthAwarePaginationView = null;
+    public ?string $simplePaginationView = null;
+
+    public array $perPageOptions = [];
 
     public ComponentAttributeBag $containerAttributes;
     public ComponentAttributeBag $tableAttributes;
@@ -47,14 +59,14 @@ class DataTable extends BaseDataTableComponent implements Wireable
     protected array $defaultThAttributes = [];
     protected array $defaultTbodyAttributes = [];
     protected array $defaultTbodyTrAttributes = [];
-
-    protected string $trAttributesModifierCode;
+    protected string $trAttributesModifierCode = '';
+    protected string $searchRendererCode;
+    protected ComponentAttributeBag $searchRendererCodeAttributes;
 
     public function __construct(
         public ?string $dataSrc = null,
 
-        public bool $withoutDefaultStyles = false,
-        public bool $withSortingIndicators = false,
+        public bool $withoutSortingIndicators = false,
 
         /** @var BaseColumn[] */
         public array $columns = [],
@@ -63,12 +75,22 @@ class DataTable extends BaseDataTableComponent implements Wireable
         public array $columnsSearch = [],
         public array $actions = [],
         public bool $searchable = false,
+        public string $pageName = 'page',
+        ?string $paginationView = null,
+        string|array $perPageOptions = [],
     ) {
-        if ($withoutDefaultStyles === false) {
-            $this->withSortingIndicators = true;
+        $this->dataSrc = $dataSrc;
+        $this->paginationView = $paginationView;
+
+        if (\is_string($perPageOptions)) {
+            $perPageOptions = \array_filter(\array_map(trim(...), \explode(',', $perPage)));
         }
 
-        $this->dataSrc = $dataSrc;
+        if (empty($perPageOptions)) {
+            $perPageOptions = $this->getDefaultPerPageOptions();
+        }
+
+        $this->perPageOptions = $perPageOptions;
 
         $this->initComponentAttributeBags();
     }
@@ -99,6 +121,31 @@ class DataTable extends BaseDataTableComponent implements Wireable
         return ['erickcomp-lw-dt' => \encrypt($this)];
     }
 
+    public function hasTableActions()
+    {
+        return $this->isSearchable()
+            || $this->isFilterable()
+            || $this->hasBulkActions()
+            || $this->hasPerPageOptions();
+    }
+
+    public function isSearchable()
+    {
+        return $this->searchable;
+    }
+
+    public function isFilterable()
+    {
+        // @TODO: implement filters
+        return false;
+    }
+
+    public function hasBulkActions()
+    {
+        // @TODO: implement bulk actions
+        return false;
+    }
+
     public function hasSearchableColumns(): bool
     {
         foreach ($this->columns as $col) {
@@ -117,7 +164,18 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
     public function setTrAttributesModifierCode(string $trAttributesModifierCode)
     {
-        $this->trAttributesModifierCode = $trAttributesModifierCode;
+        $this->trAttributesModifierCode = \trim($trAttributesModifierCode);
+    }
+
+    public function getCustomSearchRendererCode(): string
+    {
+        return $this->searchRendererCode;
+    }
+
+    public function setCustomSearchRendererCode(string $searchRendererCode, ComponentAttributeBag $attributes)
+    {
+        $this->searchRendererCode = \trim($searchRendererCode);
+        $this->searchRendererCodeAttributes = $attributes;
     }
 
     //public function addColumn(ComponentAttributeBag $columnAttributes)
@@ -151,6 +209,36 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
         //return view()->file(Str::replaceEnd('.php', '.blade.php', __FILE__));
         return $this->doRender(...);
+    }
+
+    public function hasPerPageOptions(): bool
+    {
+        return count($this->perPageOptions) > 1;
+    }
+
+    public function isUsingDefaultPaginationViews(): bool
+    {
+        return $this->paginationView === null;
+    }
+
+    public function paginationView(): string
+    {
+        return match ($this->paginationView) {
+            null => static::$defaultPaginationView,
+            'bootstrap' => 'livewire::bootstrap',
+            'tailwind' => 'livewire::tailwind',
+            default => $this->paginationView
+        };
+    }
+
+    public function paginationSimpleView(): string
+    {
+        return match ($this->paginationView) {
+            null => static::$defaultPaginationSimpleView,
+            'bootstrap' => 'livewire::simple-bootstrap',
+            'tailwind' => 'livewire::simple-tailwind',
+            default => $this->paginationView
+        };
     }
 
     // public function runAction(string $action, ...$params)
@@ -222,5 +310,13 @@ class DataTable extends BaseDataTableComponent implements Wireable
             'tbody-tr-' => 'tbodyTrAttributes',
             'tbody-' => 'tbodyAttributes',
         ];
+    }
+
+    protected function getDefaultPerPageOptions(): array
+    {
+        //@TODO: Check if data table is using Eloquent Data source.
+        // If it is, use the specific Eloquent Model perPage value
+
+        return [(new class () extends Model{})->getPerPage()];
     }
 }

@@ -2,11 +2,12 @@
 
 namespace ErickComp\LivewireDataTable\Builders\Column;
 
-use ErickComp\LivewireDataTable\DataTable;
 use Illuminate\View\ComponentAttributeBag;
 
 class CustomRenderedColumn extends BaseColumn
 {
+    public string $customRendererCode;
+
     public function __construct(
         //DataTable $__dataTable,
         string $name,

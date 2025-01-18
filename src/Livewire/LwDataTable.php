@@ -4,6 +4,7 @@ namespace ErickComp\LivewireDataTable\Livewire;
 
 use ErickComp\LivewireDataTable\ServerExecutor;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use ErickComp\LivewireDataTable\DataTable;
@@ -39,7 +40,11 @@ class LwDataTable extends LivewireComponent
     #[Url]
     public string $sortDir = '';
 
+    public ?int $perPage = 5;
+
     public DataTable $dataTable;
+
+    public function mount() {}
 
     public function render()
     {
@@ -67,11 +72,22 @@ class LwDataTable extends LivewireComponent
         $viewData = [
             'rows' => $rows,
             'searchDebounceMs' => $searchDebounceMs,
+            'shouldStylePagination' => \get_class($this->dataTable) === DataTable::class && $this->dataTable->isUsingDefaultPaginationViews()
         ];
 
         return view()
             ->file(\substr(__FILE__, 0, -3) . 'blade.php')
             ->with($viewData);
+    }
+
+    public function paginationView(): string
+    {
+        return $this->dataTable->paginationView();
+    }
+
+    public function paginationSimpleView(): string
+    {
+        return $this->dataTable->paginationSimpleView();
     }
 
     public function updating(string $property, $value)
@@ -127,8 +143,8 @@ class LwDataTable extends LivewireComponent
         }
 
         $params = [
-            'page' => null,
-            'perPage' => null,
+            'page' => Paginator::resolveCurrentPage($this->dataTable->pageName),
+            'perPage' => $this->perPage,
             'search' => null,
             'columnsSearch' => $this->columnsSearch,
             'filters' => null,
