@@ -49,7 +49,7 @@ class ColumnFactory
 
             $extracted = static::extractActionConstructorParamsFromAttributes(CustomRenderedColumn::class, $attributes);
             $constructorParamsValues = $extracted['paramsValues'];
-            $constructorParamsValues['customRendererCode'] = $columnComponent->getCustomRendererCode();
+            $constructorParamsValues['customRendererCode'] = $columnComponent->customRendererCode;
 
             return app()->make(CustomRenderedColumn::class, $constructorParamsValues);
         }

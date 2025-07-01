@@ -1,0 +1,12 @@
+<?php
+
+return [
+    'applied_search_label' => 'busca',
+    'active_filters_label' => 'Filtros aplicados',
+    'toggle_filters_button_label' => 'Filtros',
+    'search_button_label' => 'Buscar',
+    'no_data_found_table_td_text' => 'Não há dados',
+    'range_filter_label_from' => 'De',
+    'range_filter_label_to' => 'Até',
+    'apply_filters_button_label' => 'Aplicar filtros',
+];

@@ -10,10 +10,9 @@ use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
+use ErickComp\RawBladeComponents\RawComponent;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Str;
-use Illuminate\View\Compilers\ComponentTagCompiler;
 use Livewire\Livewire;
 
 class ServiceProvider extends LaravelAbstractServiceProvider
@@ -22,12 +21,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
 
     public function boot()
     {
-        // Blade::precompiler(function (string $templateStr) {
-        //     $templateStr = \trim($templateStr);
-
-        //     return $templateStr;
-        // });
-
+        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'erickcomp_lw_data_table');
         $this->registerRawBladeComponents();
         $this->registerBladeComponents();
         $this->registerLivewireComponents();
@@ -40,8 +34,8 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         Blade::component(DataTable::class, 'data-table');
         Blade::component(Column::class, 'data-table.column');
         Blade::component(Action::class, 'data-table.action');
-        Blade::component(Filters::class, 'data-table.filters');
-        Blade::component(Filter::class, 'data-table.filter');
+        //Blade::component(Filters::class, 'data-table.filters');
+        //Blade::component(Filter::class, 'data-table.filter');
         Blade::component(BulkActions::class, 'data-table.bulk-actions');
         Blade::component(BulkAction::class, 'data-table.bulk-action');
     }
@@ -51,34 +45,16 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         Livewire::component('lw-data-table', LwDataTable::class);
     }
 
-    // protected function registerBladeDirectives()
-    // {
-    //     $this->registerDataTableColCustom();
-    // }
-
-    /*
-    protected function registerDataTableColCustom()
-    {
-        $directiveName = config('erickcomp-livewire-datatable.col-custom', ['dataTableColCustom', 'endDataTableColCustom']);
-
-        Blade::directive($directiveName[0], function (string $expression) {
-            return '<?php $component->setCustomRendererCode (<<<\'___DATATABLE__RENDERER___\'';
-        });
-
-        Blade::directive($directiveName[1], function (string $expression) {
-            return "___DATATABLE__RENDERER___);?>";
-        });
-    }
-    */
-
     protected function registerRawBladeComponents()
     {
-        $this->registerColumnTdComponentTagsCompiler();
-        $this->registerTrAttributesTagsCompiler();
-        $this->registerSearchTagsCompiler();
+        $this->registerColumnTdRawComponent();
+        $this->registerTrAttributesRawComponent();
+        $this->registerSearchRawComponent();
+        $this->registerFiltersRawComponent();
+        $this->registerFilterRawComponent();
     }
 
-    protected function registerColumnTdComponentTagsCompiler()
+    protected function registerColumnTdRawComponent()
     {
         $this->registerRawBladeComponent(
             tag: 'x-data-table.column.td',
@@ -89,32 +65,13 @@ class ServiceProvider extends LaravelAbstractServiceProvider
                         throw new \LogicException("You can only use the [x-data-table.column.td] component as a direct child of the [x-data-table.column] component");
                     }
 
-                    $component->setCustomRendererCode (<<<'___DATATABLE__RENDERER___'
+                    $component->customRendererCode = <<<'___DATATABLE__RENDERER___'
                 COL_TD_COMPILER_CODE,
-            closingCode: '___DATATABLE__RENDERER___, $__rawComponentAttributes); ?>',
+            closingCode: '___DATATABLE__RENDERER___; ?>',
         );
-        /*
-        Blade::prepareStringsForCompilationUsing(function (string $templateStr) {
-            $regexOpening = $this->rawComponentOpeningTagRegex('x-data-table.column.td');
-            $regexClosing = $this->rawComponentClosingTagRegex('x-data-table.column.td');
-
-            $code = <<<'COL_TD_COMPILER_CODE'
-                    <?php
-                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable\Column) {
-                        throw new \LogicException("You can only use the [x-data-table.column.td] as a direct child of the [x-data-table.column] component");
-                    }
-
-                    $component->setCustomRendererCode (<<<'___DATATABLE__RENDERER___'
-                COL_TD_COMPILER_CODE;
-
-            $endCode = '___DATATABLE__RENDERER___);?>';
-
-            return preg_replace([$regexOpening, $regexClosing], [$code, $endCode], $templateStr);
-        });
-        */
     }
 
-    protected function registerTrAttributesTagsCompiler()
+    protected function registerTrAttributesRawComponent()
     {
         $this->registerRawBladeComponent(
             tag: 'x-data-table.tr-attributes',
@@ -128,28 +85,8 @@ class ServiceProvider extends LaravelAbstractServiceProvider
                 COL_TD_COMPILER_CODE,
             closingCode: '___DATATABLE__RENDERER___); ?>',
         );
-
-        /*
-        Blade::prepareStringsForCompilationUsing(function (string $templateStr) {
-            $regexOpening = $this->rawComponentOpeningTagRegex('x-data-table.tr-attributes');
-            $regexClosing = $this->rawComponentClosingTagRegex('x-data-table.tr-attributes');
-
-            $code = <<<'COL_TD_COMPILER_CODE'
-                    <?php
-                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
-                        throw new \LogicException("You can only use the [x-data-table.tr-attributes] as a direct child of the [x-data-table] component");
-                    }
-
-                    $component->setTrAttributesModifierCode (<<<'___DATATABLE__RENDERER___'
-                COL_TD_COMPILER_CODE;
-
-            $endCode = '___DATATABLE__RENDERER___); ?>';
-
-            return preg_replace([$regexOpening, $regexClosing], [$code, $endCode], $templateStr);
-        });
-        */
     }
-    protected function registerSearchTagsCompiler()
+    protected function registerSearchRawComponent()
     {
         $this->registerRawBladeComponent(
             tag: 'x-data-table.search',
@@ -159,240 +96,82 @@ class ServiceProvider extends LaravelAbstractServiceProvider
                         throw new \LogicException("You can only use the [x-data-table.search] as a direct child of the [x-data-table] component");
                     }
 
-                    $component->setCustomSearchRendererCode (<<<'___DATATABLE__RENDERER___'
+                    $component->customSearchRendererCode = <<<'___DATATABLE__RENDERER___'
                 COL_TD_COMPILER_CODE,
             closingCode: '___DATATABLE__RENDERER___, $__rawComponentAttributes); ?>',
         );
     }
 
-    protected function registerRawBladeComponent(string $tag, string $openingCode, string $closingCode, ?string $selfClosingCode = null)
+    protected function registerFiltersRawComponent()
     {
-        if (!\str_starts_with($tag, 'x-')) {
-            $tag = "x-$tag";
-        }
+        $defaultAttributes = [
+            'row-length' => 4,
+            'collapsible' => true,
+        ];
 
-        Blade::prepareStringsForCompilationUsing(function (string $templateStr) use ($tag, $openingCode, $closingCode, $selfClosingCode) {
-            $regexOpening = $this->rawComponentOpeningTagRegex($tag);
-            $regexClosing = $this->rawComponentClosingTagRegex($tag);
-            $regexSelfClosing = $this->rawComponentSelfClosingTagRegex($tag);
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.filters',
+            defaultAttributes: ['row-length' => 4, 'collapsible' => 'true'],
+            openingCode: <<<'COL_TD_COMPILER_CODE'
+                    <?php
+                    if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
+                        throw new \LogicException("You can only use the [x-data-table.filters] as a direct child of the [x-data-table] component");
+                    }
 
-            // \preg_match_all($regexSelfClosing, $templateStr, $matches);
-            // dd($matches);
+                    if ($component->initalizedFilters()) {
+                        throw new \LogicException("You can only have one [x-data-table.filters] component per [x-data-table] component");
+                    }   
 
-            $callbackOpening = function ($match) use ($openingCode) {
-                $attributes = $this->getAttributesFromAttributeString($match['attributes']);
+                    $__isBuildingDataTableFilters = true;
 
-                return '<?php ' . PHP_EOL
-                    . '$__previousRawComponentAttributes = $__rawComponentAttributes ?? new \\Illuminate\\View\\ComponentAttributeBag([]);' . PHP_EOL
-                    . '$__rawComponentAttributes = new \\Illuminate\\View\\ComponentAttributeBag([' . $this->componentAttributesToString($attributes) . ']);' . PHP_EOL
-                    . '?>' . PHP_EOL
-                    . $openingCode;
-            };
-
-            $callbackClosing = function ($match) use ($closingCode) {
-                return $closingCode . PHP_EOL
-                    . '<?php $__rawComponentAttributes = $__previousRawComponentAttributes; $__previousRawComponentAttributes = null; ?>' . PHP_EOL;
-            };
-
-            $callbackSelfClosing = $selfClosingCode === null
-                ? function ($match) use ($tag) {
-                    return "<?php throw new \LogicException('The component [$tag] is not meant to be used with the self-closing tag syntax'); ?>";
-                }
-                : function ($match) use ($selfClosingCode) {
-                    $attributes = $this->getAttributesFromAttributeString($match['attributes']);
-
-                    return '<?php ' . PHP_EOL
-                        . '$__previousRawComponentAttributes = $__rawComponentAttributes ?? new \\Illuminate\\View\\ComponentAttributeBag([]);' . PHP_EOL
-                        . '$__rawComponentAttributes = new \\Illuminate\\View\\ComponentAttributeBag([' . $this->componentAttributesToString($attributes) . ']);' . PHP_EOL
-                        . $selfClosingCode
-                        . '<?php $__rawComponentAttributes = $__previousRawComponentAttributes;' . PHP_EOL
-                        . '$__previousRawComponentAttributes = null;' . PHP_EOL
-                        . '?>';
-                }
-            ;
-
-
-            //$compiled = preg_replace_callback
-
-            return preg_replace_callback_array(
-                [$regexSelfClosing => $callbackSelfClosing, $regexOpening => $callbackOpening, $regexClosing => $callbackClosing],
-                $templateStr,
-            );
-
-            /*
-            return preg_replace_callback($pattern, function (array $matches) {
-                $this->boundAttributes = [];
-    
-                $attributes = $this->getAttributesFromAttributeString($matches['attributes']);
-    
-                return $this->componentString($matches[1], $attributes);
-            }, $value);
-            */
-
-            //return preg_replace([$regexOpening, $regexClosing], [$openingCode, $closingCode], $templateStr);
-        });
+                    ?>
+                COL_TD_COMPILER_CODE,
+            closingCode: '<?php unset($__isBuildingDataTableFilters); ?>',
+        );
     }
 
-    protected function rawComponentOpeningTagRegex(string $rawComponentName)
+    protected function registerFilterRawComponent()
     {
-        // if (!\str_starts_with($rawComponentName, 'x-')) {
-        //     $rawComponentName = 'x-' . $rawComponentName;
-        // }
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.filter',
+            openingCode: <<<'OPENING_CODE'
+                    <?php
 
-        $quotedComponent = \preg_quote($rawComponentName, '/');
-        $pattern = "/
-            <
-                \s*
-                $quotedComponent
-                (?<attributes>
-                    (?:
-                        \s+
-                        (?:
-                            (?:
-                                @(?:class)(\( (?: (?>[^()]+) | (?-1) )* \))
-                            )
-                            |
-                            (?:
-                                @(?:style)(\( (?: (?>[^()]+) | (?-1) )* \))
-                            )
-                            |
-                            (?:
-                                \{\{\s*\\\$attributes(?:[^}]+?)?\s*\}\}
-                            )
-                            |
-                            (?:
-                                (\:\\\$)(\w+)
-                            )
-                            |
-                            (?:
-                                [\w\-:.@%]+
-                                (
-                                    =
-                                    (?:
-                                        \\\"[^\\\"]*\\\"
-                                        |
-                                        \'[^\']*\'
-                                        |
-                                        [^\'\\\"=<>]+
-                                    )
-                                )?
-                            )
-                        )
-                    )*
-                    \s*
-                )
-                (?<![\/=\-])
-            >
-        /x";
+                    if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
+                        throw new \LogicException("You can only use the [x-data-table.filter] as a child of the [x-data-table] component");
+                    }
 
-        return $pattern;
+                    if(!isset($__isBuildingDataTableFilters) || $__isBuildingDataTableFilters !== true) {
+                        throw new \LogicException("You can only use the [x-data-table.filter] as a direct child of the [x-data-table.filters] component");
+                    }
+
+                    $component->addFilter($__rawComponentAttributes, <<<'___DATATABLE__RENDERER___'
+                OPENING_CODE,
+            closingCode: <<<'CLOSING_CODE'
+            ___DATATABLE__RENDERER___);
+            ?>
+            CLOSING_CODE,
+            selfClosingCode: <<<'SELF_CLOSING_CODE'
+                    <?php
+                    if(!isset($__isBuildingDataTableFilters) || $__isBuildingDataTableFilters !== true) {
+                        throw new \LogicException("You can only use the [x-data-table.filter] as a direct child of the [x-data-table.filters] component");
+                    }
+
+                    $component->addFilter($__rawComponentAttributes);
+
+                    ?>
+                SELF_CLOSING_CODE,
+        );
     }
 
-    protected function rawComponentClosingTagRegex(string $rawComponentName)
+    protected function registerRawBladeComponent(string $tag, string $openingCode, string $closingCode, ?string $selfClosingCode = null, array $defaultAttributes = [])
     {
-        // if (!\str_starts_with($rawComponentName, 'x-')) {
-        //     $rawComponentName = 'x-' . $rawComponentName;
-        // }
-
-        $quotedComponent = \preg_quote($rawComponentName, '/');
-
-        return "/<\/\s*$quotedComponent\s*>/";
-    }
-
-    protected function rawComponentSelfClosingTagRegex(string $rawComponentName)
-    {
-        if (!\str_starts_with($rawComponentName, 'x-')) {
-            $rawComponentName = 'x-' . $rawComponentName;
-        }
-
-        $quotedComponent = \preg_quote($rawComponentName, '/');
-
-        return "/
-            <
-                \s*
-                $quotedComponent
-                \s*
-                (?<attributes>
-                    (?:
-                        \s+
-                        (?:
-                            (?:
-                                @(?:class)(\( (?: (?>[^()]+) | (?-1) )* \))
-                            )
-                            |
-                            (?:
-                                @(?:style)(\( (?: (?>[^()]+) | (?-1) )* \))
-                            )
-                            |
-                            (?:
-                                \{\{\s*\\\$attributes(?:[^}]+?)?\s*\}\}
-                            )
-                            |
-                            (?:
-                                (\:\\\$)(\w+)
-                            )
-                            |
-                            (?:
-                                [\w\-:.@%]+
-                                (
-                                    =
-                                    (?:
-                                        \\\"[^\\\"]*\\\"
-                                        |
-                                        \'[^\']*\'
-                                        |
-                                        [^\'\\\"=<>]+
-                                    )
-                                )?
-                            )
-                        )
-                    )*
-                    \s*
-                )
-            \/>
-        /x";
-    }
-
-    protected function getAttributesFromAttributeString(string $attributesString)
-    {
-        $this->getLaravelComponentTagCompiler()->resetBoundAttributes();
-        return $this->getLaravelComponentTagCompiler()->getAttributesFromAttributeString($attributesString);
-    }
-
-    protected function componentAttributesToString(array $attributes, bool $escapeBound = true): string
-    {
-        return $this->getLaravelComponentTagCompiler()->attributesToString($attributes, $escapeBound);
-    }
-
-    protected function getLaravelComponentTagCompiler()
-    {
-        static $compiler = null;
-
-        if ($compiler === null) {
-            $compiler = new class (app()->make(ComponentTagCompiler::class)) extends ComponentTagCompiler {
-
-                public function __construct(ComponentTagCompiler $componentTagCompiler)
-                {
-                    parent::__construct($componentTagCompiler->aliases, $componentTagCompiler->namespaces, $componentTagCompiler->blade);
-                }
-
-                public function resetBoundAttributes()
-                {
-                    $this->boundAttributes = [];
-                }
-
-                public function getAttributesFromAttributeString(string $attributesString)
-                {
-                    return parent::getAttributesFromAttributeString($attributesString);
-                }
-
-                public function attributesToString(array $attributes, $escapeBound = true)
-                {
-                    return parent::attributesToString($attributes, $escapeBound);
-                }
-            };
-        }
-
-        return $compiler;
+        RawComponent::rawComponent(
+            $tag,
+            $openingCode,
+            $closingCode,
+            $selfClosingCode,
+            defaultAttributes: $defaultAttributes,
+        );
     }
 }

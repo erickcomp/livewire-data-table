@@ -3,6 +3,7 @@
     use ErickComp\LivewireDataTable\Builders\Column\CustomRenderedColumn;
     use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
     use ErickComp\LivewireDataTable\Builders\Column\ActionsColumn;
+    use ErickComp\LivewireDataTable\DataTable\Filter;
     use Illuminate\Support\Facades\Blade;
     use Illuminate\Support\Str;
     use Illuminate\View\ComponentAttributeBag;
@@ -10,6 +11,7 @@
     use Illuminate\Pagination\Paginator;
 
     /** @var \ErickComp\LivewireDataTable\DataTable $dataTable */
+    /** @var \ErickComp\LivewireDataTable\DataTable\Filter $filterItem */
 
     $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAttributeBag {
         return $columnThAttributes->merge($tableThAttributes->all());
@@ -20,66 +22,197 @@
     };
 @endphp
 
-<div {{ $dataTable->containerAttributes }}>
+<div {{ $dataTable->containerAttributes->class(['lw-dt' => true]) }}>
     @if($dataTable->hasTableActions())
-            <div class="lw-dt-table-actions">
+        <div class="lw-dt-table-actions">
+            <div class="lw-dt-table-actions-row">
                 @if($dataTable->isSearchable())
-                        <div class="lw-dt-table-search"></div>
-                        @if ($dataTable->hasCustomSearch())
+                    <div class="lw-dt-table-search">
+                        @if ($dataTable->hasCustomRenderedSearch())
                             @php
                                 $searchViewData = [
                                     '__dataTable' => $dataTable,
                                 ];
                             @endphp
-                            {!! Blade::render($dataTable->customSearch, $searchViewData) !!}
+                            {!! Blade::render($dataTable->getCustomSearchRendererCode(), $searchViewData) !!}
                         @else
-                            <label for="{{ ($dataTable->name ?? $getId()) . '-search' }}">{{__('Search')}}:</label>
-                            <input type="text" name="{{ ($dataTable->name ?? $getId()) . '-search' }}" wire:model.live.debounce.{{ $searchDebounceMs }}ms="columnsSearch.{{ $column->name }}" />
+                            <input type="text"
+                                name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-search' }}"
+                                value="{{ $search }}" wire:model="inputSearch" />
+
+                            <button
+                                name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-search-apply' }}"
+                                wire:click="updateSearch()">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 512 512"
+                                    width="14" height="14"
+                                    fill="currentColor"
+                                    style="vertical-align: middle;">
+                                    <path
+                                        d="M495 466.1l-110.1-110.1c31.1-37.7 48-84.6 48-134 0-56.4-21.9-109.3-61.8-149.2-39.8-39.9-92.8-61.8-149.1-61.8-56.3 0-109.3 21.9-149.2 61.8C33.1 112.7 11.2 165.7 11.2 222c0 56.3 21.9 109.3 61.8 149.2 39.8 39.8 92.8 61.8 149.2 61.8 49.5 0 96.4-16.9 134-48l110.1 110c8 8 20.9 8 28.9 0 8-8 8-20.9 0-28.9zM101.7 342.2c-32.2-32.1-49.9-74.8-49.9-120.2 0-45.4 17.7-88.2 49.8-120.3 32.1-32.1 74.8-49.8 120.3-49.8 45.4 0 88.2 17.7 120.3 49.8 32.1 32.1 49.8 74.8 49.8 120.3 0 45.4-17.7 88.2-49.8 120.3-32.1 32.1-74.9 49.8-120.3 49.8-45.4 0-88.1-17.7-120.2-49.9z" />
+                                </svg>
+                                @lang('erickcomp_lw_data_table::messages.search_button_label')
+                            </button>
                         @endif
                     </div>
                 @endif
-        </div>
-    @endif
-<table {{ $dataTable->tableAttributes }}>
-    <thead {{ $dataTable->theadAttributes }}>
-        <tr {{ $dataTable->theadTrAttributes }}>
-            @foreach ($dataTable->columns as $column)
-                        @php
-                            $thAttributes = $column->thAttributes->merge($dataTable->thAttributes->all());
-                            //$thAttributes = $dataTable->thAttributes->merge($column->thAttributes->all());
 
-                            if ($column->isSortable() && count($rows) > 0) {
-                                $thAttributes['wire:click'] = "setSortBy('{$column->name}')";
-                            }
-                        @endphp
-                        <th {{ $thAttributes }}>
-                            {{ $column->title }}
-                            @if ($column->isSortable() && count($rows) > 0)
+                @if($dataTable->isFilterable())
+                    <button id="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}"
+                        name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}"
+                        class="filter-toggler-button">
+
+                        @if(!$dataTable->filtersToggleNoDefaultIcon)
+                            <svg xmlns=" http://www.w3.org/2000/svg"
+                                width="14" height="14" viewBox="0 0 24 24"
+                                style="vertical-align: middle;">
+                                <path d="M3 4h18l-7 10v5l-4 1v-6z" fill="currentColor" />
+                            </svg>
+                        @endif
+                        @lang('erickcomp_lw_data_table::messages.toggle_filters_button_label')
+                    </button>
+                @endif
+            </div> <!-- end: lw-dt-table-actions-row -->
+            @if($dataTable->isFilterable())
+                <div class="lw-dt-table-actions-row">
+                    <div {{ $dataTable->filters->containerAttributes->except(['collapsible']) }}>
+                        @php $renderedFilterItemsNames = []; @endphp
+
+                        @foreach($dataTable->filters->filtersItems as $filterItem)
+                            <div class="filter-item">
+                                <div @class(['filter-content', 'filter-range' => $filterItem->mode === Filter::MODE_RANGE])>
+                                    @if(!empty($filterItem->customRendererCode))
+                                        {!! $filterItem->getCustomRendererCodeWithWireModel($filterUrlParam) !!}
+                                    @else
                                         @php
-                                            $columnSortClass = $column->name === $sortBy
-                                                ? Str::kebab("{$dataTable->sortingClassPrefix}-" . \strtolower(empty($sortDir) ? 'none' : $sortDir))
-                                                : "{$dataTable->sortingClassPrefix}-none";
-                                        @endphp
-                                        <span class="{{$dataTable->sortingClassPrefix}} {{ $columnSortClass }}"></span>
-                            @endif
-                        </th>
-            @endforeach
-        </tr>
+                                            if (\in_array($filterItem->attributes['name'], $renderedFilterItemsNames)) {
+                                                throw new \LogicException("Each filter item must have a unique name. Duplicated name found: [{$filterItem->attributes['name']}]");
+                                            }
 
-        @if($dataTable->hasSearchableColumns() && (count($rows) > 0 || !empty(\array_filter($columnsSearch))))
-            <tr {{ $dataTable->theadSearchTrAttributes }}>
+                                            $renderedFilterItemsNames[] = $filterItem->attributes['name'];
+                                        @endphp
+
+                                        <legend><span>{{ $filterItem->label }}</span></legend>
+
+                                        @if(\in_array($filterItem, [Filter::TYPE_SELECT, Filter::TYPE_SELECT_MULTIPLE], true))
+                                            <select {{ $filterItem->inputAttributes(except: 'name') }}
+                                                name="{{ $filterItem->buildInputNameAttribute($filterUrlParam) }}"
+                                                wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}">
+                                                @foreach($filterItem->getSelectOptions() as $value => $label)
+                                                    <option value="{{ $value }}">{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        @else
+                                            @if($filterItem->mode === Filter::MODE_RANGE)
+                                                <span>@lang('erickcomp_lw_data_table::messages.range_filter_label_from'):</span>
+                                                <input
+                                                    @keydown.enter="$refs.applyFiltersButton.click()"
+                                                    type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
+                                                    name="{{ $filterItem->buildInputNameAttribute($filterUrlParam, 'from') }}"
+                                                    wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}">
+
+                                                <span>@lang('erickcomp_lw_data_table::messages.range_filter_label_to'):</span>
+                                                <input
+                                                    @keydown.enter="$refs.applyFiltersButton.click()"
+                                                    type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
+                                                    name="{{ $filterItem->buildInputNameAttribute($filterUrlParam, 'to') }}"
+                                                    wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}">
+                                            @else
+                                                <input
+                                                    @keydown.enter="$refs.applyFiltersButton.click()"
+                                                    type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
+                                                    name="{{ $filterItem->buildInputNameAttribute($filterUrlParam) }}"
+                                                    wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}">
+                                            @endif
+                                        @endif
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                        <div class="lw-dt-filter-apply-container">
+                            <button
+                                x-ref="applyFiltersButton"
+                                id="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-apply' }}"
+                                name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-apply' }}"
+                                class="filters-apply-button"
+                                wire:click="updateFilters()">
+                                @lang('erickcomp_lw_data_table::messages.apply_filters_button_label')
+                            </button>
+                        </div>
+                    </div> {{-- end: $dataTable->filters->containerAttributes --}}
+
+                </div>
+            @endif
+
+            @if (!empty($search) || (!empty($dataTable->filters) && !empty($___lwDataTable->appliedFiltersData())))
+                <div class="lw-dt-table-actions-row">
+                    <div style="display:flex">
+                        @if(count($___lwDataTable->appliedFiltersData()) > 0)
+                            <span style="padding: 0.25rem;">
+                                @lang('erickcomp_lw_data_table::messages.active_filters_label'):
+                            </span>
+                        @endif
+                        @if(!empty(\trim($search)))
+
+                            <span style="padding: 0.25rem;font-weight: bold;">
+                                <button wire:click="clearSearch()">x</button>
+                                @lang('erickcomp_lw_data_table::messages.applied_search_label'): "{{ $search }}"
+                            </span>
+
+                        @endif
+
+                        @foreach ($___lwDataTable->appliedFiltersData() as $appliedFilterData)
+                            <span style="padding: 0.25rem;font-weight: bold;">
+                                <button wire:click="removeFilter('{{ $appliedFilterData['wire-name'] }}')">x</button>
+                                {{ $appliedFilterData['label'] }}
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </div> <!-- end: lw-dt-table-actions -->
+    @endif
+
+    <table {{ $dataTable->tableAttributes }}>
+        <thead {{ $dataTable->theadAttributes }}>
+            <tr {{ $dataTable->theadTrAttributes }}>
                 @foreach ($dataTable->columns as $column)
-                    <th {{ $dataTable->theadSearchThAttributes }}>
-                        @if ($column->isSearchable())
-                            <input type="text" wire:model.live.debounce.{{ $searchDebounceMs }}ms="columnsSearch.{{ $column->name }}" />
+                    @php
+                        $thAttributes = $column->thAttributes->merge($dataTable->thAttributes->all());
+                        //$thAttributes = $dataTable->thAttributes->merge($column->thAttributes->all());
+
+                        if ($column->isSortable() && count($rows) > 0) {
+                            $thAttributes['wire:click'] = "setSortBy('{$column->name}')";
+                        }
+                    @endphp
+                    <th {{ $thAttributes }}>
+                        {{ $column->title }}
+                        @if ($column->isSortable() && count($rows) > 0)
+                            @php
+                                $columnSortClass = $column->name === $sortBy
+                                    ? Str::kebab("{$dataTable->sortingClassPrefix}-" . \strtolower(empty($sortDir) ? 'none' : $sortDir))
+                                    : "{$dataTable->sortingClassPrefix}-none";
+                            @endphp
+                            <span class="{{$dataTable->sortingClassPrefix}} {{ $columnSortClass }}"></span>
                         @endif
                     </th>
                 @endforeach
             </tr>
-        @endif
-    </thead>
-    <tbody {{$dataTable->tbodyAttributes }}>
-        @forelse ($rows as $row)
+
+            @if($dataTable->hasSearchableColumns() && (count($rows) > 0 || !empty(\array_filter($columnsSearch))))
+                <tr {{ $dataTable->theadSearchTrAttributes }}>
+                    @foreach ($dataTable->columns as $column)
+                        <th {{ $dataTable->theadSearchThAttributes }}>
+                            @if ($column->isSearchable())
+                                <input type="text" wire:model.live.debounce.{{ $searchDebounceMs }}ms="columnsSearch.{{ $column->name }}" />
+                            @endif
+                        </th>
+                    @endforeach
+                </tr>
+            @endif
+        </thead>
+        <tbody {{$dataTable->tbodyAttributes }}>
+            @forelse ($rows as $row)
                 @php
                     $trAttributes = new ComponentAttributeBag();
                     $trAttributesModifierCode = $dataTable->getTrAttributesModifierCode();
@@ -101,72 +234,68 @@
                     @endphp
                 @endif
 
-                <tr {{ $trAttributes }} wire:key="{{ $row->{$dataTable->dataSrcId} }}">
+                <tr {{ $trAttributes }} wire:key="{{ $row->{$dataTable->dataIdentityColumn} }}">
                     @foreach ($dataTable->columns as $column)
+                        @php
+                            $customRenderedColumn = '';
+                        @endphp
+                        @if($column instanceof CustomRenderedColumn)
                             @php
-                                $customRenderedColumn = '';
+                                $customRenderedColumn = Blade::render($column->customRendererCode, ['__dataTableRow' => $row]);
+                                $trimmed = $customRenderedColumn;
                             @endphp
-                            @if($column instanceof CustomRenderedColumn)
-                                @php
-                                    $customRenderedColumn = Blade::render($column->customRendererCode, ['__dataTableRow' => $row]);
-                                    $trimmed = $customRenderedColumn;
-                                @endphp
 
-                                {{--
-                                @if (\str_starts_with($trimmed, '<td ') && \str_ends_with($trimmed, ' </td>'))
-                                    --}}
-                                    @if (preg_match('/^<\s*td\s*.*>.*<\/\s*td\s*>$/is', $trimmed))
-                                        {!! $customRenderedColumn !!}
-                                        @continue
-                                    @endif
+                            @if (preg_match('/^<\s*td\s*.*>.*<\/\s*td\s*>$/is', $trimmed))
+                                {!! $customRenderedColumn !!}
+                                @continue
                             @endif
+                        @endif
 
-                            <td {{ $column->tdAttributes ?? '' }}>
-                                @if (!empty($customRenderedColumn))
-                                    {!! $customRenderedColumn !!}
-                                @elseif($column instanceof DataColumn)
-                                    {{ $row->{$column->dataField} }}
-                                @elseif($column instanceof ActionsColumn)
-                                    << actions column>>
-                                @endif
-                            </td>
+                        <td {{ $column->tdAttributes ?? '' }}>
+                            @if (!empty($customRenderedColumn))
+                                {!! $customRenderedColumn !!}
+                            @elseif($column instanceof DataColumn)
+                                {{ $row->{$column->dataField} }}
+                            @elseif($column instanceof ActionsColumn)
+                                << actions column>>
+                            @endif
+                        </td>
                     @endforeach
                 </tr>
-        @empty
-            <tr {{ $dataTable->tbodyTrAttributes->class(["lw-dt-nodatafound-tr"]) }}>
-                <td class="lw-dt-nodatafound-td" colspan="{{ max([count($dataTable->columns), 1]) }}"
-                    style="text-align: center; ">
-                    {{ __('No data found') }}
-                </td>
-            </tr>
-        @endforelse
+            @empty
+                <tr {{ $dataTable->tbodyTrAttributes->class(["lw-dt-nodatafound-tr"]) }}>
+                    <td class="lw-dt-nodatafound-td" colspan="{{ max([count($dataTable->columns), 1]) }}">
+                        @lang('erickcomp_lw_data_table::messages.no_data_found_table_td_text')
+                    </td>
+                </tr>
+            @endforelse
 
-    </tbody>
-</table>
+        </tbody>
+    </table>
 
-@if (\is_object($rows) && \method_exists($rows, 'links'))
-    {{-- @TODO: Create params to choose between pagination styles --}}
-    @if($dataTable->paginationCode != null)
-        $paginationVars = [
-        '__dataTable' => $dataTable,
-        '__rows' => $rows
-        ];
-        {!! Blade::render($dataTable->paginationCode, $paginationVars) !!}
-    @else
-        <div @class(['lw-dt-pagination-container', 'default-pagination-style' => $dataTable->isUsingDefaultPaginationViews()])>
-            {{ $rows->links() }}
-        </div>
+    @if (\is_object($rows) && \method_exists($rows, 'links'))
+        {{-- @TODO: Create params to choose between pagination styles --}}
+        @if($dataTable->paginationCode != null)
+            $paginationVars = [
+            '__dataTable' => $dataTable,
+            '__rows' => $rows
+            ];
+            {!! Blade::render($dataTable->paginationCode, $paginationVars) !!}
+        @else
+            <div @class(['lw-dt-pagination-container', 'default-pagination-style' => $dataTable->isUsingDefaultPaginationViews()])>
+                {{ $rows->links() }}
+            </div>
+        @endif
+        {{--
+        @elseif($dataTable->paginationView !== null)
+        {{$rows->links($dataTable->paginationView)}}
+        @elseif($rows instanceof LengthAwarePaginator)
+        {{$rows->links($dataTable->lengthAwarePaginationView)}}
+        @elseif($rows instanceof Paginator)
+        {{$rows->links($dataTable->simplePaginationView)}}
+        @endif
+        --}}
     @endif
-    {{--
-    @elseif($dataTable->paginationView !== null)
-    {{$rows->links($dataTable->paginationView)}}
-    @elseif($rows instanceof LengthAwarePaginator)
-    {{$rows->links($dataTable->lengthAwarePaginationView)}}
-    @elseif($rows instanceof Paginator)
-    {{$rows->links($dataTable->simplePaginationView)}}
-    @endif
-    --}}
-@endif
 </div>
 
 @assets
@@ -178,10 +307,8 @@
         padding: 1rem;
     }
 </style>
-@endassets
 
 @if($dataTable->withoutSortingIndicators === false)
-    @assets
     <style>
         th:has(.{{ $dataTable->sortingClassPrefix }}) {
             cursor: pointer;
@@ -210,11 +337,9 @@
             background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg' class='p-icon p-datatable-sort-icon' aria-hidden='true' sorted='true' sortOrder='-1' data-pc-section='sorticon'%3E%3Cpath d='M4.93953 10.5858L3.83759 11.6877V0.677419C3.83759 0.307097 3.53049 0 3.16017 0C2.78985 0 2.48275 0.307097 2.48275 0.677419V11.6877L1.38082 10.5858C1.11888 10.3239 0.685331 10.3239 0.423396 10.5858C0.16146 10.8477 0.16146 11.2813 0.423396 11.5432L2.68146 13.8013C2.74469 13.8645 2.81694 13.9097 2.89823 13.9458C2.97952 13.9819 3.06985 14 3.16017 14C3.25049 14 3.33178 13.9819 3.42211 13.9458C3.5034 13.9097 3.57565 13.8645 3.63888 13.8013L5.89694 11.5432C6.15888 11.2813 6.15888 10.8477 5.89694 10.5858C5.63501 10.3239 5.20146 10.3239 4.93953 10.5858ZM13.0957 0H7.22468C6.85436 0 6.54726 0.307097 6.54726 0.677419C6.54726 1.04774 6.85436 1.35484 7.22468 1.35484H13.0957C13.466 1.35484 13.7731 1.04774 13.7731 0.677419C13.7731 0.307097 13.466 0 13.0957 0ZM7.22468 5.41935H9.48275C9.85307 5.41935 10.1602 5.72645 10.1602 6.09677C10.1602 6.4671 9.85307 6.77419 9.48275 6.77419H7.22468C6.85436 6.77419 6.54726 6.4671 6.54726 6.09677C6.54726 5.72645 6.85436 5.41935 7.22468 5.41935ZM7.6763 8.12903H7.22468C6.85436 8.12903 6.54726 8.43613 6.54726 8.80645C6.54726 9.17677 6.85436 9.48387 7.22468 9.48387H7.6763C8.04662 9.48387 8.35372 9.17677 8.35372 8.80645C8.35372 8.43613 8.04662 8.12903 7.6763 8.12903ZM7.22468 2.70968H11.2892C11.6595 2.70968 11.9666 3.01677 11.9666 3.3871C11.9666 3.75742 11.6595 4.06452 11.2892 4.06452H7.22468C6.85436 4.06452 6.54726 3.75742 6.54726 3.3871C6.54726 3.01677 6.85436 2.70968 7.22468 2.70968Z' fill='currentColor'%3E%3C/path%3E%3C/svg%3E");
         }
     </style>
-    @endassets
 @endif
 
 @if ($shouldStylePagination)
-    @assets
     <style>
         .lw-dt-pagination-container .pagination {
             display: flex;
@@ -229,5 +354,184 @@
             text-decoration: none;
         }
     </style>
-    @endassets
 @endif
+
+@if($dataTable->isFilterable())
+    @php
+        //$filtersContainerColumns = $dataTable->filters->rowLength;
+        //$filtersContainerGap = 0.25; // in rem
+        //$filtersContainerGapTotal = ($filtersContainerColumns - 1) * $filtersContainerGap;
+        //$filtersContainerColWidth = "calc(100% / {$filtersContainerColumns})";
+        //$filtersContainerColWidth = "calc((100% - {$filtersContainerGapTotal}rem) / {$filtersContainerColumns})";
+    @endphp
+    <style>
+        .lw-dt .lw-dt-table-actions-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .lw-dt .lw-dt-table-actions-row button.filter-toggler-button {
+            cursor: pointer;
+        }
+
+        .lw-dt .lw-dt-table-actions-row button.filter-toggler-button.active {
+            border-bottom: none;
+            /* background: white; */
+            /* position: relative; */
+            z-index: 2;
+            /* padding-top: calc(0.5rem - 0.5rem); */
+            padding-bottom: calc(1.0rem + 4px);
+            margin-bottom: calc(-1.0rem - 1px);
+            border-color: #ccc;
+            border-width: 0.15em;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            border-style: solid;
+            border-bottom-width: 0;
+            border-bottom-color: white;
+            border-bottom-style: none;
+            background-color: white;
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container {
+            width: 80%;
+            min-width: 1024px;
+            border: 1px solid #ccc;
+            margin-top: 1rem;
+            padding: 10px;
+            display: none;
+            position: relative;
+            z-index: 1;
+            background: white;
+            /* align-items: self-start; */
+            align-items: stretch;
+            flex-wrap: wrap;
+
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.show {
+            display: flex;
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.hide {
+            display: none;
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .lw-dt-filter-apply-container {
+            flex-basis: 100%;
+            padding-top: 1rem;
+            padding-left: 0.25rem;
+        }
+
+        @media (max-width: 1024px) {
+            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container {
+                width: 100%;
+                min-width: 90%;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container {
+                align-items: center;
+            }
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item {
+            padding: 0.25rem;
+            min-width: 240px;
+            border-radius: 6px;
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item----old {
+            display: flex;
+            flex-direction: column;
+            /*gap: 0.25rem; */
+            /*background: #f9f9f9; */
+            padding: 0.25rem;
+            min-width: 240px;
+            border-radius: 6px;
+
+            /*display: inline-block; */
+            /*
+                                                                                                                                                                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
+                                                                                                                                                                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
+                                                                                                                                                                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
+                                                                                                                                                                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
+                                                                                                                                                                                                                                                                                                                                                                                                                                            */
+            /*font-weight: bold;*/
+
+            flex: 0 0 calc(100% - 2%);
+        }
+
+        @media (max-width: 1279px) {
+            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item {
+                flex: 0 0 content;
+            }
+        }
+
+        @media (max-width: 551px) {
+            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item {
+                min-width: 100%;
+            }
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item .filter-content {
+            padding: 0.5em 1em;
+            border: 1px solid #ccc;
+            border-radius: 0.25em;
+            background-color: #f9f9f9;
+            height: 100%;
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item .filter-content legend {
+            font-weight: bold;
+        }
+
+        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item .filter-content.filter-range {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    </style>
+@endif
+
+@if($dataTable->isSearchable())
+    <style>
+        .lw-dt-table-actions-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .lw-dt-table-actions-row .lw-dt-table-search {}
+    </style>
+@endif
+
+@foreach ($dataTable->assets as $asset)
+    {!! $asset !!}
+@endforeach
+
+@endassets
+
+@script
+
+<script>
+    const filterTogglerButtonId = "{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}";
+
+    const button = document.getElementById(filterTogglerButtonId);
+    const filtersContainer = document.querySelector('.lw-dt .lw-dt-table-actions-row .lw-dt-filters-container');
+
+    button.addEventListener('click', () => {
+        const isVisible = filtersContainer.style.display === 'flex';
+        filtersContainer.style.display = isVisible ? 'none' : 'flex';
+        button.classList.toggle('active', !isVisible);
+    });
+</script>
+
+@foreach ($dataTable->scripts as $script)
+    {!! $script !!}
+@endforeach
+@endscript

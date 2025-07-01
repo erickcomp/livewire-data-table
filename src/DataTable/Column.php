@@ -11,9 +11,9 @@ class Column extends BaseDataTableComponent
 {
     /**  @var BaseAction[] */
     protected array $actions;
-    protected string $customRendererCode;
     protected ComponentAttributeBag $customRendererCodeAttributes;
     protected string $class;
+    public ?string $customRendererCode = null;
 
     protected function extractPublicProperties()
     {
@@ -42,18 +42,6 @@ class Column extends BaseDataTableComponent
     public function getActions(): array
     {
         return $this->actions;
-    }
-
-    public function getCustomRendererCode(): string
-    {
-        return $this->customRendererCode;
-    }
-
-    public function setCustomRendererCode(string $rendererCode, ?ComponentAttributeBag $attributes = null)
-    {
-        Fazer benchmark dos raw components com e sem attributes, para ver se vale a pena usar
-        $this->customRendererCode = $rendererCode;
-        $this->customRendererCodeAttributes = $attributes ?? new ComponentAttributeBag([]);
     }
 
     public function isActionsColumn()

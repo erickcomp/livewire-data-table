@@ -1,16 +1,11 @@
 @aware(['__dataTable'])
 
-@props([
-    'actionsColumn' => false,
-    'searchable' => false,
-    'filterable' => false,
-])
-
-@php /** @var ErickComp\LivewireDataTable\DataTable $__dataTable */ @endphp
-
 @php
+    /** @var ErickComp\LivewireDataTable\DataTable $__dataTable */
 
-    dd($__env);
+    //dd($__dataTableFilters, 'hue-filter', $__env);
+    $__dataTable->addFilter($__dataTableFilter);
+    //dd($__env);
 
     //$__dataTable->addColumn($attributes, $actionsColumn, $searchable, $filterable);
 @endphp

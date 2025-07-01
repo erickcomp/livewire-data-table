@@ -34,11 +34,25 @@ trait FillsComponentAttributeBags
             }
         }
 
-        // Set attributes to respective bags
+        // Set attributes to their respective bags
         foreach ($partitionedAttributes as $bagName => $bagAttributes) {
-            $this->{$bagName}->setAttributes($bagAttributes);
+            if (!isset($this->{$bagName}) && \property_exists($this, $bagName)) {
+                $this->{$bagName} = new ComponentAttributeBag($bagAttributes);
+            } else {
+                $this->{$bagName}->setAttributes($bagAttributes);
+            }
         }
 
-        $this->{$attributeBagsMappings[0]}->setAttributes($defaultBagAttributes);
+        if (!isset($this->{$attributeBagsMappings[0]}) && \property_exists($this, $attributeBagsMappings[0])) {
+            $this->{$attributeBagsMappings[0]} = new ComponentAttributeBag($defaultBagAttributes);
+        } else {
+            $this->{$attributeBagsMappings[0]}->setAttributes($defaultBagAttributes);
+        }
+
+        foreach ($attributeBagsMappings as $bag) {
+            if (!isset($this->{$bag}) && \property_exists($this, $bag)) {
+                $this->{$bag} = new ComponentAttributeBag();
+            }
+        }
     }
 }

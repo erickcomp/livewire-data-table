@@ -109,7 +109,7 @@
             </tr>
         @else
             <tr>
-                <td colspan="{{ count($dataTable->columns) }}"> {{ $dataTable->noDataFoundMessage ?? __('No data') }}
+                <td colspan="{{ count($dataTable->columns) }}"> {{ $dataTable->noDataFoundMessage ?? __('erickcomp_lw_data_table::messages.no_data_td') }}
                 </td>
             </tr>
         @endforelse

@@ -3,11 +3,19 @@
     "name": "erickcomp/livewire-data-table",
     "type": "package",
     "description": "Provides a html/blade centric data table approach leveraging Livewire's reactiveness for a great UX.",
-    "keywords": ["laravel", "framework", "livewire", "table", "data", "data-table"],
+    "keywords": [
+        "laravel",
+        "framework",
+        "livewire",
+        "table",
+        "data",
+        "data-table"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "livewire/livewire": "^3.0"
+        "livewire/livewire": "^3.0",
+        "erickcomp/laravel-raw-blade-components": "dev-master"
     },
     "autoload": {
         "psr-4": {
@@ -26,8 +34,7 @@
             "providers": [
                 "ErickComp\\LivewireDataTable\\ServiceProvider"
             ],
-            "dont-discover": [
-            ]
+            "dont-discover": []
         }
     }
 }
