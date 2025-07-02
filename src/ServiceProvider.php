@@ -57,7 +57,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     protected function registerColumnTdRawComponent()
     {
         $this->registerRawBladeComponent(
-            tag: 'x-data-table.column.td',
+            tag: 'x-data-table.column.td-template',
             openingCode: <<<'COL_TD_COMPILER_CODE'
                     <?php
 
@@ -99,6 +99,15 @@ class ServiceProvider extends LaravelAbstractServiceProvider
                     $component->customSearchRendererCode = <<<'___DATATABLE__RENDERER___'
                 COL_TD_COMPILER_CODE,
             closingCode: '___DATATABLE__RENDERER___, $__rawComponentAttributes); ?>',
+            selfClosingCode: <<<'SELF_CLOSING_CODE'
+                <?php
+                if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
+                    throw new \LogicException("You can only use the [x-data-table.search] as a direct child of the [x-data-table] component");
+                }
+
+                $component->setupSearch($__rawComponentAttributes);
+                ?>
+            SELF_CLOSING_CODE,
         );
     }
 

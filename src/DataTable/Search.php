@@ -2,74 +2,63 @@
 
 namespace ErickComp\LivewireDataTable\DataTable;
 
-use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
-use ErickComp\LivewireDataTable\Builders\ActionFactory;
 use Illuminate\View\ComponentAttributeBag;
-use ErickComp\LivewireDataTable\Builders\Action\BaseAction;
+use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 
-class Search extends BaseDataTableComponent
+class Search
 {
-    /**  @var BaseAction[] */
-    protected array $actions;
-    protected string $customRendererCode;
-    protected string $class;
+    use FillsComponentAttributeBags;
 
-    protected function extractPublicProperties()
+    protected array $defaultContainerAttributes = [
+        //'row-length' => 4,
+        'collapsible' => true,
+        //'class' => 'lw-dt-filters-container',
+    ];
+
+    protected array $defaultFilterRowAttributes = [
+        'class' => 'lw-dt-filters-row',
+    ];
+
+    protected array $defaultFilterItemsAttributes = [
+        'class' => 'lw-dt-filter-item',
+    ];
+
+    public string $title {
+        get => $this->containerAttributes['title'] ?? __('erickcomp_lw_data_table::messages.filters_container_label');
+    }
+
+    public bool $collapsible {
+        get => \filter_var($this->containerAttributes['collapsible'], \FILTER_VALIDATE_BOOL);
+    }
+
+    public bool $filtersToggleNoDefaultIcon {
+        get {
+            return \filter_var($this->containerAttributes['filters-toggle-no-default-icon'], \FILTER_VALIDATE_BOOL);
+        }
+    }
+
+    public ComponentAttributeBag $containerAttributes;
+    public ComponentAttributeBag $filterRowAttributes;
+    public ComponentAttributeBag $filterItemsAttributes;
+
+    /** @var string[] */
+    public array $dataFields;
+
+    public function __construct(ComponentAttributeBag $componentAttributes)
+    {
+        $this->fillComponentAttributeBags($componentAttributes);
+
+        $this->containerAttributes = $this->containerAttributes->merge($this->defaultContainerAttributes);
+        $this->containerAttributes = $this->containerAttributes->class(['lw-dt-filters-container', 'hide', 'collapsible' => $this->collapsible]);
+        $this->filterItemsAttributes = $this->filterItemsAttributes->merge($this->defaultFilterItemsAttributes);
+    }
+
+    protected function getAttributeBagsMappings(): array
     {
         return [
-            ...parent::extractPublicProperties(),
-            '__dataTableColumn' => $this,
+            0 => 'containerAttributes', //default
+            'filter-row-' => 'filterRowAttributes',
+            'filter-item-' => 'filterItemsAttributes',
         ];
-    }
-
-    public function addAction(Action $actionComponent)
-    {
-        if (isset($this->customRendererCode)) {
-            throw new \LogicException('Cannot add a new action to a column that\'s using custom renderer code');
-        }
-
-        if (isset($this->class)) {
-            throw new \LogicException('Cannot add a new action to a column that\'s that\'s rendered by a custom class');
-        }
-
-        $this->actions[] = ActionFactory::make($actionComponent);
-    }
-
-    /**
-     * @return BaseAction[]
-     */
-    public function getActions(): array
-    {
-        return $this->actions;
-    }
-
-    public function getCustomRendererCode(): string
-    {
-        return $this->customRendererCode;
-    }
-
-    public function setCustomRendererCode(string $rendererCode)
-    {
-        $this->customRendererCode = $rendererCode;
-    }
-
-    public function isActionsColumn()
-    {
-        return !empty($this->actions);
-    }
-
-    public function isCustomClassColumn()
-    {
-        return !empty($this->class);
-    }
-
-    public function isCustomRenderedCodeColumn()
-    {
-        return !empty($this->customRendererCode);
-    }
-
-    public function isDataColumn()
-    {
-        return !$this->isActionsColumn() && !$this->isCustomClassColumn() && !$this->isCustomRenderedCodeColumn();
     }
 }

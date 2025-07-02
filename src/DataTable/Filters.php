@@ -2,10 +2,8 @@
 
 namespace ErickComp\LivewireDataTable\DataTable;
 
-use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
 use Illuminate\View\ComponentAttributeBag;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
-use Illuminate\Support\Facades\Blade;
 
 class Filters
 {
