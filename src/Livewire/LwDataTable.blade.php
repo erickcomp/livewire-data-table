@@ -108,7 +108,6 @@
                 <div class="lw-dt-table-actions-row">
                     <div {{ $dataTable->filters->containerAttributes->except(['collapsible']) }}>
                         @php $renderedFilterItemsNames = []; @endphp
-
                         @foreach($dataTable->filters->filtersItems as $filterItem)
                             <div class="filter-item">
                                 <div @class(['filter-content', 'filter-range' => $filterItem->mode === Filter::MODE_RANGE])>
@@ -510,11 +509,11 @@
 
             /*display: inline-block; */
             /*
-                                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
-                                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
-                                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
-                                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
-                                                                                                                                                                                                                                                                                                            */
+                                                                                                                                                                                                                                                                                                                        padding: 0.5em 1em;
+                                                                                                                                                                                                                                                                                                                        border: 1px solid #ccc;
+                                                                                                                                                                                                                                                                                                                        border-radius: 0.25em;
+                                                                                                                                                                                                                                                                                                                        background-color: #f9f9f9;
+                                                                                                                                                                                                                                                                                                                        */
             /*font-weight: bold;*/
 
             flex: 0 0 calc(100% - 2%);

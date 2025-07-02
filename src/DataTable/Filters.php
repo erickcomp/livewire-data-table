@@ -35,7 +35,7 @@ class Filters
 
     public bool $filtersToggleNoDefaultIcon {
         get {
-            return \filter_var($this->containerAttributes['filtersToggleNoDefaultIcon'], \FILTER_VALIDATE_BOOL);
+            return \filter_var($this->containerAttributes['filters-toggle-no-default-icon'], \FILTER_VALIDATE_BOOL);
         }
     }
 

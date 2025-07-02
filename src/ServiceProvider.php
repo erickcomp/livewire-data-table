@@ -114,13 +114,17 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             defaultAttributes: ['row-length' => 4, 'collapsible' => 'true'],
             openingCode: <<<'COL_TD_COMPILER_CODE'
                     <?php
+                    \xdebug_break();
+
                     if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
                         throw new \LogicException("You can only use the [x-data-table.filters] as a direct child of the [x-data-table] component");
                     }
 
                     if ($component->initalizedFilters()) {
                         throw new \LogicException("You can only have one [x-data-table.filters] component per [x-data-table] component");
-                    }   
+                    }
+
+                    $component->initFilters($__rawComponentAttributes);
 
                     $__isBuildingDataTableFilters = true;
 
@@ -138,7 +142,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
                     <?php
 
                     if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
-                        throw new \LogicException("You can only use the [x-data-table.filter] as a child of the [x-data-table] component");
+                        throw new \LogicException("You can only use the [x-data-table.filter] as a child of the [x-data-table.filters] component");
                     }
 
                     if(!isset($__isBuildingDataTableFilters) || $__isBuildingDataTableFilters !== true) {
