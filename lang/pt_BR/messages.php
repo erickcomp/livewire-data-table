@@ -3,6 +3,7 @@
 return [
     'applied_search_label' => 'busca',
     'active_filters_label' => 'Filtros aplicados',
+    'filters_container_label' => 'Filtros',
     'toggle_filters_button_label' => 'Filtros',
     'search_button_label' => 'Buscar',
     'no_data_found_table_td_text' => 'Não há dados',

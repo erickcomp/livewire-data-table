@@ -26,11 +26,17 @@ class Filters
     ];
 
     public string $title {
-        get => $this->containerAttributes['title'] ?? \trans('Filters');
+        get => $this->containerAttributes['title'] ?? __('erickcomp_lw_data_table::messages.filters_container_label');
     }
 
     public bool $collapsible {
         get => \filter_var($this->containerAttributes['collapsible'], \FILTER_VALIDATE_BOOL);
+    }
+
+    public bool $filtersToggleNoDefaultIcon {
+        get {
+            return \filter_var($this->containerAttributes['filtersToggleNoDefaultIcon'], \FILTER_VALIDATE_BOOL);
+        }
     }
 
     public ComponentAttributeBag $containerAttributes;

@@ -18,6 +18,7 @@ use Illuminate\View\Component as BladeComponent;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\ImplicitlyBoundMethod;
 use Livewire\Wireable;
+use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
 class DataTable extends BaseDataTableComponent implements Wireable
 {
@@ -96,15 +97,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
     /** @var string[] $scripts */
     public array $scripts = [];
 
-    public array|true $searchable {
-        get {
-            if (\is_array($this->searchable)) {
-                return $this->searchable;
-            }
-
-            return \array_map(fn(BaseColumn $col) => $col->name, $this->columns);
-        }
-    }
+    public array|true $searchable;
 
     public function __construct(
         public ?string $dataProvider = null,
@@ -119,7 +112,6 @@ class DataTable extends BaseDataTableComponent implements Wireable
         public array $columnsSearch = [],
         public array $actions = [],
         public string $pageName = 'page',
-        public bool $filtersToggleNoDefaultIcon = false,
         ?string $paginationView = null,
         string|array $perPageOptions = [],
         string|array|bool $searchable = false,
@@ -139,10 +131,12 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
         $this->perPageOptions = $perPageOptions;
 
-        $this->searchable = match (\gettype($searchable)) {
-            'true' => [],
-            'string' => \array_map(fn($item) => \trim($item), \explode(',', $searchable)),
-            'array' => $searchable
+
+
+        $this->searchable = match (true) {
+            $searchable === false => [],
+            \is_string($searchable) => \array_map(fn($item) => \trim($item), \explode(',', $searchable)),
+            default => $searchable
         };
 
         $this->initComponentAttributeBags();
@@ -199,6 +193,25 @@ class DataTable extends BaseDataTableComponent implements Wireable
     {
         // @TODO: implement bulk actions
         return false;
+    }
+
+    public function getGlobalSearchColumns(): array
+    {
+        if ($this->searchable === false) {
+            return [];
+        }
+
+        if ($this->searchable === true) {
+            $columns = [];
+            foreach ($this->columns as $col) {
+                $columns[] = $col->searchableDataField();
+            }
+
+            return $columns;
+            //return \array_map(fn(BaseColumn $col) => $col $col->name, $this->columns);
+        }
+
+        $this->searchable;
     }
 
     public function hasSearchableColumns(): bool

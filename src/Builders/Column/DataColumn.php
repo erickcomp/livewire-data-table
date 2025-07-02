@@ -37,6 +37,13 @@ class DataColumn extends BaseColumn
         // $this->setupSortable($isSortable, $sortableRaw);
     }
 
+    public function searchableDataField(): string
+    {
+        return $this->searchable
+            ? $this->dataField
+            : null;
+    }
+
 
 
     // public function usesRawSorting(): bool

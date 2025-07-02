@@ -31,6 +31,13 @@ class BaseColumn
         $this->fillComponentAttributeBags($attributes);
     }
 
+    public function searchableDataField(): ?string
+    {
+        return $this->searchable
+            ? $this->name
+            : null;
+    }
+
     public function isSearchable(): bool
     {
         return $this->searchable;

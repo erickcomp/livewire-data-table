@@ -17,9 +17,9 @@
         return $columnThAttributes->merge($tableThAttributes->all());
     };
 
-    $onClickSortableColumn = function (BaseColumn $column): string {
-        return $column->isSortable() ? 'wire:click="setSortBy(\'' . $column->name . '\')"' : '';
-    };
+    //$onClickSortableColumn = function (BaseColumn $column): string {
+    //    return $column->isSortable() ? 'wire:click="setSortBy(\'' . $column->name . '\')"' : '';
+    //};
 @endphp
 
 <div {{ $dataTable->containerAttributes->class(['lw-dt' => true]) }}
@@ -93,7 +93,7 @@
                         name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}"
                         class="filter-toggler-button">
 
-                        @if(!$dataTable->filtersToggleNoDefaultIcon)
+                        @if(!$dataTable->filters->filtersToggleNoDefaultIcon)
                             <svg xmlns=" http://www.w3.org/2000/svg"
                                 width="14" height="14" viewBox="0 0 24 24"
                                 style="vertical-align: middle;">
@@ -258,7 +258,7 @@
                     @foreach ($dataTable->columns as $column)
                         <th {{ $dataTable->theadSearchThAttributes }}>
                             @if ($column->isSearchable())
-                                <input type="text" wire:model.live.debounce.{{ $searchDebounceMs }}ms="columnsSearch.{{ $column->name }}" />
+                                <input type="text" wire:model.live.debounce.{{ $searchDebounceMs }}ms="columnsSearch.{{ $column->searchableDataField() }}" />
                             @endif
                         </th>
                     @endforeach
@@ -510,11 +510,11 @@
 
             /*display: inline-block; */
             /*
-                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
-                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
-                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
-                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
-                                                                                                                                                                                                                                                                                            */
+                                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
+                                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
+                                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
+                                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
+                                                                                                                                                                                                                                                                                                            */
             /*font-weight: bold;*/
 
             flex: 0 0 calc(100% - 2%);
