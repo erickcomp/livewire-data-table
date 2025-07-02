@@ -24,22 +24,26 @@
 
 <div {{ $dataTable->containerAttributes->class(['lw-dt' => true]) }}
     x-data="{
-        storeId: '{{ $___lwDataTable->getId() }}'
+        storeId: '{{ $___lwDataTable->getId() }}',
+
+        dtData() {
+            return Alpine.store(this.storeId);
+        },
 
         applySearch() {
-            Alpine.$store[this.storeId].applySearch($wire);
+            this.dtData().applySearch($wire);
         },
 
         applyFilters() {
-            Alpine.$store[this.storeId].applyFilters($wire);
+            this.dtData().applyFilters($wire);
         },
 
         clearSearch() {
-            Alpine.$store[this.storeId].clearSearch($wire);
+            this.dtData().clearSearch($wire);
         },
 
         removeFilter(filter) {
-            Alpine.$store[this.storeId].removeFilter($wire, filter);
+            this.dtData().removeFilter($wire, filter);
         }
     };">
     @if($dataTable->hasTableActions())
@@ -60,8 +64,9 @@
                                 name="{{ $inputSearchIdentifier }}"
                                 {{-- wire:model="inputSearch" --}}
                                 {{-- x-model="inputSearch" --}}
-                                x-on:input="updateSearchInput()"
-                                x-on:keydown.enter="applySearch()" />
+                                {{-- x-on:input="updateSearchInput()" --}}
+                                x-on:keydown.enter="applySearch()"
+                                x-model="dtData()['inputSearch']" />
 
                             <button
                                 id="{{ $buttonApplySearchIdentifier }}"
@@ -125,7 +130,9 @@
                                                 name="{{ $filterItem->buildInputNameAttribute($filterUrlParam) }}"
                                                 {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
                                                 {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}"> --}}
-                                                x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters') }}')"
+                                                {{-- x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters')
+                                                }}')" --}}
+                                                x-model="{{ $filterItem->buildXModelAttribute('inputFilters') }}"
                                                 @foreach($filterItem->getSelectOptions() as $value => $label)
                                                     <option value="{{ $value }}">{{ $label }}</option>
                                                 @endforeach
@@ -138,7 +145,10 @@
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam, 'from') }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
                                                     {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
+                                                    {{--
                                                     x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}')"
+                                                    --}}
+                                                    x-model="{{ $filterItem->buildXModelAttribute('inputFilters', 'from') }}"
                                                     x-on:keydown.enter="applyFilters()">
                                                 <span>@lang('erickcomp_lw_data_table::messages.range_filter_label_to'):</span>
                                                 <input
@@ -146,7 +156,10 @@
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam, 'to') }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
                                                     {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
+                                                    {{--
                                                     x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}')"
+                                                    --}}
+                                                    x-model="{{ $filterItem->buildXModelAttribute('inputFilters', 'to') }}"
                                                     x-on:keydown.enter="applyFilters()">
                                             @else
                                                 <input
@@ -154,7 +167,10 @@
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam) }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
                                                     {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
+                                                    {{--
                                                     x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters') }}')"
+                                                    --}}
+                                                    x-model="{{ $filterItem->buildXModelAttribute('inputFilters') }}"
                                                     x-on:keydown.enter="applyFilters()">
                                             @endif
                                         @endif
@@ -494,11 +510,11 @@
 
             /*display: inline-block; */
             /*
-                                                                                                                                padding: 0.5em 1em;
-                                                                                                                                border: 1px solid #ccc;
-                                                                                                                                border-radius: 0.25em;
-                                                                                                                                background-color: #f9f9f9;
-                                                                                                                                */
+                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
+                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
+                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
+                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
+                                                                                                                                                                                                                                                                                            */
             /*font-weight: bold;*/
 
             flex: 0 0 calc(100% - 2%);
@@ -521,7 +537,7 @@
             border: 1px solid #ccc;
             border-radius: 0.25em;
             background-color: #f9f9f9;
-            height: 100%;
+            min-height: 8rem;
         }
 
         .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item .filter-content legend {
@@ -557,21 +573,28 @@
 @script
 
 <script>
-    const filterTogglerButtonId = "{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}";
+    (function () {
+        const filterTogglerButtonId = "{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}";
 
-    const button = document.getElementById(filterTogglerButtonId);
-    const filtersContainer = document.querySelector('.lw-dt .lw-dt-table-actions-row .lw-dt-filters-container');
+        const button = $wire.$el.querySelector('#' + filterTogglerButtonId);
+        const filtersContainer = $wire.$el.querySelector('.lw-dt .lw-dt-table-actions-row .lw-dt-filters-container');
 
-    button.addEventListener('click', () => {
-        const isVisible = filtersContainer.style.display === 'flex';
-        filtersContainer.style.display = isVisible ? 'none' : 'flex';
-        button.classList.toggle('active', !isVisible);
-    });
+        button.addEventListener('click', () => {
+            const isVisible = filtersContainer.style.display === 'flex';
+            filtersContainer.style.display = isVisible ? 'none' : 'flex';
+            button.classList.toggle('active', !isVisible);
+        });
+    })();
 
-    document.addEventListener('alpine:init', () => {
+    //document.addEventListener('alpine:init', function () {
+    (function () {
+        const storeId = '{{ $___lwDataTable->getId() }}';
+
+        //console.log('Registering Alpine store: [' + storeId + ']');
+
         Alpine.store(
-            '{{ $___lwDataTable->getId() }}',
-            {
+            storeId,
+            Alpine.reactive({
                 inputSearch: {{ Illuminate\Support\Js::from($search) }},
                 inputFilters: {{ Illuminate\Support\Js::from($initialFilters) }},
 
@@ -588,8 +611,6 @@
                 clearSearch(wireHandler) {
                     this.inputSearch = '';
                     this.applySearch(wireHandler);
-
-                    console.log('***** this.inputSearch: [' + this.inputSearch + ']');
                 },
 
                 removeFilter(wireHandler, filter) {
@@ -620,9 +641,9 @@
 
                     this.applyFilters(wireHandler);
                 }
-            }
+            })
         );
-    })
+    })();
 </script>
 
 @foreach ($dataTable->scripts as $script)

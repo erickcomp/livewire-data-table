@@ -129,6 +129,22 @@ class Filter // extends BaseDataTableComponent
         return "$wireModel.$range";
     }
 
+    public function buildXModelAttribute(string $filterProperty, ?string $range = null): string
+    {
+        //
+        $wireModel = "dtData()['$filterProperty']['$this->column']['$this->name']";
+
+        if ($range === null) {
+            return $wireModel;
+        }
+
+        if (!\in_array(\strtolower($range), ['from', 'to'])) {
+            throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
+        }
+
+        return "{$wireModel}['$range']";
+    }
+
     public function getCustomRendererCodeWithWireModel(string $filterProperty): string
     {
         $renderedCode = Blade::render($this->customRendererCode, ['__dataTableFilter' => $this]);
@@ -154,7 +170,7 @@ class Filter // extends BaseDataTableComponent
             $renderedCode,
             'input,select',
             'x-model',
-            $this->buildWireModelAttribute('inputFilters'),
+            $this->buildXModelAttribute('inputFilters'),
             false,
             '.',
         );
