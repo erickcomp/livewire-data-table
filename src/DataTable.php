@@ -139,7 +139,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
         $this->perPageOptions = $perPageOptions;
 
-        $this->searchable = match (getype($searchable)) {
+        $this->searchable = match (\gettype($searchable)) {
             'true' => [],
             'string' => \array_map(fn($item) => \trim($item), \explode(',', $searchable)),
             'array' => $searchable

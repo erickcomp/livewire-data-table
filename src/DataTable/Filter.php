@@ -145,17 +145,15 @@ class Filter // extends BaseDataTableComponent
         $renderedCode = $this->insertAttributeValueIntoHTML(
             $renderedCode,
             'input',
-            '___keydown.enter___',
-            '$refs.applyFiltersButton.click()',
+            'x-on:keydown.enter',
+            'applyFilters()',
             false,
         );
-
-        $renderedCode = \str_replace('___keydown.enter___', '@keydown.enter', $renderedCode);
 
         return $this->insertAttributeValueIntoHTML(
             $renderedCode,
             'input,select',
-            'wire:model',
+            'x-model',
             $this->buildWireModelAttribute('inputFilters'),
             false,
             '.',

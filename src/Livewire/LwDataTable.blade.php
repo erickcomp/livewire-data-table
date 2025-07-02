@@ -22,7 +22,55 @@
     };
 @endphp
 
-<div {{ $dataTable->containerAttributes->class(['lw-dt' => true]) }}>
+<div {{ $dataTable->containerAttributes->class(['lw-dt' => true]) }}
+    x-data="{
+        inputSearch: {{ Illuminate\Support\Js::from($search) }},
+        inputFilters: {{ Illuminate\Support\Js::from($initialFilters) }},
+
+        applySearch() {
+            $wire.set('search', this.inputSearch);
+        },
+
+        applyFilters() {
+            $wire.applyFilters(this.inputFilters);
+        },
+
+        clearSearch() {
+            this.inputSearch = '';
+            this.applySearch();
+
+            console.log('***** this.inputSearch: [' + this.inputSearch + ']');
+        },
+
+        removeFilter(filter) {
+            if (typeof filter !== 'string') {
+                return;
+            }
+
+            const keys = filter.split('.');
+            const lastKey = keys.pop();
+            const parent = keys.reduce((acc, key) => acc?.[key], this.inputFilters);
+            const parentItem = parent[lastKey];
+            const parentItemIsObject = typeof parent[lastKey] === 'object';
+
+            const hasFrom = parentItemIsObject && 'from' in parentItem;
+            const hasTo = parentItemIsObject  && 'to' in parentItem;
+
+            if(!hasFrom && !hasTo) {
+                parent[lastKey] = '';
+            } else {
+                if(hasFrom) {
+                    parent[lastKey]['from'] = '';
+                }
+                
+                if(hasTo) {
+                    parent[lastKey]['to'] = '';
+                }
+            }
+
+            this.applyFilters();
+        }
+    }">
     @if($dataTable->hasTableActions())
         <div class="lw-dt-table-actions">
             <div class="lw-dt-table-actions-row">
@@ -38,11 +86,15 @@
                         @else
                             <input type="text"
                                 name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-search' }}"
-                                value="{{ $search }}" wire:model="inputSearch" />
+                                {{-- wire:model="inputSearch" --}}
+                                x-model="inputSearch"
+                                x-on:keydown.enter="applySearch()" />
 
                             <button
                                 name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-search-apply' }}"
-                                wire:click="updateSearch()">
+                                {{-- wire:click="updateSearch()" --}}
+                                x-on:click="applySearch()">
+
                                 <svg xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 512 512"
                                     width="14" height="14"
@@ -97,7 +149,8 @@
                                         @if(\in_array($filterItem, [Filter::TYPE_SELECT, Filter::TYPE_SELECT_MULTIPLE], true))
                                             <select {{ $filterItem->inputAttributes(except: 'name') }}
                                                 name="{{ $filterItem->buildInputNameAttribute($filterUrlParam) }}"
-                                                wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}">
+                                                {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
+                                                x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}">
                                                 @foreach($filterItem->getSelectOptions() as $value => $label)
                                                     <option value="{{ $value }}">{{ $label }}</option>
                                                 @endforeach
@@ -106,23 +159,25 @@
                                             @if($filterItem->mode === Filter::MODE_RANGE)
                                                 <span>@lang('erickcomp_lw_data_table::messages.range_filter_label_from'):</span>
                                                 <input
-                                                    @keydown.enter="$refs.applyFiltersButton.click()"
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam, 'from') }}"
-                                                    wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}">
-
+                                                    {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
+                                                    x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}"
+                                                    x-on:keydown.enter="applyFilters()">
                                                 <span>@lang('erickcomp_lw_data_table::messages.range_filter_label_to'):</span>
                                                 <input
-                                                    @keydown.enter="$refs.applyFiltersButton.click()"
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam, 'to') }}"
-                                                    wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}">
+                                                    {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
+                                                    x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}"
+                                                    x-on:keydown.enter="applyFilters()">
                                             @else
                                                 <input
-                                                    @keydown.enter="$refs.applyFiltersButton.click()"
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam) }}"
-                                                    wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}">
+                                                    {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
+                                                    x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}"
+                                                    x-on:keydown.enter="applyFilters()">
                                             @endif
                                         @endif
                                     @endif
@@ -131,11 +186,12 @@
                         @endforeach
                         <div class="lw-dt-filter-apply-container">
                             <button
-                                x-ref="applyFiltersButton"
+                                {{-- x-ref="applyFiltersButton" --}}
                                 id="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-apply' }}"
                                 name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-apply' }}"
                                 class="filters-apply-button"
-                                wire:click="updateFilters()">
+                                {{-- wire:click="updateFilters()" --}}
+                                x-on:click="applyFilters()">
                                 @lang('erickcomp_lw_data_table::messages.apply_filters_button_label')
                             </button>
                         </div>
@@ -155,7 +211,8 @@
                         @if(!empty(\trim($search)))
 
                             <span style="padding: 0.25rem;font-weight: bold;">
-                                <button wire:click="clearSearch()">x</button>
+                                {{-- <button wire:click="clearSearch()">x</button> --}}
+                                <button x-on:click="clearSearch()">x</button>
                                 @lang('erickcomp_lw_data_table::messages.applied_search_label'): "{{ $search }}"
                             </span>
 
@@ -163,7 +220,10 @@
 
                         @foreach ($___lwDataTable->appliedFiltersData() as $appliedFilterData)
                             <span style="padding: 0.25rem;font-weight: bold;">
-                                <button wire:click="removeFilter('{{ $appliedFilterData['wire-name'] }}')">x</button>
+                                {{-- <button wire:click="removeFilter('{{ $appliedFilterData['wire-name'] }}')">x</button></button>
+                                --}}
+                                <button
+                                    x-on:click="removeFilter('{{ Str::chopStart($appliedFilterData['wire-name'], "{$this->filterUrlParam}.") }}')">x</button>
                                 {{ $appliedFilterData['label'] }}
                             </span>
                         @endforeach
@@ -456,11 +516,11 @@
 
             /*display: inline-block; */
             /*
-                                                                                                                                                                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
-                                                                                                                                                                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
-                                                                                                                                                                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
-                                                                                                                                                                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
-                                                                                                                                                                                                                                                                                                                                                                                                                                            */
+                                            padding: 0.5em 1em;
+                                            border: 1px solid #ccc;
+                                            border-radius: 0.25em;
+                                            background-color: #f9f9f9;
+                                            */
             /*font-weight: bold;*/
 
             flex: 0 0 calc(100% - 2%);

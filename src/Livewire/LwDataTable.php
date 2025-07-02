@@ -14,7 +14,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -39,11 +38,9 @@ class LwDataTable extends LivewireComponent
     ];
 
     #[Url]
-    public string $inputSearch = '';
     public string $search = '';
 
     #[Url]
-    public array $inputFilters = [];
     public array $filters = [];
 
     #[Url]
@@ -75,8 +72,8 @@ class LwDataTable extends LivewireComponent
 
     public function mount()
     {
-        $this->updateFilters();
-        $this->updateSearch();
+        //$this->updateFilters();
+        //$this->updateSearch();
         //$this->processFilters();
     }
 
@@ -110,6 +107,7 @@ class LwDataTable extends LivewireComponent
             'searchDebounceMs' => $searchDebounceMs,
             'shouldStylePagination' => $shouldStylePagination,
             'filterUrlParam' => $this->filterUrlParam,
+            'initialFilters' => $this->computeInitialFilters(),
             '___lwDataTable' => $this,
         ];
 
@@ -118,18 +116,17 @@ class LwDataTable extends LivewireComponent
             ->with($viewData);
     }
 
-    public function clearSearch()
+    protected function computeInitialFilters()
     {
-        $this->inputSearch = '';
-        $this->search = '';
-    }
+        $fullFilters = [];
+        foreach ($this->dataTable->filters->filtersItems as $filterItem) {
+            $filterValue = $this->filters[$filterItem->column][$filterItem->name]
+                ?? ($filterItem->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '');
 
-    public function removeFilter(string $filterKey)
-    {
-        $filterKey = Str::chopStart($filterKey, "{$this->filterUrlParam}.");
+            $fullFilters[$filterItem->column][$filterItem->name] = $filterValue;
+        }
 
-        Arr::forget($this->inputFilters, $filterKey);
-        Arr::forget($this->filters, $filterKey);
+        return $fullFilters;
     }
 
     public function paginationView(): string
@@ -173,20 +170,35 @@ class LwDataTable extends LivewireComponent
         $this->dataTable->runAction($action, ...$params);
     }
 
-    public function updateSearch()
+    public function applyFilters(array $inputFilters)
     {
-        // process query string $data and set it on the DataTable object
-        $this->search = $this->inputSearch;
+        $removeEmptyValues = function (array $data) use (&$removeEmptyValues) {
+            $filtered = [];
+
+            foreach ($data as $key => $value) {
+                if (is_array($value)) {
+                    $cleaned = $removeEmptyValues($value);
+
+                    if (!empty($cleaned)) {
+                        $filtered[$key] = $cleaned;
+                    }
+
+                } elseif ($value !== null && $value !== '' && $value !== []) {
+                    $filtered[$key] = $value;
+                }
+            }
+
+            return $filtered;
+        };
+
+        $filteredFilters = $removeEmptyValues($inputFilters);
+
+        $this->filters = $filteredFilters;
     }
 
     protected function processColumnsSearch()
     {
         // process query string $data and set it on the DataTable object
-    }
-
-    public function updateFilters()
-    {
-        $this->filters = $this->inputFilters;
     }
 
     protected function processFilters()
@@ -438,10 +450,10 @@ class LwDataTable extends LivewireComponent
     protected function queryString()
     {
         return [
-            'inputSearch' => [
+            'search' => [
                 'as' => $this->searchUrlParam,
             ],
-            'inputFilters' => [
+            'filters' => [
                 'as' => $this->filterUrlParam,
             ],
             'columnsSearch' => [
