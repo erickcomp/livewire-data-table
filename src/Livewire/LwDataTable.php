@@ -261,7 +261,7 @@ class LwDataTable extends LivewireComponent
         $params = new LwDataRetrievalParams(
             page: Paginator::resolveCurrentPage($this->dataTable->pageName),
             perPage: $this->perPage,
-            search: null,
+            search: $this->search,
             columnsSearch: $this->columnsSearch,
             filters: $this->processedFilters,
             sortBy: $this->sortBy,
