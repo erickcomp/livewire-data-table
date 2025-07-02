@@ -24,53 +24,24 @@
 
 <div {{ $dataTable->containerAttributes->class(['lw-dt' => true]) }}
     x-data="{
-        inputSearch: {{ Illuminate\Support\Js::from($search) }},
-        inputFilters: {{ Illuminate\Support\Js::from($initialFilters) }},
+        storeId: '{{ $___lwDataTable->getId() }}'
 
         applySearch() {
-            $wire.set('search', this.inputSearch);
+            Alpine.$store[this.storeId].applySearch($wire);
         },
 
         applyFilters() {
-            $wire.applyFilters(this.inputFilters);
+            Alpine.$store[this.storeId].applyFilters($wire);
         },
 
         clearSearch() {
-            this.inputSearch = '';
-            this.applySearch();
-
-            console.log('***** this.inputSearch: [' + this.inputSearch + ']');
+            Alpine.$store[this.storeId].clearSearch($wire);
         },
 
         removeFilter(filter) {
-            if (typeof filter !== 'string') {
-                return;
-            }
-
-            const keys = filter.split('.');
-            const lastKey = keys.pop();
-            const parent = keys.reduce((acc, key) => acc?.[key], this.inputFilters);
-            const parentItem = parent[lastKey];
-            const parentItemIsObject = typeof parent[lastKey] === 'object';
-
-            const hasFrom = parentItemIsObject && 'from' in parentItem;
-            const hasTo = parentItemIsObject  && 'to' in parentItem;
-
-            if(!hasFrom && !hasTo) {
-                parent[lastKey] = '';
-            } else {
-                if(hasFrom) {
-                    parent[lastKey]['from'] = '';
-                }
-                
-                if(hasTo) {
-                    parent[lastKey]['to'] = '';
-                }
-            }
-
-            this.applyFilters();
+            Alpine.$store[this.storeId].removeFilter($wire, filter);
         }
-    }">
+    };">
     @if($dataTable->hasTableActions())
         <div class="lw-dt-table-actions">
             <div class="lw-dt-table-actions-row">
@@ -85,13 +56,16 @@
                             {!! Blade::render($dataTable->getCustomSearchRendererCode(), $searchViewData) !!}
                         @else
                             <input type="text"
-                                name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-search' }}"
+                                id="{{ $inputSearchIdentifier }}"
+                                name="{{ $inputSearchIdentifier }}"
                                 {{-- wire:model="inputSearch" --}}
-                                x-model="inputSearch"
+                                {{-- x-model="inputSearch" --}}
+                                x-on:input="updateSearchInput()"
                                 x-on:keydown.enter="applySearch()" />
 
                             <button
-                                name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-search-apply' }}"
+                                id="{{ $buttonApplySearchIdentifier }}"
+                                name="{{ $buttonApplySearchIdentifier }}"
                                 {{-- wire:click="updateSearch()" --}}
                                 x-on:click="applySearch()">
 
@@ -150,7 +124,8 @@
                                             <select {{ $filterItem->inputAttributes(except: 'name') }}
                                                 name="{{ $filterItem->buildInputNameAttribute($filterUrlParam) }}"
                                                 {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
-                                                x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}">
+                                                {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}"> --}}
+                                                x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters') }}')"
                                                 @foreach($filterItem->getSelectOptions() as $value => $label)
                                                     <option value="{{ $value }}">{{ $label }}</option>
                                                 @endforeach
@@ -162,21 +137,24 @@
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam, 'from') }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
-                                                    x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}"
+                                                    {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
+                                                    x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}')"
                                                     x-on:keydown.enter="applyFilters()">
                                                 <span>@lang('erickcomp_lw_data_table::messages.range_filter_label_to'):</span>
                                                 <input
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam, 'to') }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
-                                                    x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}"
+                                                    {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
+                                                    x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}')"
                                                     x-on:keydown.enter="applyFilters()">
                                             @else
                                                 <input
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
                                                     name="{{ $filterItem->buildInputNameAttribute($filterUrlParam) }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
-                                                    x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}"
+                                                    {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
+                                                    x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters') }}')"
                                                     x-on:keydown.enter="applyFilters()">
                                             @endif
                                         @endif
@@ -516,11 +494,11 @@
 
             /*display: inline-block; */
             /*
-                                            padding: 0.5em 1em;
-                                            border: 1px solid #ccc;
-                                            border-radius: 0.25em;
-                                            background-color: #f9f9f9;
-                                            */
+                                                                                                                                padding: 0.5em 1em;
+                                                                                                                                border: 1px solid #ccc;
+                                                                                                                                border-radius: 0.25em;
+                                                                                                                                background-color: #f9f9f9;
+                                                                                                                                */
             /*font-weight: bold;*/
 
             flex: 0 0 calc(100% - 2%);
@@ -589,6 +567,62 @@
         filtersContainer.style.display = isVisible ? 'none' : 'flex';
         button.classList.toggle('active', !isVisible);
     });
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.store(
+            '{{ $___lwDataTable->getId() }}',
+            {
+                inputSearch: {{ Illuminate\Support\Js::from($search) }},
+                inputFilters: {{ Illuminate\Support\Js::from($initialFilters) }},
+
+                applySearch(wireHandler) {
+                    //$wire.set('search', this.inputSearch);
+                    wireHandler.set('search', this.inputSearch);
+                },
+
+                applyFilters(wireHandler) {
+                    //$wire.applyFilters(this.inputFilters);
+                    wireHandler.applyFilters(this.inputFilters);
+                },
+
+                clearSearch(wireHandler) {
+                    this.inputSearch = '';
+                    this.applySearch(wireHandler);
+
+                    console.log('***** this.inputSearch: [' + this.inputSearch + ']');
+                },
+
+                removeFilter(wireHandler, filter) {
+                    if (typeof filter !== 'string') {
+                        return;
+                    }
+
+                    const keys = filter.split('.');
+                    const lastKey = keys.pop();
+                    const parent = keys.reduce((acc, key) => acc?.[key], this.inputFilters);
+                    const parentItem = parent[lastKey];
+                    const parentItemIsObject = typeof parent[lastKey] === 'object';
+
+                    const hasFrom = parentItemIsObject && 'from' in parentItem;
+                    const hasTo = parentItemIsObject && 'to' in parentItem;
+
+                    if (!hasFrom && !hasTo) {
+                        parent[lastKey] = '';
+                    } else {
+                        if (hasFrom) {
+                            parent[lastKey]['from'] = '';
+                        }
+
+                        if (hasTo) {
+                            parent[lastKey]['to'] = '';
+                        }
+                    }
+
+                    this.applyFilters(wireHandler);
+                }
+            }
+        );
+    })
 </script>
 
 @foreach ($dataTable->scripts as $script)

@@ -102,8 +102,13 @@ class LwDataTable extends LivewireComponent
             null => \get_class($this->dataTable) === DataTable::class && $this->dataTable->isUsingDefaultPaginationViews()
         };
 
+        $inputSearchIdentifier = ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search';
+        $buttonApplySearchIdentifier = "$inputSearchIdentifier-apply";
+
         $viewData = [
             'rows' => $rows,
+            'inputSearchIdentifier' => $inputSearchIdentifier,
+            'buttonApplySearchIdentifier' => $buttonApplySearchIdentifier,
             'searchDebounceMs' => $searchDebounceMs,
             'shouldStylePagination' => $shouldStylePagination,
             'filterUrlParam' => $this->filterUrlParam,
