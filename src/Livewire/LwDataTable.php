@@ -94,7 +94,7 @@ class LwDataTable extends LivewireComponent
 
         }
 
-        $searchDebounceMs = config('erickcomp-livewire-data-table.search-debounce-ms', 200);
+        $columnsSearchDebounceMs = config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200);
 
         $shouldStylePagination = match ($this->dataTable::class::$useDefaultPaginationStylingForDefaultPaginationViews) {
             true => $this->dataTable->isUsingDefaultPaginationViews(),
@@ -102,14 +102,16 @@ class LwDataTable extends LivewireComponent
             null => \get_class($this->dataTable) === DataTable::class && $this->dataTable->isUsingDefaultPaginationViews()
         };
 
-        $inputSearchIdentifier = ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search';
-        $buttonApplySearchIdentifier = "$inputSearchIdentifier-apply";
+        $this->setupSearch();
+
+        //$inputSearchIdentifier = ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search';
+        //$buttonApplySearchIdentifier = "$inputSearchIdentifier-apply";
 
         $viewData = [
             'rows' => $rows,
-            'inputSearchIdentifier' => $inputSearchIdentifier,
-            'buttonApplySearchIdentifier' => $buttonApplySearchIdentifier,
-            'searchDebounceMs' => $searchDebounceMs,
+            //'inputSearchIdentifier' => $inputSearchIdentifier,
+            //'buttonApplySearchIdentifier' => $buttonApplySearchIdentifier,
+            'columnsSearchDebounceMs' => $columnsSearchDebounceMs,
             'shouldStylePagination' => $shouldStylePagination,
             'filterUrlParam' => $this->filterUrlParam,
             'initialFilters' => $this->computeInitialFilters(),
@@ -119,19 +121,6 @@ class LwDataTable extends LivewireComponent
         return view()
             ->file(\substr(__FILE__, 0, -3) . 'blade.php')
             ->with($viewData);
-    }
-
-    protected function computeInitialFilters()
-    {
-        $fullFilters = [];
-        foreach ($this->dataTable->filters->filtersItems as $filterItem) {
-            $filterValue = $this->filters[$filterItem->column][$filterItem->name]
-                ?? ($filterItem->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '');
-
-            $fullFilters[$filterItem->column][$filterItem->name] = $filterValue;
-        }
-
-        return $fullFilters;
     }
 
     public function paginationView(): string
@@ -244,6 +233,36 @@ class LwDataTable extends LivewireComponent
                     ];
                 }
             }
+        }
+    }
+
+    protected function computeInitialFilters()
+    {
+        $fullFilters = [];
+        foreach ($this->dataTable->filters->filtersItems as $filterItem) {
+            $filterValue = $this->filters[$filterItem->column][$filterItem->name]
+                ?? ($filterItem->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '');
+
+            $fullFilters[$filterItem->column][$filterItem->name] = $filterValue;
+        }
+
+        return $fullFilters;
+    }
+
+    protected function setupSearch()
+    {
+        $this->dataTable->search->inputAttributes->merge([
+            'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
+            'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
+        ]);
+
+        $this->dataTable->search->buttonAttributes->merge([
+            'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
+            'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
+        ]);
+
+        if (empty($this->dataTable->search->dataFields)) {
+            $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
         }
     }
 

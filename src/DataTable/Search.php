@@ -2,8 +2,10 @@
 
 namespace ErickComp\LivewireDataTable\DataTable;
 
-use Illuminate\View\ComponentAttributeBag;
+use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
+use ErickComp\LivewireDataTable\DataTable;
+use Illuminate\View\ComponentAttributeBag;
 
 class Search
 {
@@ -16,8 +18,7 @@ class Search
     ];
 
     protected array $defaultInputAttributes = [
-        'id' => '',
-        'class' => 'lw-dt-filters-row',
+        'type' => 'text',
         'x-on:keydown.enter' => 'applySearch()',
         'x-model' => 'dtData()[\'inputSearch\']',
     ];
@@ -26,18 +27,17 @@ class Search
         'class' => 'lw-dt-filter-item',
     ];
 
+
     public ComponentAttributeBag $containerAttributes;
     public ComponentAttributeBag $inputAttributes;
     public ComponentAttributeBag $buttonAttributes;
-
     /** @var string[] */
     public array $dataFields;
+    public string $customRendererCode = '';
 
-    public function __construct(?ComponentAttributeBag $componentAttributes = null)
+    public function __construct(DataTable $dataTable, ?ComponentAttributeBag $componentAttributes = null)
     {
-        if ($componentAttributes !== null) {
-            $this->setup($componentAttributes);
-        }
+        $this->setup($componentAttributes ?? new ComponentAttributeBag());
     }
 
     public function setup(ComponentAttributeBag $componentAttributes)
@@ -46,6 +46,7 @@ class Search
 
         $this->containerAttributes = $this->containerAttributes->merge($this->defaultContainerAttributes);
         $this->inputAttributes = $this->inputAttributes->merge($this->defaultInputAttributes);
+        $this->buttonAttributes = $this->buttonAttributes->merge($this->defaultButtonAttributes);
     }
 
     public function isSearchable(): bool
@@ -53,9 +54,23 @@ class Search
         return isset($this->dataFields) && !empty($this->dataFields);
     }
 
-    public function buildId(string $fallbackPrefix)
+    public function hasCustomRenderer(): bool
     {
-        
+        return !empty($this->customRendererCode);
+    }
+
+    public function shouldRenderDefaultIconOnApplyButton()
+    {
+        return !$this->buttonAttributes->has('no-default-icon');
+    }
+
+    public function setDataFieldsFromDataTable(DataTable $dataTable)
+    {
+        $this->dataFields = [];
+
+        foreach ($dataTable->columns as $col) {
+            $this->dataFields[] = isset($col->dataField) ? $col->dataField : $col->name;
+        }
     }
 
     protected function getAttributeBagsMappings(): array

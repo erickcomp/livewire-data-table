@@ -11,6 +11,7 @@
     use Illuminate\Pagination\Paginator;
 
     /** @var \ErickComp\LivewireDataTable\DataTable $dataTable */
+    /** @var \ErickComp\LivewireDataTable\Livewire\LwDataTable $___lwDataTable */
     /** @var \ErickComp\LivewireDataTable\DataTable\Filter $filterItem */
 
     $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAttributeBag {
@@ -51,39 +52,29 @@
             <div class="lw-dt-table-actions-row">
                 @if($dataTable->isSearchable())
                     <div class="lw-dt-table-search">
-                        @if ($dataTable->hasCustomRenderedSearch())
+                        @if ($dataTable->search->hasCustomRenderer()))
                             @php
                                 $searchViewData = [
                                     '__dataTable' => $dataTable,
+                                    '___lwDataTable' => $___lwDataTable,
                                 ];
                             @endphp
-                            {!! Blade::render($dataTable->getCustomSearchRendererCode(), $searchViewData) !!}
+                            {!! Blade::render($dataTable->search->customRendererCode, $searchViewData) !!}
+                            @php unset($searchViewData); @endphp
                         @else
-                            <input 
-                                {{ $dataTable->sear }}
-                                type="text"
-                                id="{{ $inputSearchIdentifier }}"
-                                name="{{ $inputSearchIdentifier }}"
-                                {{-- wire:model="inputSearch" --}}
-                                {{-- x-model="inputSearch" --}}
-                                {{-- x-on:input="updateSearchInput()" --}}
-                                x-on:keydown.enter="applySearch()"
-                                x-model="dtData()['inputSearch']" />
+                            <input {{ $dataTable->search->inputAttributes }} />
 
-                            <button
-                                id="{{ $buttonApplySearchIdentifier }}"
-                                name="{{ $buttonApplySearchIdentifier }}"
-                                {{-- wire:click="updateSearch()" --}}
-                                x-on:click="applySearch()">
-
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 512 512"
-                                    width="14" height="14"
-                                    fill="currentColor"
-                                    style="vertical-align: middle;">
-                                    <path
-                                        d="M495 466.1l-110.1-110.1c31.1-37.7 48-84.6 48-134 0-56.4-21.9-109.3-61.8-149.2-39.8-39.9-92.8-61.8-149.1-61.8-56.3 0-109.3 21.9-149.2 61.8C33.1 112.7 11.2 165.7 11.2 222c0 56.3 21.9 109.3 61.8 149.2 39.8 39.8 92.8 61.8 149.2 61.8 49.5 0 96.4-16.9 134-48l110.1 110c8 8 20.9 8 28.9 0 8-8 8-20.9 0-28.9zM101.7 342.2c-32.2-32.1-49.9-74.8-49.9-120.2 0-45.4 17.7-88.2 49.8-120.3 32.1-32.1 74.8-49.8 120.3-49.8 45.4 0 88.2 17.7 120.3 49.8 32.1 32.1 49.8 74.8 49.8 120.3 0 45.4-17.7 88.2-49.8 120.3-32.1 32.1-74.9 49.8-120.3 49.8-45.4 0-88.1-17.7-120.2-49.9z" />
-                                </svg>
+                            <button {{ $dataTable->search->buttonAttributes }}>
+                                @if($dataTable->search->shouldRenderDefaultIconOnApplyButton())
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 512 512"
+                                        width="14" height="14"
+                                        fill="currentColor"
+                                        style="vertical-align: middle;">
+                                        <path
+                                            d="M495 466.1l-110.1-110.1c31.1-37.7 48-84.6 48-134 0-56.4-21.9-109.3-61.8-149.2-39.8-39.9-92.8-61.8-149.1-61.8-56.3 0-109.3 21.9-149.2 61.8C33.1 112.7 11.2 165.7 11.2 222c0 56.3 21.9 109.3 61.8 149.2 39.8 39.8 92.8 61.8 149.2 61.8 49.5 0 96.4-16.9 134-48l110.1 110c8 8 20.9 8 28.9 0 8-8 8-20.9 0-28.9zM101.7 342.2c-32.2-32.1-49.9-74.8-49.9-120.2 0-45.4 17.7-88.2 49.8-120.3 32.1-32.1 74.8-49.8 120.3-49.8 45.4 0 88.2 17.7 120.3 49.8 32.1 32.1 49.8 74.8 49.8 120.3 0 45.4-17.7 88.2-49.8 120.3-32.1 32.1-74.9 49.8-120.3 49.8-45.4 0-88.1-17.7-120.2-49.9z" />
+                                    </svg>
+                                @endif
                                 @lang('erickcomp_lw_data_table::messages.search_button_label')
                             </button>
                         @endif
@@ -259,7 +250,7 @@
                     @foreach ($dataTable->columns as $column)
                         <th {{ $dataTable->theadSearchThAttributes }}>
                             @if ($column->isSearchable())
-                                <input type="text" wire:model.live.debounce.{{ $searchDebounceMs }}ms="columnsSearch.{{ $column->searchableDataField() }}" />
+                                <input type="text" wire:model.live.debounce.{{ $columnsSearchDebounceMs }}ms="columnsSearch.{{ $column->searchableDataField() }}" />
                             @endif
                         </th>
                     @endforeach
@@ -511,11 +502,11 @@
 
             /*display: inline-block; */
             /*
-                                                                                                                                                                                                                                                                                                                        padding: 0.5em 1em;
-                                                                                                                                                                                                                                                                                                                        border: 1px solid #ccc;
-                                                                                                                                                                                                                                                                                                                        border-radius: 0.25em;
-                                                                                                                                                                                                                                                                                                                        background-color: #f9f9f9;
-                                                                                                                                                                                                                                                                                                                        */
+                                                                                                                                                                                                                                                                                                                                                    padding: 0.5em 1em;
+                                                                                                                                                                                                                                                                                                                                                    border: 1px solid #ccc;
+                                                                                                                                                                                                                                                                                                                                                    border-radius: 0.25em;
+                                                                                                                                                                                                                                                                                                                                                    background-color: #f9f9f9;
+                                                                                                                                                                                                                                                                                                                                                    */
             /*font-weight: bold;*/
 
             flex: 0 0 calc(100% - 2%);

@@ -113,6 +113,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
         //public array $filters = [],
         //public string|false $search = false,
         public array $columnsSearch = [],
+        public bool $columnsSearchDebounce = \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
         public array $actions = [],
         public string $pageName = 'page',
         ?string $paginationView = null,
@@ -134,7 +135,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
         $this->perPageOptions = $perPageOptions;
 
-        $this->search = new Search();
+        $this->search = new Search($this);
 
         // $this->searchable = match (true) {
         //     $searchable === false => [],
@@ -197,25 +198,6 @@ class DataTable extends BaseDataTableComponent implements Wireable
     {
         // @TODO: implement bulk actions
         return false;
-    }
-
-    public function getGlobalSearchColumns(): array
-    {
-        if ($this->searchable === false) {
-            return [];
-        }
-
-        if ($this->searchable === true) {
-            $columns = [];
-            foreach ($this->columns as $col) {
-                $columns[] = $col->searchableDataField();
-            }
-
-            return $columns;
-            //return \array_map(fn(BaseColumn $col) => $col $col->name, $this->columns);
-        }
-
-        $this->searchable;
     }
 
     public function hasSearchableColumns(): bool

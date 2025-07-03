@@ -7,7 +7,7 @@ use ErickComp\LivewireDataTable\DataTable;
 
 class DataColumn extends BaseColumn
 {
-    public null|string $dataField;
+    public string $dataField;
     //public array $tableSearchDataFields = [];
     //public array $columnSearchDataFields = [];
     //public string|false $sortable = false;
@@ -30,14 +30,14 @@ class DataColumn extends BaseColumn
     ) {
         parent::__construct(/*$__dataTable,*/ $name, $title, $attributes, $searchable, $sortable);
 
-        $this->dataField = $dataField;
+        $this->dataField = $dataField ?? $this->name;
 
         // $this->setupTableSearchable($isTableSearchable);
         // $this->setupColumnSearchable($isColumnSearchable);
         // $this->setupSortable($isSortable, $sortableRaw);
     }
 
-    public function searchableDataField(): string
+    public function searchableDataField(): ?string
     {
         return $this->searchable
             ? $this->dataField

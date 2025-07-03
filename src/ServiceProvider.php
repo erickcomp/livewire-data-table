@@ -88,26 +88,28 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     }
     protected function registerSearchRawComponent()
     {
+        $searchCode = <<<'SEARCH_CODE'
+            <?php
+            if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
+                throw new \LogicException("You can only use the [x-data-table.search] as a direct child of the [x-data-table] component");
+            }
+            $component->search->setup($__rawComponentAttributes);
+            SEARCH_CODE;
+
         $this->registerRawBladeComponent(
             tag: 'x-data-table.search',
-            openingCode: <<<'COL_TD_COMPILER_CODE'
-                    <?php
-                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
-                        throw new \LogicException("You can only use the [x-data-table.search] as a direct child of the [x-data-table] component");
-                    }
-
-                    $component->search->customSearchRendererCode = <<<'___DATATABLE__RENDERER___'
-                COL_TD_COMPILER_CODE,
-            closingCode: '___DATATABLE__RENDERER___, $__rawComponentAttributes); ?>',
-            selfClosingCode: <<<'SELF_CLOSING_CODE'
-                <?php
-                if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
-                    throw new \LogicException("You can only use the [x-data-table.search] as a direct child of the [x-data-table] component");
-                }
-
-                $component->setupSearch($__rawComponentAttributes);
+            openingCode: <<<SEARCH_CODE
+                    $searchCode
+                    \$component->search->customRendererCode = <<<'___DATATABLE__RENDERER___'
+                SEARCH_CODE,
+            closingCode: <<<'SEARCH_CODE'
+                ___DATATABLE__RENDERER___;
                 ?>
-            SELF_CLOSING_CODE,
+                SEARCH_CODE,
+            selfClosingCode: <<<SEARCH_CODE
+                $searchCode
+                ?>
+                SEARCH_CODE,
         );
     }
 
