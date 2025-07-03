@@ -59,7 +59,9 @@
                             @endphp
                             {!! Blade::render($dataTable->getCustomSearchRendererCode(), $searchViewData) !!}
                         @else
-                            <input type="text"
+                            <input 
+                                {{ $dataTable->sear }}
+                                type="text"
                                 id="{{ $inputSearchIdentifier }}"
                                 name="{{ $inputSearchIdentifier }}"
                                 {{-- wire:model="inputSearch" --}}

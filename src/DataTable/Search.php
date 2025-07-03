@@ -11,54 +11,59 @@ class Search
 
     protected array $defaultContainerAttributes = [
         //'row-length' => 4,
-        'collapsible' => true,
-        //'class' => 'lw-dt-filters-container',
+        //'collapsible' => true,
+        'class' => 'lw-dt-table-search',
     ];
 
-    protected array $defaultFilterRowAttributes = [
+    protected array $defaultInputAttributes = [
+        'id' => '',
         'class' => 'lw-dt-filters-row',
+        'x-on:keydown.enter' => 'applySearch()',
+        'x-model' => 'dtData()[\'inputSearch\']',
     ];
 
-    protected array $defaultFilterItemsAttributes = [
+    protected array $defaultButtonAttributes = [
         'class' => 'lw-dt-filter-item',
     ];
 
-    public string $title {
-        get => $this->containerAttributes['title'] ?? __('erickcomp_lw_data_table::messages.filters_container_label');
-    }
-
-    public bool $collapsible {
-        get => \filter_var($this->containerAttributes['collapsible'], \FILTER_VALIDATE_BOOL);
-    }
-
-    public bool $filtersToggleNoDefaultIcon {
-        get {
-            return \filter_var($this->containerAttributes['filters-toggle-no-default-icon'], \FILTER_VALIDATE_BOOL);
-        }
-    }
-
     public ComponentAttributeBag $containerAttributes;
-    public ComponentAttributeBag $filterRowAttributes;
-    public ComponentAttributeBag $filterItemsAttributes;
+    public ComponentAttributeBag $inputAttributes;
+    public ComponentAttributeBag $buttonAttributes;
 
     /** @var string[] */
     public array $dataFields;
 
-    public function __construct(ComponentAttributeBag $componentAttributes)
+    public function __construct(?ComponentAttributeBag $componentAttributes = null)
+    {
+        if ($componentAttributes !== null) {
+            $this->setup($componentAttributes);
+        }
+    }
+
+    public function setup(ComponentAttributeBag $componentAttributes)
     {
         $this->fillComponentAttributeBags($componentAttributes);
 
         $this->containerAttributes = $this->containerAttributes->merge($this->defaultContainerAttributes);
-        $this->containerAttributes = $this->containerAttributes->class(['lw-dt-filters-container', 'hide', 'collapsible' => $this->collapsible]);
-        $this->filterItemsAttributes = $this->filterItemsAttributes->merge($this->defaultFilterItemsAttributes);
+        $this->inputAttributes = $this->inputAttributes->merge($this->defaultInputAttributes);
+    }
+
+    public function isSearchable(): bool
+    {
+        return isset($this->dataFields) && !empty($this->dataFields);
+    }
+
+    public function buildId(string $fallbackPrefix)
+    {
+        
     }
 
     protected function getAttributeBagsMappings(): array
     {
         return [
-            0 => 'containerAttributes', //default
-            'filter-row-' => 'filterRowAttributes',
-            'filter-item-' => 'filterItemsAttributes',
+            0 => 'containerAttributes',
+            'input-' => 'inputAttributes',
+            'apply-search-button-' => 'buttonAttributes',
         ];
     }
 }

@@ -8,6 +8,7 @@ use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
+use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
 use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
@@ -97,7 +98,9 @@ class DataTable extends BaseDataTableComponent implements Wireable
     /** @var string[] $scripts */
     public array $scripts = [];
 
-    public array|true $searchable;
+    public Search $search;
+
+    //public array|true $searchable;
 
     public function __construct(
         public ?string $dataProvider = null,
@@ -108,13 +111,13 @@ class DataTable extends BaseDataTableComponent implements Wireable
         /** @var BaseColumn[] */
         public array $columns = [],
         //public array $filters = [],
-        public string|false $search = false,
+        //public string|false $search = false,
         public array $columnsSearch = [],
         public array $actions = [],
         public string $pageName = 'page',
         ?string $paginationView = null,
         string|array $perPageOptions = [],
-        string|array|bool $searchable = false,
+        //string|array|bool $searchable = false,
 
     ) {
         $this->dataProvider = $dataProvider;
@@ -131,13 +134,13 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
         $this->perPageOptions = $perPageOptions;
 
+        $this->search = new Search();
 
-
-        $this->searchable = match (true) {
-            $searchable === false => [],
-            \is_string($searchable) => \array_map(fn($item) => \trim($item), \explode(',', $searchable)),
-            default => $searchable
-        };
+        // $this->searchable = match (true) {
+        //     $searchable === false => [],
+        //     \is_string($searchable) => \array_map(fn($item) => \trim($item), \explode(',', $searchable)),
+        //     default => $searchable
+        // };
 
         $this->initComponentAttributeBags();
     }
@@ -176,12 +179,13 @@ class DataTable extends BaseDataTableComponent implements Wireable
             || $this->hasPerPageOptions();
     }
 
-    public function isSearchable()
+    public function isSearchable(): bool
     {
-        return $this->searchable;
+        //return $this->searchable;
+        return $this->search->isSearchable();
     }
 
-    public function isFilterable()
+    public function isFilterable(): bool
     {
         // @TODO: implement filters
         //return false;

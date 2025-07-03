@@ -96,7 +96,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
                         throw new \LogicException("You can only use the [x-data-table.search] as a direct child of the [x-data-table] component");
                     }
 
-                    $component->customSearchRendererCode = <<<'___DATATABLE__RENDERER___'
+                    $component->search->customSearchRendererCode = <<<'___DATATABLE__RENDERER___'
                 COL_TD_COMPILER_CODE,
             closingCode: '___DATATABLE__RENDERER___, $__rawComponentAttributes); ?>',
             selfClosingCode: <<<'SELF_CLOSING_CODE'
