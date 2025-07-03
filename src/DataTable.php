@@ -40,6 +40,8 @@ class DataTable extends BaseDataTableComponent implements Wireable
     protected string $trAttributesModifierCode = '';
     protected string $searchRendererCode;
     protected ComponentAttributeBag $searchRendererCodeAttributes;
+
+    public bool $noStyles = true;
     public string $dataIdentityColumn = 'id';
     public string $sortingClassPrefix = 'lw-dt-sort';
     public ?string $paginationView = null;
@@ -47,6 +49,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
     public ?string $lengthAwarePaginationView = null;
     public ?string $simplePaginationView = null;
     public array $perPageOptions = [];
+    public int $columnsSearchDebounce;
     public ComponentAttributeBag $containerAttributes;
     public ComponentAttributeBag $tableAttributes;
     public ComponentAttributeBag $theadAttributes;
@@ -97,8 +100,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
     /** @var string[] $scripts */
     public array $scripts = [];
-
-    public Search $search;
+    public ?Search $search = null;
 
     //public array|true $searchable;
 
@@ -113,11 +115,11 @@ class DataTable extends BaseDataTableComponent implements Wireable
         //public array $filters = [],
         //public string|false $search = false,
         public array $columnsSearch = [],
-        public bool $columnsSearchDebounce = \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
         public array $actions = [],
         public string $pageName = 'page',
         ?string $paginationView = null,
         string|array $perPageOptions = [],
+        ?int $columnsSearchDebounce = null,
         //string|array|bool $searchable = false,
 
     ) {
@@ -133,9 +135,9 @@ class DataTable extends BaseDataTableComponent implements Wireable
             $perPageOptions = $this->getDefaultPerPageOptions();
         }
 
-        $this->perPageOptions = $perPageOptions;
+        $this->columnsSearchDebounce = $columnsSearchDebounce ?? \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200);
 
-        $this->search = new Search($this);
+        $this->perPageOptions = $perPageOptions;
 
         // $this->searchable = match (true) {
         //     $searchable === false => [],
@@ -182,8 +184,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
     public function isSearchable(): bool
     {
-        //return $this->searchable;
-        return $this->search->isSearchable();
+        return isset($this->search) && $this->search !== null;
     }
 
     public function isFilterable(): bool
@@ -303,6 +304,15 @@ class DataTable extends BaseDataTableComponent implements Wireable
     public function isUsingDefaultPaginationViews(): bool
     {
         return $this->paginationView === null;
+    }
+
+    public function shouldStylePagination(): ?bool
+    {
+        return match (static::$useDefaultPaginationStylingForDefaultPaginationViews) {
+            true => $this->isUsingDefaultPaginationViews(),
+            false => false,
+            null => static::class === DataTable::class && $this->isUsingDefaultPaginationViews()
+        };
     }
 
     public function paginationView(): string

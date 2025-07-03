@@ -94,13 +94,6 @@ class LwDataTable extends LivewireComponent
 
         }
 
-        $columnsSearchDebounceMs = config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200);
-
-        $shouldStylePagination = match ($this->dataTable::class::$useDefaultPaginationStylingForDefaultPaginationViews) {
-            true => $this->dataTable->isUsingDefaultPaginationViews(),
-            false => false,
-            null => \get_class($this->dataTable) === DataTable::class && $this->dataTable->isUsingDefaultPaginationViews()
-        };
 
         $this->setupSearch();
 
@@ -111,9 +104,9 @@ class LwDataTable extends LivewireComponent
             'rows' => $rows,
             //'inputSearchIdentifier' => $inputSearchIdentifier,
             //'buttonApplySearchIdentifier' => $buttonApplySearchIdentifier,
-            'columnsSearchDebounceMs' => $columnsSearchDebounceMs,
-            'shouldStylePagination' => $shouldStylePagination,
-            'filterUrlParam' => $this->filterUrlParam,
+            //'columnsSearchDebounceMs' => $columnsSearchDebounceMs,
+            //'shouldStylePagination' => $shouldStylePagination,
+            //'filterUrlParam' => $this->filterUrlParam,
             'initialFilters' => $this->computeInitialFilters(),
             '___lwDataTable' => $this,
         ];
@@ -190,6 +183,19 @@ class LwDataTable extends LivewireComponent
         $this->filters = $filteredFilters;
     }
 
+    public function computeInitialFilters()
+    {
+        $fullFilters = [];
+        foreach ($this->dataTable->filters->filtersItems as $filterItem) {
+            $filterValue = $this->filters[$filterItem->column][$filterItem->name]
+                ?? ($filterItem->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '');
+
+            $fullFilters[$filterItem->column][$filterItem->name] = $filterValue;
+        }
+
+        return $fullFilters;
+    }
+
     protected function processColumnsSearch()
     {
         // process query string $data and set it on the DataTable object
@@ -236,34 +242,26 @@ class LwDataTable extends LivewireComponent
         }
     }
 
-    protected function computeInitialFilters()
-    {
-        $fullFilters = [];
-        foreach ($this->dataTable->filters->filtersItems as $filterItem) {
-            $filterValue = $this->filters[$filterItem->column][$filterItem->name]
-                ?? ($filterItem->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '');
 
-            $fullFilters[$filterItem->column][$filterItem->name] = $filterValue;
-        }
-
-        return $fullFilters;
-    }
 
     protected function setupSearch()
     {
-        $this->dataTable->search->inputAttributes->merge([
-            'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
-            'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
-        ]);
+        if ($this->dataTable->isSearchable()) {
+            $this->dataTable->search->inputAttributes->merge([
+                'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
+                'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
+            ]);
 
-        $this->dataTable->search->buttonAttributes->merge([
-            'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
-            'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
-        ]);
+            $this->dataTable->search->buttonAttributes->merge([
+                'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
+                'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
+            ]);
 
-        if (empty($this->dataTable->search->dataFields)) {
-            $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
+            if (empty($this->dataTable->search->dataFields)) {
+                $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
+            }
         }
+
     }
 
     protected function processSorting()

@@ -93,7 +93,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
                 throw new \LogicException("You can only use the [x-data-table.search] as a direct child of the [x-data-table] component");
             }
-            $component->search->setup($__rawComponentAttributes);
+            $component->search = new \ErickComp\LivewireDataTable\DataTable\Search($__rawComponentAttributes);
             SEARCH_CODE;
 
         $this->registerRawBladeComponent(

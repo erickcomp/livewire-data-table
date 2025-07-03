@@ -35,12 +35,9 @@ class Search
     public array $dataFields;
     public string $customRendererCode = '';
 
-    public function __construct(DataTable $dataTable, ?ComponentAttributeBag $componentAttributes = null)
-    {
-        $this->setup($componentAttributes ?? new ComponentAttributeBag());
-    }
+    public bool $initialized = false;
 
-    public function setup(ComponentAttributeBag $componentAttributes)
+    public function __construct(?ComponentAttributeBag $componentAttributes = null)
     {
         $this->fillComponentAttributeBags($componentAttributes);
 
@@ -49,7 +46,7 @@ class Search
         $this->buttonAttributes = $this->buttonAttributes->merge($this->defaultButtonAttributes);
     }
 
-    public function isSearchable(): bool
+    public function hasDataFields(): bool
     {
         return isset($this->dataFields) && !empty($this->dataFields);
     }
@@ -78,7 +75,7 @@ class Search
         return [
             0 => 'containerAttributes',
             'input-' => 'inputAttributes',
-            'apply-search-button-' => 'buttonAttributes',
+            'button-' => 'buttonAttributes',
         ];
     }
 }
