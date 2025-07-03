@@ -41,7 +41,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
     protected string $searchRendererCode;
     protected ComponentAttributeBag $searchRendererCodeAttributes;
 
-    public bool $noStyles = true;
+    public bool $noStyles = false;
     public string $dataIdentityColumn = 'id';
     public string $sortingClassPrefix = 'lw-dt-sort';
     public ?string $paginationView = null;

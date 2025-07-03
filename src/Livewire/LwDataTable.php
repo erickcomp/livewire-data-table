@@ -80,6 +80,7 @@ class LwDataTable extends LivewireComponent
     public function render()
     {
         $this->processFilters();
+        $this->setupSearch();
 
         $rows = $this->getTableData();
 
@@ -95,7 +96,7 @@ class LwDataTable extends LivewireComponent
         }
 
 
-        $this->setupSearch();
+
 
         //$inputSearchIdentifier = ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search';
         //$buttonApplySearchIdentifier = "$inputSearchIdentifier-apply";
@@ -257,9 +258,9 @@ class LwDataTable extends LivewireComponent
                 'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
             ]);
 
-            if (empty($this->dataTable->search->dataFields)) {
-                $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
-            }
+            // if (empty($this->dataTable->search->dataFields)) {
+            //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
+            // }
         }
 
     }
@@ -279,6 +280,7 @@ class LwDataTable extends LivewireComponent
             page: Paginator::resolveCurrentPage($this->dataTable->pageName),
             perPage: $this->perPage,
             search: $this->search,
+            searchDataFields: $this->dataTable->search->dataFields,
             columnsSearch: $this->columnsSearch,
             filters: $this->processedFilters,
             sortBy: $this->sortBy,

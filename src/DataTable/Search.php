@@ -27,12 +27,11 @@ class Search
         'class' => 'lw-dt-filter-item',
     ];
 
-
     public ComponentAttributeBag $containerAttributes;
     public ComponentAttributeBag $inputAttributes;
     public ComponentAttributeBag $buttonAttributes;
-    /** @var string[] */
-    public array $dataFields;
+    /** @var string[]|true */
+    public array|true $dataFields = true;
     public string $customRendererCode = '';
 
     public bool $initialized = false;
@@ -61,14 +60,14 @@ class Search
         return !$this->buttonAttributes->has('no-default-icon');
     }
 
-    public function setDataFieldsFromDataTable(DataTable $dataTable)
-    {
-        $this->dataFields = [];
+    // public function setDataFieldsFromDataTable(DataTable $dataTable)
+    // {
+    //     $this->dataFields = [];
 
-        foreach ($dataTable->columns as $col) {
-            $this->dataFields[] = isset($col->dataField) ? $col->dataField : $col->name;
-        }
-    }
+    //     foreach ($dataTable->columns as $col) {
+    //         $this->dataFields[] = isset($col->dataField) ? $col->dataField : $col->name;
+    //     }
+    // }
 
     protected function getAttributeBagsMappings(): array
     {
