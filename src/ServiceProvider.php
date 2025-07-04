@@ -125,8 +125,6 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             defaultAttributes: ['row-length' => 4, 'collapsible' => 'true'],
             openingCode: <<<'COL_TD_COMPILER_CODE'
                     <?php
-                    \xdebug_break();
-
                     if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
                         throw new \LogicException("You can only use the [x-data-table.filters] as a direct child of the [x-data-table] component");
                     }

@@ -2,18 +2,14 @@
 
 namespace ErickComp\LivewireDataTable\DataTable;
 
-use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
-use ErickComp\LivewireDataTable\DataTable;
 use Illuminate\View\ComponentAttributeBag;
 
 class Search
 {
     use FillsComponentAttributeBags;
 
-    protected array $defaultContainerAttributes = [
-        //'row-length' => 4,
-        //'collapsible' => true,
+    protected array $defaultComponentAttributes = [
         'class' => 'lw-dt-table-search',
     ];
 
@@ -27,7 +23,7 @@ class Search
         'class' => 'lw-dt-filter-item',
     ];
 
-    public ComponentAttributeBag $containerAttributes;
+    public ComponentAttributeBag $componentAttributes;
     public ComponentAttributeBag $inputAttributes;
     public ComponentAttributeBag $buttonAttributes;
     /** @var string[]|true */
@@ -40,9 +36,11 @@ class Search
     {
         $this->fillComponentAttributeBags($componentAttributes);
 
-        $this->containerAttributes = $this->containerAttributes->merge($this->defaultContainerAttributes);
+        $this->componentAttributes = $this->componentAttributes->merge($this->defaultComponentAttributes);
         $this->inputAttributes = $this->inputAttributes->merge($this->defaultInputAttributes);
         $this->buttonAttributes = $this->buttonAttributes->merge($this->defaultButtonAttributes);
+
+        $this->setupDataFields();
     }
 
     public function hasDataFields(): bool
@@ -69,10 +67,29 @@ class Search
     //     }
     // }
 
+    protected function setupDataFields()
+    {
+        if ($this->componentAttributes->has('data-fields')) {
+            $dataFields = $this->componentAttributes['data-fields'];
+
+            if (\is_string($dataFields) || $dataFields === true) {
+                $dataFields = $dataFields === true || \strtolower($dataFields) === 'true'
+                    ? true
+                    : \array_map(trim(...), \explode(',', $dataFields));
+
+            } elseif (!\is_array($dataFields)) {
+                throw new \InvalidArgumentException('Attribute data-fields must be of type array|string|true, ' . \get_debug_type($dataFields) . ' given');
+            }
+
+            $this->dataFields = $dataFields;
+            unset($this->componentAttributes['data-fields']);
+        }
+    }
+
     protected function getAttributeBagsMappings(): array
     {
         return [
-            0 => 'containerAttributes',
+            0 => 'componentAttributes',
             'input-' => 'inputAttributes',
             'button-' => 'buttonAttributes',
         ];

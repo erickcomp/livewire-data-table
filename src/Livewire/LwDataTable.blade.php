@@ -27,6 +27,8 @@
     x-data="{
         storeId: '{{ $___lwDataTable->getId() }}',
 
+        filtersContainerIsOpen: {{ $___lwDataTable->shouldShowFiltersContainer() ? 'true' : 'false' }},
+
         dtData() {
             return Alpine.store(this.storeId);
         },
@@ -45,13 +47,19 @@
 
         removeFilter(filter) {
             this.dtData().removeFilter($wire, filter);
+        },
+
+        toggleFiltersContainer(event) {
+            this.filtersContainerIsOpen = !this.filtersContainerIsOpen;
+            
+            $wire.filtersContainerIsOpen = this.filtersContainerIsOpen;
         }
     };">
     @if($dataTable->hasTableActions())
         <div class="lw-dt-table-actions">
             <div class="lw-dt-table-actions-row">
                 @if($dataTable->isSearchable())
-                    <div class="lw-dt-table-search">
+                    <div {{ $dataTable->search->componentAttributes }}>
                         @if ($dataTable->search->hasCustomRenderer()))
                             @php
                                 $searchViewData = [
@@ -81,12 +89,11 @@
                     </div>
                 @endif
 
-                @if($dataTable->isFilterable())
-                    <button id="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}"
-                        name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}"
-                        class="filter-toggler-button">
+                @if($dataTable->isFilterable() && $dataTable->filters->isCollapsible())
+                    <button {{ $dataTable->filters->buttonToggleAttributes }}
+                        x-bind:class="filtersContainerIsOpen ? 'active' : ''">
 
-                        @if(!$dataTable->filters->filtersToggleNoDefaultIcon)
+                        @if($dataTable->filters->shouldShowDefaultIconOnToggleButton())
                             <svg xmlns=" http://www.w3.org/2000/svg"
                                 width="14" height="14" viewBox="0 0 24 24"
                                 style="vertical-align: middle;">
@@ -99,13 +106,13 @@
             </div> <!-- end: lw-dt-table-actions-row -->
             @if($dataTable->isFilterable())
                 <div class="lw-dt-table-actions-row">
-                    <div {{ $dataTable->filters->containerAttributes->except(['collapsible']) }}>
+                    <div {{ $dataTable->filters->containerAttributes() }}>
                         @php $renderedFilterItemsNames = []; @endphp
                         @foreach($dataTable->filters->filtersItems as $filterItem)
                             <div class="filter-item">
                                 <div @class(['filter-content', 'filter-range' => $filterItem->mode === Filter::MODE_RANGE])>
                                     @if(!empty($filterItem->customRendererCode))
-                                        {!! $filterItem->getCustomRendererCodeWithWireModel('asas') !!}
+                                        {!! $filterItem->getCustomRendererCodeWithXModel('inputFilters') !!}
                                     @else
                                         @php
                                             if (\in_array($filterItem->attributes['name'], $renderedFilterItemsNames)) {
@@ -171,13 +178,7 @@
                             </div>
                         @endforeach
                         <div class="lw-dt-filter-apply-container">
-                            <button
-                                {{-- x-ref="applyFiltersButton" --}}
-                                id="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-apply' }}"
-                                name="{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-apply' }}"
-                                class="filters-apply-button"
-                                {{-- wire:click="updateFilters()" --}}
-                                x-on:click="applyFilters()">
+                            <button {{ $dataTable->filters->buttonApplyAttributes }}>
                                 @lang('erickcomp_lw_data_table::messages.apply_filters_button_label')
                             </button>
                         </div>
@@ -188,7 +189,7 @@
 
             @if (!empty($search) || (!empty($dataTable->filters) && !empty($___lwDataTable->appliedFiltersData())))
                 <div class="lw-dt-table-actions-row">
-                    <div style="display:flex">
+                    <div>
                         @if(count($___lwDataTable->appliedFiltersData()) > 0)
                             <span style="padding: 0.25rem;">
                                 @lang('erickcomp_lw_data_table::messages.active_filters_label'):
@@ -420,11 +421,11 @@
                 gap: 10px;
             }
 
-            .lw-dt .lw-dt-table-actions-row button.filter-toggler-button {
+            .lw-dt .lw-dt-table-actions-row button.filters-toggle-button {
                 cursor: pointer;
             }
 
-            .lw-dt .lw-dt-table-actions-row button.filter-toggler-button.active {
+            .lw-dt .lw-dt-table-actions-row button.filters-toggle-button.active {
                 border-bottom: none;
                 /* background: white; */
                 /* position: relative; */
@@ -451,7 +452,8 @@
                 border: 1px solid #ccc;
                 margin-top: 1rem;
                 padding: 10px;
-                display: none;
+                /* display: none; */
+                display: flex;
                 position: relative;
                 z-index: 1;
                 background: white;
@@ -461,13 +463,15 @@
 
             }
 
-            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.show {
-                display: flex;
-            }
+            /*
+                                                                                                                                                                                                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.show {
+                                                                                                                                                                                                        display: flex;
+                                                                                                                                                                                                    }
 
-            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.hide {
-                display: none;
-            }
+                                                                                                                                                                                                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.hide {
+                                                                                                                                                                                                        display: none;
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                    */
 
             .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .lw-dt-filter-apply-container {
                 flex-basis: 100%;
@@ -505,11 +509,11 @@
 
                 /*display: inline-block; */
                 /*
-                                                                                                                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
-                                                                                                                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
-                                                                                                                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
-                                                                                                                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
-                                                                                                                                                                                                                                                                                                                                                                                            */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    padding: 0.5em 1em;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    border: 1px solid #ccc;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    border-radius: 0.25em;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    background-color: #f9f9f9;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    */
                 /*font-weight: bold;*/
 
                 flex: 0 0 calc(100% - 2%);
@@ -569,20 +573,6 @@
 @script
 
 <script>
-    (function () {
-        const filterTogglerButtonId = "{{ ($dataTable->name ?? $dataTable->id ?? $___lwDataTable->getId()) . '-filters-toggle' }}";
-
-        const button = $wire.$el.querySelector('#' + filterTogglerButtonId);
-        const filtersContainer = $wire.$el.querySelector('.lw-dt .lw-dt-table-actions-row .lw-dt-filters-container');
-
-        button.addEventListener('click', () => {
-            const isVisible = filtersContainer.style.display === 'flex';
-            filtersContainer.style.display = isVisible ? 'none' : 'flex';
-            button.classList.toggle('active', !isVisible);
-        });
-    })();
-
-    //document.addEventListener('alpine:init', function () {
     (function () {
         const storeId = '{{ $___lwDataTable->getId() }}';
 

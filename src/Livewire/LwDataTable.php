@@ -51,9 +51,9 @@ class LwDataTable extends LivewireComponent
 
     #[Url]
     public string $sortDir = '';
-
-    public ?int $perPage = 5;
+    public ?int $perPage = 15;
     public DataTable $dataTable;
+    public ?bool $filtersContainerIsOpen = null;
 
     protected string $filterUrlParam {
         get => \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
@@ -80,7 +80,8 @@ class LwDataTable extends LivewireComponent
     public function render()
     {
         $this->processFilters();
-        $this->setupSearch();
+        $this->setupSearchAttributes();
+        $this->setupFiltersAttributes();
 
         $rows = $this->getTableData();
 
@@ -134,16 +135,16 @@ class LwDataTable extends LivewireComponent
         }
     }
 
-    public function setSortBy(string $column, ?string $sortDir = null)
+    public function setSortBy(string $dataField, ?string $sortDir = null)
     {
-        if ($this->sortBy === $column) {
+        if ($this->sortBy === $dataField) {
             $this->sortDir = $sortDir ?? self::SORT_DIR_TOGGLE[$this->sortDir] ?? self::SORT_DIR_NONE;
 
             if ($this->sortDir === self::SORT_DIR_NONE) {
                 $this->sortBy = self::SORT_BY_NONE;
             }
         } else {
-            $this->sortBy = $column;
+            $this->sortBy = $dataField;
             $this->sortDir = $sortDir ?? self::SORT_DIR_ASC;
         }
     }
@@ -188,13 +189,22 @@ class LwDataTable extends LivewireComponent
     {
         $fullFilters = [];
         foreach ($this->dataTable->filters->filtersItems as $filterItem) {
-            $filterValue = $this->filters[$filterItem->column][$filterItem->name]
+            $filterValue = $this->filters[$filterItem->dataField][$filterItem->name]
                 ?? ($filterItem->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '');
 
-            $fullFilters[$filterItem->column][$filterItem->name] = $filterValue;
+            $fullFilters[$filterItem->dataField][$filterItem->name] = $filterValue;
         }
 
         return $fullFilters;
+    }
+
+    public function shouldShowFiltersContainer(): bool
+    {
+        if (\is_bool($this->filtersContainerIsOpen)) {
+            return $this->filtersContainerIsOpen;
+        }
+
+        return !empty($this->filters);
     }
 
     protected function processColumnsSearch()
@@ -209,17 +219,17 @@ class LwDataTable extends LivewireComponent
 
         $filtersItemsCollection = collect($this->dataTable->filters->filtersItems);
 
-        foreach ($this->filters as $column => $filters) {
+        foreach ($this->filters as $dataField => $filters) {
             foreach ($filters as $filterName => $filterVal) {
 
                 /** @var Filter */
                 $filterDefinition = $filtersItemsCollection->first(
-                    fn(Filter $filterDefinition) => $filterDefinition->column === $column && $filterDefinition->name === $filterName
+                    fn(Filter $filterDefinition) => $filterDefinition->dataField === $dataField && $filterDefinition->name === $filterName
                 );
 
                 if ($filterDefinition) {
                     $this->processedFilters[] = [
-                        'column' => $column,
+                        'column' => $dataField,
                         'mode' => $filterDefinition->mode,
                         'value' => $filterVal,
                     ];
@@ -245,15 +255,15 @@ class LwDataTable extends LivewireComponent
 
 
 
-    protected function setupSearch()
+    protected function setupSearchAttributes()
     {
         if ($this->dataTable->isSearchable()) {
-            $this->dataTable->search->inputAttributes->merge([
+            $this->dataTable->search->inputAttributes = $this->dataTable->search->inputAttributes->merge([
                 'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
                 'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
             ]);
 
-            $this->dataTable->search->buttonAttributes->merge([
+            $this->dataTable->search->buttonAttributes = $this->dataTable->search->buttonAttributes->merge([
                 'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
                 'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
             ]);
@@ -262,8 +272,30 @@ class LwDataTable extends LivewireComponent
             //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
             // }
         }
-
     }
+
+    protected function setupFiltersAttributes()
+    {
+        if ($this->dataTable->isFilterable()) {
+            if ($this->dataTable->filters->shouldShowDefaultIconOnToggleButton()) {
+                $this->dataTable->filters->buttonToggleAttributes = $this->dataTable->filters->buttonToggleAttributes->merge([
+                    'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
+                    'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
+                ]);
+            }
+
+            $this->dataTable->search->buttonAttributes = $this->dataTable->search->buttonAttributes->merge([
+                'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-apply',
+                'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-apply',
+            ])->class(['filters-apply-button']);
+
+            // if (empty($this->dataTable->search->dataFields)) {
+            //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
+            // }
+        }
+    }
+
+
 
     protected function processSorting()
     {
@@ -368,8 +400,8 @@ class LwDataTable extends LivewireComponent
             $model = $this->dataTable->dataProvider;
             new $model()->applyLwDataTableColumnsSearch($query, $columnsSearch);
         } else {
-            foreach ($columnsSearch as $col => $value) {
-                $query->whereLike($col, "%$value%");
+            foreach ($columnsSearch as $dataField => $value) {
+                $query->whereLike($dataField, "%$value%");
             }
         }
     }
@@ -389,8 +421,12 @@ class LwDataTable extends LivewireComponent
                 ->pluck('name')
                 ->diff($model->getHidden());
 
-            foreach ($columnsToSearch as $col) {
-                $query->whereLike($col, "%$search%");
+            if ($columnsToSearch->isNotEmpty()) {
+                $query->where(function ($orQuery) use ($columnsToSearch, $search) {
+                    foreach ($columnsToSearch as $dataField) {
+                        $orQuery->orWhereLike($dataField, "%$search%");
+                    }
+                });
             }
         }
     }

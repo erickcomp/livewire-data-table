@@ -43,11 +43,11 @@ class Filter // extends BaseDataTableComponent
     }
 
     public string $label {
-        get => $this->attributes['label'] ?? Str::headline($this->attributes['column']);
+        get => $this->attributes['label'] ?? Str::headline($this->attributes['data-field']);
     }
 
-    public string $column {
-        get => $this->attributes['column'];
+    public string $dataField {
+        get => $this->attributes['data-field'];
     }
 
     public string $inputType {
@@ -76,11 +76,9 @@ class Filter // extends BaseDataTableComponent
     {
         $this->validateAttributes($attributes);
 
-        // HTML names defaults to column's name
-        $this->attributes = $attributes->merge(['name' => $attributes['column']]);
+        // HTML names defaults to data-fields's name
+        $this->attributes = $attributes->merge(['name' => $attributes['data-field']]);
         $this->customRendererCode = $customRendererCode;
-
-        //dd($this->attributes, $this->customRendererCode);
     }
 
     public function htmlInputType(): ?string
@@ -100,7 +98,7 @@ class Filter // extends BaseDataTableComponent
             $range = null;
         }
 
-        $inputName = "{$filterUrlParam}[{$this->column}][{$this->name}]";
+        $inputName = "{$filterUrlParam}[{$this->dataField}][{$this->name}]";
 
         if ($range === null) {
             return $inputName;
@@ -116,7 +114,7 @@ class Filter // extends BaseDataTableComponent
     public function buildWireModelAttribute(string $filterProperty, ?string $range = null): string
     {
         //
-        $wireModel = "$filterProperty.{$this->column}.{$this->name}";
+        $wireModel = "$filterProperty.{$this->dataField}.{$this->name}";
 
         if ($range === null) {
             return $wireModel;
@@ -132,7 +130,7 @@ class Filter // extends BaseDataTableComponent
     public function buildXModelAttribute(string $filterProperty, ?string $range = null): string
     {
         //
-        $wireModel = "dtData()['$filterProperty']['$this->column']['$this->name']";
+        $wireModel = "dtData()['$filterProperty']['$this->dataField']['$this->name']";
 
         if ($range === null) {
             return $wireModel;
@@ -145,7 +143,7 @@ class Filter // extends BaseDataTableComponent
         return "{$wireModel}['$range']";
     }
 
-    public function getCustomRendererCodeWithWireModel(string $filterProperty): string
+    public function getCustomRendererCodeWithXModel(string $filterProperty): string
     {
         $renderedCode = Blade::render($this->customRendererCode, ['__dataTableFilter' => $this]);
 
@@ -178,7 +176,7 @@ class Filter // extends BaseDataTableComponent
 
     public function inputAttributes(array|string $except = []): ComponentAttributeBag
     {
-        $attrs = $this->attributes->except(\array_merge(['label', 'column', 'input-type', 'mode'], Arr::wrap($except)));
+        $attrs = $this->attributes->except(\array_merge(['label', 'data-field', 'input-type', 'mode'], Arr::wrap($except)));
 
         if ($this->inputType === static::TYPE_SELECT_MULTIPLE) {
             return $attrs->merge(['multiple' => true]);
@@ -188,8 +186,8 @@ class Filter // extends BaseDataTableComponent
     }
     protected function validateAttributes(ComponentAttributeBag $attributes)
     {
-        if (!$attributes->has('column')) {
-            throw new \LogicException('Data table filters must specify a [column] attribute');
+        if (!$attributes->has('data-field')) {
+            throw new \LogicException('Data table filters must specify a [data-field] attribute');
         }
 
         if ($attributes->has('input-type') && !\in_array($attributes['input-type'], static::INPUT_TYPES)) {
