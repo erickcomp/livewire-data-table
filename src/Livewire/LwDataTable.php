@@ -26,7 +26,6 @@ use Livewire\WithPagination;
 class LwDataTable extends LivewireComponent
 {
     use WithPagination;
-
     protected const SORT_BY_NONE = '';
     protected const SORT_DIR_NONE = '';
     protected const SORT_DIR_ASC = 'ASC';
@@ -55,27 +54,28 @@ class LwDataTable extends LivewireComponent
     public DataTable $dataTable;
     public ?bool $filtersContainerIsOpen = null;
 
-    protected string $filterUrlParam {
-        get => \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
-    }
+    public string $preset = 'default';
 
-    protected string $searchUrlParam {
-        get => \config('erickcomp-livewire-data-table.query-string-search', 'search');
-    }
+    // protected string $filterUrlParam {
+    //     get => \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
+    // }
 
-    protected string $columnsSearchUrlParam {
-        get => \config('erickcomp-livewire-data-table.query-string-param-cols-search', 'cols-search');
-    }
+    // protected string $searchUrlParam {
+    //     get => \config('erickcomp-livewire-data-table.query-string-search', 'search');
+    // }
 
+    // // protected string $columnsSearchUrlParam {
+    // //     get => \config('erickcomp-livewire-data-table.query-string-param-cols-search', 'cols-search');
+    // // }
     protected array $processedFilters = [];
     protected array $appliedFilters = [];
 
-    public function mount()
-    {
-        //$this->updateFilters();
-        //$this->updateSearch();
-        //$this->processFilters();
-    }
+    // public function mount()
+    // {
+    //     //$this->updateFilters();
+    //     //$this->updateSearch();
+    //     //$this->processFilters();
+    // }
 
     public function render()
     {
@@ -93,11 +93,7 @@ class LwDataTable extends LivewireComponent
                 ->__tostring();
 
             $this->redirect($newUri, true);
-
         }
-
-
-
 
         //$inputSearchIdentifier = ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search';
         //$buttonApplySearchIdentifier = "$inputSearchIdentifier-apply";
@@ -153,12 +149,10 @@ class LwDataTable extends LivewireComponent
     {
         return $this->appliedFilters;
     }
-
     public function runAction(string $action, ...$params)
     {
         $this->dataTable->runAction($action, ...$params);
     }
-
     public function applyFilters(array $inputFilters)
     {
         $removeEmptyValues = function (array $data) use (&$removeEmptyValues) {
@@ -206,6 +200,20 @@ class LwDataTable extends LivewireComponent
 
         return !empty($this->filters);
     }
+    protected function filtersUrlParam(): string
+    {
+        return \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
+    }
+
+    protected function searchUrlParam(): string
+    {
+        return \config('erickcomp-livewire-data-table.query-string-search', 'search');
+    }
+
+    protected function columnsSearchUrlParam(): string
+    {
+        return \config('erickcomp-livewire-data-table.query-string-param-cols-search', 'cols-search');
+    }
 
     protected function processColumnsSearch()
     {
@@ -237,7 +245,7 @@ class LwDataTable extends LivewireComponent
                     $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
 
                     $this->appliedFilters[] = [
-                        'wire-name' => $filterDefinition->buildWireModelAttribute($this->filterUrlParam),
+                        'wire-name' => $filterDefinition->buildWireModelAttribute($this->filtersUrlParam()),
                         'name' => $filterDefinition->name,
                         'label' => str($filterDefinition->label . ': ')
                             ->when($isRangeMode, function (Stringable $string) use ($filterVal) {
@@ -511,13 +519,13 @@ class LwDataTable extends LivewireComponent
     {
         return [
             'search' => [
-                'as' => $this->searchUrlParam,
+                'as' => $this->searchUrlParam(),
             ],
             'filters' => [
-                'as' => $this->filterUrlParam,
+                'as' => $this->filtersUrlParam(),
             ],
             'columnsSearch' => [
-                'as' => $this->columnsSearchUrlParam,
+                'as' => $this->columnsSearchUrlParam(),
             ],
         ];
     }

@@ -126,7 +126,7 @@
 
                                         @if(\in_array($filterItem, [Filter::TYPE_SELECT, Filter::TYPE_SELECT_MULTIPLE], true))
                                             <select {{ $filterItem->inputAttributes(except: 'name') }}
-                                                name="{{ $filterItem->buildInputNameAttribute($___lwDataTable->filterUrlParam) }}"
+                                                name="{{ $filterItem->buildInputNameAttribute($___lwDataTable->filtersUrlParam()) }}"
                                                 {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
                                                 {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}"> --}}
                                                 {{-- x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters')
@@ -141,7 +141,7 @@
                                                 <span>@lang('erickcomp_lw_data_table::messages.range_filter_label_from'):</span>
                                                 <input
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
-                                                    name="{{ $filterItem->buildInputNameAttribute($___lwDataTable->filterUrlParam, 'from') }}"
+                                                    name="{{ $filterItem->buildInputNameAttribute($___lwDataTable->filtersUrlParam(), 'from') }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
                                                     {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
                                                     {{--
@@ -152,7 +152,7 @@
                                                 <span>@lang('erickcomp_lw_data_table::messages.range_filter_label_to'):</span>
                                                 <input
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
-                                                    name="{{ $filterItem->buildInputNameAttribute($___lwDataTable->filterUrlParam, 'to') }}"
+                                                    name="{{ $filterItem->buildInputNameAttribute($___lwDataTable->filtersUrlParam(), 'to') }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
                                                     {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
                                                     {{--
@@ -163,7 +163,7 @@
                                             @else
                                                 <input
                                                     type="{{ $filterItem->htmlInputType() }}" {{ $filterItem->inputAttributes(except: 'name') }}
-                                                    name="{{ $filterItem->buildInputNameAttribute($___lwDataTable->filterUrlParam) }}"
+                                                    name="{{ $filterItem->buildInputNameAttribute($___lwDataTable->filtersUrlParam()) }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
                                                     {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
                                                     {{--
@@ -210,7 +210,7 @@
                                 {{-- <button wire:click="removeFilter('{{ $appliedFilterData['wire-name'] }}')">x</button></button>
                                 --}}
                                 <button
-                                    x-on:click="removeFilter('{{ Str::chopStart($appliedFilterData['wire-name'], "{$this->filterUrlParam}.") }}')">x</button>
+                                    x-on:click="removeFilter('{{ Str::chopStart($appliedFilterData['wire-name'], "{$this->filtersUrlParam()}.") }}')">x</button>
                                 {{ $appliedFilterData['label'] }}
                             </span>
                         @endforeach
@@ -348,7 +348,6 @@
 @assets
 
 @if (!$dataTable->noStyles)
-
     <style>
         table .lw-dt-nodatafound-td {
             text-align: center;
@@ -464,14 +463,14 @@
             }
 
             /*
-                                                                                                                                                                                                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.show {
-                                                                                                                                                                                                        display: flex;
-                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.show {
+                                                                                                                                                                                                                                                                display: flex;
+                                                                                                                                                                                                                                                            }
 
-                                                                                                                                                                                                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.hide {
-                                                                                                                                                                                                        display: none;
-                                                                                                                                                                                                    }
-                                                                                                                                                                                                    */
+                                                                                                                                                                                                                                                            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.hide {
+                                                                                                                                                                                                                                                                display: none;
+                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                            */
 
             .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .lw-dt-filter-apply-container {
                 flex-basis: 100%;
@@ -509,11 +508,11 @@
 
                 /*display: inline-block; */
                 /*
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    padding: 0.5em 1em;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    border: 1px solid #ccc;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    border-radius: 0.25em;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    background-color: #f9f9f9;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            */
                 /*font-weight: bold;*/
 
                 flex: 0 0 calc(100% - 2%);

@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'applied_search_label' => 'busca',
+    'applied_search_label' => 'Busca',
     'active_filters_label' => 'Filtros aplicados',
     'filters_container_label' => 'Filtros',
     'toggle_filters_button_label' => 'Filtros',

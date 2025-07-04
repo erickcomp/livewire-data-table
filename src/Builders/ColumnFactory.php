@@ -6,10 +6,10 @@ use ErickComp\LivewireDataTable\Builders\Column\ActionsColumn;
 use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Builders\Column\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
-use ErickComp\LivewireDataTable\DataTable;
-use Illuminate\View\ComponentAttributeBag;
-use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\Concerns\GetsConstructorsParamsNames;
+use ErickComp\LivewireDataTable\DataTable;
+use ErickComp\LivewireDataTable\DataTable\Column;
+use Illuminate\View\ComponentAttributeBag;
 
 class ColumnFactory
 {
