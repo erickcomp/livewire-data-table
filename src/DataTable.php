@@ -5,7 +5,8 @@ namespace ErickComp\LivewireDataTable;
 use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
-use ErickComp\LivewireDataTable\DataTable\Column;
+use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
+use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\DataTable\Search;
@@ -19,7 +20,8 @@ use Illuminate\View\Component as BladeComponent;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\ImplicitlyBoundMethod;
 use Livewire\Wireable;
-use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
+use ErickComp\LivewireDataTable\DataTable\Column;
+//use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
 class DataTable extends BaseDataTableComponent implements Wireable
 {
@@ -110,7 +112,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
         public bool $withoutSortingIndicators = false,
 
-        /** @var BaseColumn[] */
+        /** @var Column[] */
         public array $columns = [],
         //public array $filters = [],
         //public string|false $search = false,
@@ -238,8 +240,17 @@ class DataTable extends BaseDataTableComponent implements Wireable
         $this->searchRendererCodeAttributes = $attributes;
     }
 
-    //public function addColumn(ComponentAttributeBag $columnAttributes)
-    public function addColumn(Column $columnComponent)
+    public function addDataColumn(ComponentAttributeBag $columnAttributes)
+    {
+        $this->columns[] = DataColumn::fromComponentAttributeBag($columnAttributes);
+    }
+
+    public function addCustomRenderedColumn(ComponentAttributeBag $columnAttributes, ?string $customRendererCode)
+    {
+        //$this->columns[] = Builders\ColumnFactory::make($this, $columnAttributes);
+        $this->columns[] = CustomRenderedColumn::fromComponentAttributeBag($columnAttributes, customRendererCode: $customRendererCode);
+    }
+    public function OLD_addColumn(Column $columnComponent)
     {
         //$this->columns[] = Builders\ColumnFactory::make($this, $columnAttributes);
         $this->columns[] = Builders\ColumnFactory::make($columnComponent);

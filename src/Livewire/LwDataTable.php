@@ -53,29 +53,11 @@ class LwDataTable extends LivewireComponent
     public ?int $perPage = 15;
     public DataTable $dataTable;
     public ?bool $filtersContainerIsOpen = null;
-
     public string $preset = 'default';
 
-    // protected string $filterUrlParam {
-    //     get => \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
-    // }
-
-    // protected string $searchUrlParam {
-    //     get => \config('erickcomp-livewire-data-table.query-string-search', 'search');
-    // }
-
-    // // protected string $columnsSearchUrlParam {
-    // //     get => \config('erickcomp-livewire-data-table.query-string-param-cols-search', 'cols-search');
-    // // }
     protected array $processedFilters = [];
     protected array $appliedFilters = [];
 
-    // public function mount()
-    // {
-    //     //$this->updateFilters();
-    //     //$this->updateSearch();
-    //     //$this->processFilters();
-    // }
 
     public function render()
     {
@@ -122,6 +104,40 @@ class LwDataTable extends LivewireComponent
     public function paginationSimpleView(): string
     {
         return $this->dataTable->paginationSimpleView();
+    }
+
+    public function xData(): string
+    {
+        return "{
+            storeId: '{$this->getId()}',
+
+            filtersContainerIsOpen: " . ($this->shouldShowFiltersContainer() ? 'true' : 'false') . ",
+
+            dtData() {
+                return Alpine.store(this.storeId);
+            },
+
+            applySearch() {
+                this.dtData().applySearch(\$wire);
+            },
+
+            applyFilters() {
+                this.dtData().applyFilters(\$wire);
+            },
+
+            clearSearch() {
+                this.dtData().clearSearch(\$wire);
+            },
+
+            removeFilter(filter) {
+                this.dtData().removeFilter(\$wire, filter);
+            },
+
+            toggleFiltersContainer(event) {
+                this.filtersContainerIsOpen = !this.filtersContainerIsOpen;
+                \$wire.filtersContainerIsOpen = this.filtersContainerIsOpen;
+            }
+        };";
     }
 
     public function updating(string $property, $value)

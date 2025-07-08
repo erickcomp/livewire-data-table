@@ -23,9 +23,9 @@ trait GetsConstructorsParamsNames
         return \array_map(fn(\ReflectionParameter $reflParam) => $reflParam->getName(), $reflMethod->getParameters());
     }
 
-    protected static function extractActionConstructorParamsFromAttributes(string $actionClass, ComponentAttributeBag $attributes): array
+    protected static function extractActionConstructorParamsFromAttributes(string $class, ComponentAttributeBag $attributes): array
     {
-        $constructorParams = static::getConstructorsParams($actionClass);
+        $constructorParams = static::getConstructorsParams($class);
 
         $constructorParamsValues = [];
         $attributesNewValues = [];

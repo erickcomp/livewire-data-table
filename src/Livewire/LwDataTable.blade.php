@@ -1,60 +1,29 @@
-@php
-    use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
-    use ErickComp\LivewireDataTable\Builders\Column\CustomRenderedColumn;
-    use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
-    use ErickComp\LivewireDataTable\Builders\Column\ActionsColumn;
-    use ErickComp\LivewireDataTable\DataTable\Filter;
-    use Illuminate\Support\Facades\Blade;
-    use Illuminate\Support\Str;
-    use Illuminate\View\ComponentAttributeBag;
-    use Illuminate\Pagination\LengthAwarePaginator;
-    use Illuminate\Pagination\Paginator;
+<?php
 
-    /** @var \ErickComp\LivewireDataTable\DataTable $dataTable */
-    /** @var \ErickComp\LivewireDataTable\Livewire\LwDataTable $___lwDataTable */
-    /** @var \ErickComp\LivewireDataTable\DataTable\Filter $filterItem */
+use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
+use ErickComp\LivewireDataTable\DataTable\DataColumn;
+use ErickComp\LivewireDataTable\DataTable\Filter;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Str;
+use Illuminate\View\ComponentAttributeBag;
 
-    $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAttributeBag {
-        return $columnThAttributes->merge($tableThAttributes->all());
-    };
 
-    //$onClickSortableColumn = function (BaseColumn $column): string {
-    //    return $column->isSortable() ? 'wire:click="setSortBy(\'' . $column->name . '\')"' : '';
-    //};
-@endphp
+/** @var \ErickComp\LivewireDataTable\DataTable $dataTable */
+/** @var \ErickComp\LivewireDataTable\Livewire\LwDataTable $___lwDataTable */
+/** @var \ErickComp\LivewireDataTable\DataTable\Filter $filterItem */
 
+$thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAttributeBag {
+    return $columnThAttributes->merge($tableThAttributes->all());
+};
+
+//$onClickSortableColumn = function (BaseColumn $column): string {
+//    return $column->isSortable() ? 'wire:click="setSortBy(\'' . $column->name . '\')"' : '';
+//};
+?>
 <div {{ $dataTable->containerAttributes->class(['lw-dt' => true]) }}
-    x-data="{
-        storeId: '{{ $___lwDataTable->getId() }}',
-
-        filtersContainerIsOpen: {{ $___lwDataTable->shouldShowFiltersContainer() ? 'true' : 'false' }},
-
-        dtData() {
-            return Alpine.store(this.storeId);
-        },
-
-        applySearch() {
-            this.dtData().applySearch($wire);
-        },
-
-        applyFilters() {
-            this.dtData().applyFilters($wire);
-        },
-
-        clearSearch() {
-            this.dtData().clearSearch($wire);
-        },
-
-        removeFilter(filter) {
-            this.dtData().removeFilter($wire, filter);
-        },
-
-        toggleFiltersContainer(event) {
-            this.filtersContainerIsOpen = !this.filtersContainerIsOpen;
-            
-            $wire.filtersContainerIsOpen = this.filtersContainerIsOpen;
-        }
-    };">
+    x-data="{!! $___lwDataTable->xData() !!}">
     @if($dataTable->hasTableActions())
         <div class="lw-dt-table-actions">
             <div class="lw-dt-table-actions-row">
@@ -90,8 +59,8 @@
                 @endif
 
                 @if($dataTable->isFilterable() && $dataTable->filters->isCollapsible())
-                    <button {{ $dataTable->filters->buttonToggleAttributes }}
-                        x-bind:class="filtersContainerIsOpen ? 'active' : ''">
+                    <button {{ $dataTable->filters->buttonToggleAttributes->class(['active' => $___lwDataTable->shouldShowFiltersContainer()]) }}
+                        x-bind:class="{ 'active': filtersContainerIsOpen }">
 
                         @if($dataTable->filters->shouldShowDefaultIconOnToggleButton())
                             <svg xmlns=" http://www.w3.org/2000/svg"
@@ -229,14 +198,14 @@
                         //$thAttributes = $dataTable->thAttributes->merge($column->thAttributes->all());
 
                         if ($column->isSortable() && count($rows) > 0) {
-                            $thAttributes['wire:click'] = "setSortBy('{$column->name}')";
+                            $thAttributes['wire:click'] = "setSortBy('{$column->dataField}')";
                         }
                     @endphp
                     <th {{ $thAttributes }}>
                         {{ $column->title }}
                         @if ($column->isSortable() && count($rows) > 0)
                             @php
-                                $columnSortClass = $column->name === $sortBy
+                                $columnSortClass = $column->dataField === $sortBy
                                     ? Str::kebab("{$dataTable->sortingClassPrefix}-" . \strtolower(empty($sortDir) ? 'none' : $sortDir))
                                     : "{$dataTable->sortingClassPrefix}-none";
                             @endphp
@@ -251,7 +220,7 @@
                     @foreach ($dataTable->columns as $column)
                         <th {{ $dataTable->theadSearchThAttributes }}>
                             @if ($column->isSearchable())
-                                <input type="text" wire:model.live.debounce.{{ $dataTable->columnsSearchDebounce }}ms="columnsSearch.{{ $column->searchableDataField() }}" />
+                                <input type="text" wire:model.live.debounce.{{ $dataTable->columnsSearchDebounce }}ms="columnsSearch.{{ $column->dataField }}" />
                             @endif
                         </th>
                     @endforeach
@@ -259,6 +228,7 @@
             @endif
         </thead>
         <tbody {{$dataTable->tbodyAttributes }}>
+            @debugger
             @forelse ($rows as $row)
                 @php
                     $trAttributes = new ComponentAttributeBag();
@@ -270,7 +240,8 @@
 
                         $modifierViewData = [
                             '__dataTable' => $dataTable,
-                            '__dataTableRow' => $row,
+                            'loop' => $loop,
+                            '__rowData' => $row,
                             '__trAttributes' => $trAttributes,
                         ];
                     @endphp
@@ -288,14 +259,19 @@
                         @endphp
                         @if($column instanceof CustomRenderedColumn)
                             @php
-                                $customRenderedColumn = Blade::render($column->customRendererCode, ['__dataTableRow' => $row]);
+                                $customRenderedColumn = Blade::render($column->customRendererCode, ['loop' => $loop->parent, '__rowData' => $row]);
                                 $trimmed = $customRenderedColumn;
                             @endphp
 
                             @if (preg_match('/^<\s*td\s*.*>.*<\/\s*td\s*>$/is', $trimmed))
                                 {!! $customRenderedColumn !!}
-                                @continue
+                            @else
+                                <td {{ $column->tdAttributes ?? '' }}>
+                                    {!! $customRenderedColumn !!}
+                                </td>
                             @endif
+
+                            @continue
                         @endif
 
                         <td {{ $column->tdAttributes ?? '' }}>
@@ -303,8 +279,6 @@
                                 {!! $customRenderedColumn !!}
                             @elseif($column instanceof DataColumn)
                                 {{ $row->{$column->dataField} }}
-                            @elseif($column instanceof ActionsColumn)
-                                << actions column>>
                             @endif
                         </td>
                     @endforeach
@@ -463,14 +437,14 @@
             }
 
             /*
-                                                                                                                                                                                                                                                                            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.show {
-                                                                                                                                                                                                                                                                                display: flex;
-                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.show {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        display: flex;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
 
-                                                                                                                                                                                                                                                                            .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.hide {
-                                                                                                                                                                                                                                                                                display: none;
-                                                                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                                                                            */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container.hide {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        display: none;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    */
 
             .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .lw-dt-filter-apply-container {
                 flex-basis: 100%;
@@ -508,11 +482,11 @@
 
                 /*display: inline-block; */
                 /*
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            padding: 0.5em 1em;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            border: 1px solid #ccc;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            border-radius: 0.25em;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            background-color: #f9f9f9;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    padding: 0.5em 1em;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    border: 1px solid #ccc;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    border-radius: 0.25em;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    background-color: #f9f9f9;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    */
                 /*font-weight: bold;*/
 
                 flex: 0 0 calc(100% - 2%);
@@ -572,63 +546,55 @@
 @script
 
 <script>
-    (function () {
-        const storeId = '{{ $___lwDataTable->getId() }}';
+    Alpine.store(
+        '{{ $___lwDataTable->getId() }}',
+        Alpine.reactive({
+            inputSearch: {{ Illuminate\Support\Js::from($search) }},
+            inputFilters: {{ Illuminate\Support\Js::from($___lwDataTable->computeInitialFilters()) }},
 
-        //console.log('Registering Alpine store: [' + storeId + ']');
+            applySearch(wireHandler) {
+                wireHandler.set('search', this.inputSearch);
+            },
 
-        Alpine.store(
-            storeId,
-            Alpine.reactive({
-                inputSearch: {{ Illuminate\Support\Js::from($search) }},
-                inputFilters: {{ Illuminate\Support\Js::from($___lwDataTable->computeInitialFilters()) }},
+            applyFilters(wireHandler) {
+                wireHandler.applyFilters(this.inputFilters);
+            },
 
-                applySearch(wireHandler) {
-                    //$wire.set('search', this.inputSearch);
-                    wireHandler.set('search', this.inputSearch);
-                },
+            clearSearch(wireHandler) {
+                this.inputSearch = '';
+                this.applySearch(wireHandler);
+            },
 
-                applyFilters(wireHandler) {
-                    //$wire.applyFilters(this.inputFilters);
-                    wireHandler.applyFilters(this.inputFilters);
-                },
-
-                clearSearch(wireHandler) {
-                    this.inputSearch = '';
-                    this.applySearch(wireHandler);
-                },
-
-                removeFilter(wireHandler, filter) {
-                    if (typeof filter !== 'string') {
-                        return;
-                    }
-
-                    const keys = filter.split('.');
-                    const lastKey = keys.pop();
-                    const parent = keys.reduce((acc, key) => acc?.[key], this.inputFilters);
-                    const parentItem = parent[lastKey];
-                    const parentItemIsObject = typeof parent[lastKey] === 'object';
-
-                    const hasFrom = parentItemIsObject && 'from' in parentItem;
-                    const hasTo = parentItemIsObject && 'to' in parentItem;
-
-                    if (!hasFrom && !hasTo) {
-                        parent[lastKey] = '';
-                    } else {
-                        if (hasFrom) {
-                            parent[lastKey]['from'] = '';
-                        }
-
-                        if (hasTo) {
-                            parent[lastKey]['to'] = '';
-                        }
-                    }
-
-                    this.applyFilters(wireHandler);
+            removeFilter(wireHandler, filter) {
+                if (typeof filter !== 'string') {
+                    return;
                 }
-            })
-        );
-    })();
+
+                const keys = filter.split('.');
+                const lastKey = keys.pop();
+                const parent = keys.reduce((acc, key) => acc?.[key], this.inputFilters);
+                const parentItem = parent[lastKey];
+                const parentItemIsObject = typeof parent[lastKey] === 'object';
+
+                const hasFrom = parentItemIsObject && 'from' in parentItem;
+                const hasTo = parentItemIsObject && 'to' in parentItem;
+
+                if (!hasFrom && !hasTo) {
+                    parent[lastKey] = '';
+                } else {
+                    if (hasFrom) {
+                        parent[lastKey]['from'] = '';
+                    }
+
+                    if (hasTo) {
+                        parent[lastKey]['to'] = '';
+                    }
+                }
+
+                this.applyFilters(wireHandler);
+            }
+        })
+    );
 </script>
 
 @foreach ($dataTable->scripts as $script)

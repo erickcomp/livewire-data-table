@@ -32,12 +32,12 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     protected function registerBladeComponents()
     {
         Blade::component(DataTable::class, 'data-table');
-        Blade::component(Column::class, 'data-table.column');
-        Blade::component(Action::class, 'data-table.action');
+        //Blade::component(Column::class, 'data-table.column');
+        //Blade::component(Action::class, 'data-table.action');
         //Blade::component(Filters::class, 'data-table.filters');
         //Blade::component(Filter::class, 'data-table.filter');
-        Blade::component(BulkActions::class, 'data-table.bulk-actions');
-        Blade::component(BulkAction::class, 'data-table.bulk-action');
+        //Blade::component(BulkActions::class, 'data-table.bulk-actions');
+        //Blade::component(BulkAction::class, 'data-table.bulk-action');
     }
 
     protected function registerLivewireComponents()
@@ -47,34 +47,50 @@ class ServiceProvider extends LaravelAbstractServiceProvider
 
     protected function registerRawBladeComponents()
     {
-        $this->registerColumnTdRawComponent();
+        //$this->registerColumnTdRawComponent();
+        $this->registerColumnRawComponent();
         $this->registerTrAttributesRawComponent();
         $this->registerSearchRawComponent();
         $this->registerFiltersRawComponent();
         $this->registerFilterRawComponent();
     }
 
-    protected function registerColumnTdRawComponent()
+    protected function registerColumnRawComponent()
     {
         $this->registerRawBladeComponent(
-            tag: 'x-data-table.column.td-template',
-            openingCode: <<<'COL_TD_COMPILER_CODE'
-                    <?php
+            tag: 'x-data-table.column',
+            openingCode: <<<'COL_COMPILER_CODE'
+            <?php
 
-                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable\Column) {
-                        throw new \LogicException("You can only use the [x-data-table.column.td] component as a direct child of the [x-data-table.column] component");
-                    }
+            if((!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable\Column) && $__parentRawComponentTag !== null) {
+                throw new \LogicException("You can only use the [x-data-table.column] component as a direct child of the [x-data-table] component");
+            }
 
-                    $component->customRendererCode = <<<'___DATATABLE__RENDERER___'
-                COL_TD_COMPILER_CODE,
-            closingCode: '___DATATABLE__RENDERER___; ?>',
+            $component->addCustomRenderedColumn(
+                $__rawComponentAttributes,
+                <<<'___DATATABLE__RENDERER___'
+            COL_COMPILER_CODE,
+            closingCode: <<<'COL_COMPILER_CODE'
+            ___DATATABLE__RENDERER___
+                    );
+                ?>
+            COL_COMPILER_CODE,
+            selfClosingCode: <<<'COL_COMPILER_CODE'
+            <?php
+            if((!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable\Column) && $__parentRawComponentTag !== null) {
+                throw new \LogicException("You can only use the [x-data-table.column] component as a direct child of the [x-data-table] component");
+            }
+
+            $component->addDataColumn($__rawComponentAttributes);
+            ?>
+            COL_COMPILER_CODE,
         );
     }
 
     protected function registerTrAttributesRawComponent()
     {
         $this->registerRawBladeComponent(
-            tag: 'x-data-table.tr-attributes',
+            tag: 'x-data-table.tr-before-render',
             openingCode: <<<'COL_TD_COMPILER_CODE'
                     <?php
                     if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
@@ -82,8 +98,9 @@ class ServiceProvider extends LaravelAbstractServiceProvider
                     }
 
                     $component->setTrAttributesModifierCode (<<<'___DATATABLE__RENDERER___'
+
                 COL_TD_COMPILER_CODE,
-            closingCode: '___DATATABLE__RENDERER___); ?>',
+            closingCode: PHP_EOL . '___DATATABLE__RENDERER___); ?>',
         );
     }
     protected function registerSearchRawComponent()
