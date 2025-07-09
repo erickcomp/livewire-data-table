@@ -17,7 +17,10 @@ use Livewire\Livewire;
 
 class ServiceProvider extends LaravelAbstractServiceProvider
 {
-    public function register() {}
+    public function register()
+    {
+        $this->setupConfig();
+    }
 
     public function boot()
     {
@@ -27,6 +30,14 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerLivewireComponents();
 
         Paginator::useBootstrap();
+    }
+
+    protected function setupConfig()
+    {
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/erickcomp-livewire-data-table.php',
+            'erickcomp-livewire-data-table',
+        );
     }
 
     protected function registerBladeComponents()

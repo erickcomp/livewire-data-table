@@ -53,11 +53,11 @@ class LwDataTable extends LivewireComponent
     public ?int $perPage = 15;
     public DataTable $dataTable;
     public ?bool $filtersContainerIsOpen = null;
-    public string $preset = 'default';
+    public string $preset = 'vanilla';
 
     protected array $processedFilters = [];
     protected array $appliedFilters = [];
-
+    protected Preset $loadedPreset;
 
     public function render()
     {
@@ -94,6 +94,15 @@ class LwDataTable extends LivewireComponent
         return view()
             ->file(\substr(__FILE__, 0, -3) . 'blade.php')
             ->with($viewData);
+    }
+
+    public function preset(): Preset
+    {
+        if (!isset($this->loadedPreset)) {
+            $this->loadedPreset = Preset::loadFromName($this->preset);
+        }
+
+        return $this->loadedPreset;
     }
 
     public function paginationView(): string

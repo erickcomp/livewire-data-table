@@ -5,6 +5,19 @@ namespace ErickComp\LivewireDataTable\Livewire;
 
 class Preset
 {
+    public const LW_DT_PRESETS = [
+        'empty',
+        'vanilla',
+    ];
+
+    /** @var string[] */
+    public array $scripts = [];
+
+    /** @var string[] */
+    public array $assets = [];
+
+    public const DEFAULT_PRESET = 'vanilla';
+
     /**
      * @param array {
      *     extends: ?string,
@@ -62,5 +75,19 @@ class Preset
         array $presetInfo,
     ) {
         $presetInfo['applied-filters'][''] ??= [];
+        $this->assets = $presetInfo['assets'] ?? [];
+        $this->scripts = $presetInfo['scripts'] ?? [];
+    }
+
+    public static function loadFromName(string $name): static
+    {
+        $presetInfo = \config("app.lw_dt_presets.$name", null)
+            ?? \config("erickcomp-livewire-data-table.presets.$name", null);
+
+        if (empty($presetInfo)) {
+            throw new \InvalidArgumentException("Preset '$name' not found in config: app.lw_dt_presets.$name or erickcomp-livewire-data-table.presets.$name");
+        }
+
+        return new static($presetInfo);
     }
 }
