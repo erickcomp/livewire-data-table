@@ -79,6 +79,11 @@ class Preset
         $this->scripts = $presetInfo['scripts'] ?? [];
     }
 
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return \data_get($this, $key, $default);
+    }
+
     public static function loadFromName(string $name): static
     {
         $presetInfo = \config("app.lw_dt_presets.$name", null)

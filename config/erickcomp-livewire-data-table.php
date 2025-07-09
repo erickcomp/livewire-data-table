@@ -70,67 +70,134 @@ return [
         'vanilla' => [
             'extends' => 'empty', // ?string
 
-            'main-container.class' => [],
-            'actions.container.class' => ['lw-dt-table-actions' => true],
-            'actions.row.class' => ['lw-dt-table-actions-row' => true],
+            'main-container' => [
+                'class' => [],
+            ],
+            'actions' => [
+                'container' => [
+                    'class' => ['lw-dt-table-actions' => true],
+                ],
+                'row' => [
+                    'class' => ['lw-dt-table-actions-row' => true],
+                ],
+            ],
 
-            'search.container.class' => ['lw-dt-table-search' => true],
-            'search.input.class' => [],
-            'search.button.class' => [],
-            'search.button-icon' => <<<'ICON'
-                <svg xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 512 512"
-                    width="14" height="14"
-                    fill="currentColor"
-                    style="vertical-align: middle;">
-                    <path
-                        d="M495 466.1l-110.1-110.1c31.1-37.7 48-84.6 48-134 0-56.4-21.9-109.3-61.8-149.2-39.8-39.9-92.8-61.8-149.1-61.8-56.3 0-109.3 21.9-149.2 61.8C33.1 112.7 11.2 165.7 11.2 222c0 56.3 21.9 109.3 61.8 149.2 39.8 39.8 92.8 61.8 149.2 61.8 49.5 0 96.4-16.9 134-48l110.1 110c8 8 20.9 8 28.9 0 8-8 8-20.9 0-28.9zM101.7 342.2c-32.2-32.1-49.9-74.8-49.9-120.2 0-45.4 17.7-88.2 49.8-120.3 32.1-32.1 74.8-49.8 120.3-49.8 45.4 0 88.2 17.7 120.3 49.8 32.1 32.1 49.8 74.8 49.8 120.3 0 45.4-17.7 88.2-49.8 120.3-32.1 32.1-74.9 49.8-120.3 49.8-45.4 0-88.1-17.7-120.2-49.9z" />
-                </svg>
-            ICON,
+            'search' => [
+                'container' => [
+                    'class' => ['lw-dt-table-search-container' => true],
+                ],
+                'input' => [
+                    'class' => ['lw-dt-table-search-input' => true],
+                ],
+                'button' => [
+                    'class' => ['lw-dt-table-search-button' => true],
+                    'use-default-icon' => true,
+                ],
+            ],
+            'search' => [
+                'container' => [
+                    'class' => ['lw-dt-table-search-container' => true],
+                ],
+                'input' => [
+                    'class' => ['lw-dt-table-search-input' => true],
+                ],
+                'button' => [
+                    'class' => ['lw-dt-table-search-button' => true],
+                    'icon' => <<<'ICON'
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 512 512"
+                            width="14" height="14"
+                            fill="currentColor"
+                            style="vertical-align: middle;">
+                            <path
+                                d="M495 466.1l-110.1-110.1c31.1-37.7 48-84.6 48-134 0-56.4-21.9-109.3-61.8-149.2-39.8-39.9-92.8-61.8-149.1-61.8-56.3 0-109.3 21.9-149.2 61.8C33.1 112.7 11.2 165.7 11.2 222c0 56.3 21.9 109.3 61.8 149.2 39.8 39.8 92.8 61.8 149.2 61.8 49.5 0 96.4-16.9 134-48l110.1 110c8 8 20.9 8 28.9 0 8-8 8-20.9 0-28.9zM101.7 342.2c-32.2-32.1-49.9-74.8-49.9-120.2 0-45.4 17.7-88.2 49.8-120.3 32.1-32.1 74.8-49.8 120.3-49.8 45.4 0 88.2 17.7 120.3 49.8 32.1 32.1 49.8 74.8 49.8 120.3 0 45.4-17.7 88.2-49.8 120.3-32.1 32.1-74.9 49.8-120.3 49.8-45.4 0-88.1-17.7-120.2-49.9z" />
+                        </svg>
+                    ICON,
+                ],
+            ],
 
-            'filters.collapsible' => true,
-            'filters.toggle-button.class' => ['filters-toggle-button'],
-            'filters.toggle-button.icon' => <<<'ICON'
-                <svg xmlns=" http://www.w3.org/2000/svg"
-                    width="14" height="14" viewBox="0 0 24 24"
-                    style="vertical-align: middle;">
-                    <path d="M3 4h18l-7 10v5l-4 1v-6z" fill="currentColor" />
-                </svg>
-            ICON,
+            'filters' => [
+                'collapsible' => true,
+                'toggle-button' => [
+                    'class' => ['filters-toggle-button'],
+                    'use-default-icon' => true,
+                    'icon' => <<<'ICON'
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            width="14" height="14" viewBox="0 0 24 24"
+                            style="vertical-align: middle;">
+                            <path d="M3 4h18l-7 10v5l-4 1v-6z" fill="currentColor" />
+                        </svg>
+                    ICON,
+                ],
+                'apply-button' => [
+                    'container' => [
+                        'class' => [],
+                    ],
+                    'class' => ['filters-apply-button'],
+                    'use-default-icon' => false,
+                ],
+                'item' => [
+                    'class' => ['filter-item'],
+                    'content' => [
+                        'class' => ['filter-content'],
+                        'range' => [
+                            'class' => ['filter-range'],
+                        ],
+                        'input-text' => [
+                            'class' => [],
+                        ],
+                        'input-date' => [
+                            'class' => [],
+                        ],
+                        'input-datetime-local' => [
+                            'class' => [],
+                        ],
+                        'input-number' => [
+                            'class' => [],
+                        ],
+                        'select' => [
+                            'class' => [],
+                        ],
+                    ],
+                ],
+            ],
 
-            'filters.apply-button.container.class' => [],
-            'filters.apply-button.class' => ['filters-apply-button'],
+            'applied-filters' => [
+                'container' => [
+                    'class' => ['lw-dt-applied-filters-container'],
+                ],
+                'label' => [
+                    'class' => ['active-filters-label'],
+                ],
+                'applied-filter-item' => [
+                    'class' => ['applied-filter'],
+                ],
+                'button-remove-applied-filter-item' => [
+                    'class' => ['applied-filter'],
+                ],
+            ],
 
-            'filters.item.class' => ['filter-item'],
-            'filters.item.content.class' => ['filter-content'],
-            'filters.item.content.range.class' => ['filter-range'],
+            'columns-search' => [
+                'debounce-ms' => 250, // integer
+                'columns' => [], // TODO: Add columns configuration
+            ],
 
-            'filters.item.content.input-text.class' => [],
-            'filters.item.content.input-date.class' => [],
-            'filters.item.content.input-datetime-local.class' => [],
-            'filters.item.content.input-number.class' => [],
-            'filters.item.content.select.class' => [],
-
-            'applied-filters.container.class' => [],
-            'applied-filters.label.class' => ['active-filters-label'],
-            'applied-filters.applied-filter-item.class' => ['applied-filter'],
-            'applied-filters.button-remove-applied-filter-item.class' => ['applied-filter'],
-
-            'columns-search.debounce-ms' => 250,
-            'columns-search.columns' => [], // TODO: Add columns configuration
-
-            'sorting.sorting-indicators' => true,
-            'sorting.indicator.class' => ['lw-dt-sort'],
-            'sorting.indicator-asc.class' => ['lw-dt-sort-asc'],
-            'sorting.indicator-desc.class' => ['lw-dt-sort-desc'],
+            'sorting' => [
+                'default-sorting-indicators' => true,
+                'indicator-class' => ['lw-dt-sort'],
+                'indicator-asc-class' => ['lw-dt-sort-asc'],
+                'indicator-desc-class' => ['lw-dt-sort-desc'],
+            ],
 
             'table' => [
                 // TODO: Add table configuration
             ],
 
-            'pagination.view' => 'livewire::bootstrap',
-            'pagination.simple-view' => 'livewire::simple-bootstrap',
-            //'pagination.default-style-for-pagination' => true,
+            'pagination' => [
+                'view' => 'livewire::bootstrap',
+                'simple-view' => 'livewire::simple-bootstrap',
+                //'default-style-for-pagination' => true,
+            ],
 
             'assets' => [<<<'CSS'
                 <style>

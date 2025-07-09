@@ -64,6 +64,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerSearchRawComponent();
         $this->registerFiltersRawComponent();
         $this->registerFilterRawComponent();
+        $this->registerAssetRawComponent();
     }
 
     protected function registerColumnRawComponent()
@@ -202,6 +203,27 @@ class ServiceProvider extends LaravelAbstractServiceProvider
 
                     ?>
                 SELF_CLOSING_CODE,
+        );
+    }
+
+    protected function registerAssetRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.assets',
+            openingCode: <<<'OPENING_CODE'
+                    <?php
+
+                    if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
+                        throw new \LogicException("You can only use the [x-data-table.asset] as a direct child of the [x-data-table] component");
+                    }
+
+                    $component->assets[] = <<<'___DATATABLE__RENDERER___'
+                OPENING_CODE,
+            closingCode: <<<'CLOSING_CODE'
+            ___DATATABLE__RENDERER___;
+            ?>
+            CLOSING_CODE,
+
         );
     }
 
