@@ -65,6 +65,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerFiltersRawComponent();
         $this->registerFilterRawComponent();
         $this->registerAssetRawComponent();
+        $this->registerFooterRawComponent();
     }
 
     protected function registerColumnRawComponent()
@@ -74,7 +75,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             openingCode: <<<'COL_COMPILER_CODE'
             <?php
 
-            if((!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable\Column) && $__parentRawComponentTag !== null) {
+            if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
                 throw new \LogicException("You can only use the [x-data-table.column] component as a direct child of the [x-data-table] component");
             }
 
@@ -89,7 +90,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             COL_COMPILER_CODE,
             selfClosingCode: <<<'COL_COMPILER_CODE'
             <?php
-            if((!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable\Column) && $__parentRawComponentTag !== null) {
+            if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
                 throw new \LogicException("You can only use the [x-data-table.column] component as a direct child of the [x-data-table] component");
             }
 
@@ -105,8 +106,8 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             tag: 'x-data-table.tr-before-render',
             openingCode: <<<'COL_TD_COMPILER_CODE'
                     <?php
-                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
-                        throw new \LogicException("You can only use the [x-data-table.tr-attributes] as a direct child of the [x-data-table] component");
+                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
+                        throw new \LogicException("You can only use the [x-data-table.tr-before-render] as a direct child of the [x-data-table] component");
                     }
 
                     $component->setTrAttributesModifierCode (<<<'___DATATABLE__RENDERER___'
@@ -119,7 +120,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     {
         $searchCode = <<<'SEARCH_CODE'
             <?php
-            if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
+            if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
                 throw new \LogicException("You can only use the [x-data-table.search] as a direct child of the [x-data-table] component");
             }
             $component->search = new \ErickComp\LivewireDataTable\DataTable\Search($__rawComponentAttributes);
@@ -154,7 +155,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             defaultAttributes: ['row-length' => 4, 'collapsible' => 'true'],
             openingCode: <<<'COL_TD_COMPILER_CODE'
                     <?php
-                    if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
+                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
                         throw new \LogicException("You can only use the [x-data-table.filters] as a direct child of the [x-data-table] component");
                     }
 
@@ -179,13 +180,13 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             openingCode: <<<'OPENING_CODE'
                     <?php
 
-                    if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
-                        throw new \LogicException("You can only use the [x-data-table.filter] as a child of the [x-data-table.filters] component");
-                    }
-
-                    if(!isset($__isBuildingDataTableFilters) || $__isBuildingDataTableFilters !== true) {
+                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== 'x-data-table.filters') {
                         throw new \LogicException("You can only use the [x-data-table.filter] as a direct child of the [x-data-table.filters] component");
                     }
+
+                    //if(!isset($__isBuildingDataTableFilters) || $__isBuildingDataTableFilters !== true) {
+                    //    throw new \LogicException("You can only use the [x-data-table.filter] as a direct child of the [x-data-table.filters] component");
+                    //}
 
                     $component->addFilter($__rawComponentAttributes, <<<'___DATATABLE__RENDERER___'
                 OPENING_CODE,
@@ -195,7 +196,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             CLOSING_CODE,
             selfClosingCode: <<<'SELF_CLOSING_CODE'
                     <?php
-                    if(!isset($__isBuildingDataTableFilters) || $__isBuildingDataTableFilters !== true) {
+                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== 'x-data-table.filters') {
                         throw new \LogicException("You can only use the [x-data-table.filter] as a direct child of the [x-data-table.filters] component");
                     }
 
@@ -213,7 +214,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             openingCode: <<<'OPENING_CODE'
                     <?php
 
-                    if (!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable) {
+                    if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
                         throw new \LogicException("You can only use the [x-data-table.asset] as a direct child of the [x-data-table] component");
                     }
 
@@ -223,7 +224,29 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             ___DATATABLE__RENDERER___;
             ?>
             CLOSING_CODE,
+        );
+    }
 
+    protected function registerFooterRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.footer',
+            openingCode: <<<'FOOTER_COMPILER_CODE'
+            <?php
+            \xdebug_break();
+            if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
+                throw new \LogicException("You can only use the [x-data-table.footer] component as a direct child of the [x-data-table] component");
+            }
+
+            $component->setFooter(
+                $__rawComponentAttributes,
+            <<<'___DATATABLE__RENDERER___'
+            FOOTER_COMPILER_CODE,
+            closingCode: <<<'FOOTER_COMPILER_CODE'
+            ___DATATABLE__RENDERER___
+            );
+            ?>
+            FOOTER_COMPILER_CODE,
         );
     }
 

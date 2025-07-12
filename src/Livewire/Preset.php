@@ -2,21 +2,26 @@
 
 namespace ErickComp\LivewireDataTable\Livewire;
 
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
+/**
+ * Class Preset
+ *
+ * Represents a preset configuration for Livewire Data Table.
+ * Presets can be used to define default styles, behaviors, and configurations for the data table.
+ * 
+ * @property-read Preset $parent
+ */
 class Preset
 {
     public const LW_DT_PRESETS = [
         'empty',
         'vanilla',
     ];
-
-    /** @var string[] */
-    public array $scripts = [];
-
-    /** @var string[] */
-    public array $assets = [];
-
     public const DEFAULT_PRESET = 'vanilla';
+
+    protected static array $presetCache = [];
 
     /**
      * @param array {
@@ -72,20 +77,39 @@ class Preset
      * $presetInfo
      */
     public function __construct(
-        array $presetInfo,
-    ) {
-        $presetInfo['applied-filters'][''] ??= [];
-        $this->assets = $presetInfo['assets'] ?? [];
-        $this->scripts = $presetInfo['scripts'] ?? [];
+        protected string $name,
+        protected array $presetInfo,
+    ) {}
+
+    public function __get(string $key): mixed
+    {
+        if ($key === 'parent') {
+            $parentName = $this->get('extends', '');
+            return empty($parentName) ? null : static::loadFromName($parentName);
+        }
+
+        throw new \BadMethodCallException("Undefined property: " . static::class . "::$key for preset [{$this->name}]");
     }
 
     public function get(string $key, mixed $default = null): mixed
     {
-        return \data_get($this, $key, $default);
+        $val = Arr::get($this->presetInfo, $key, static::noDataFound());
+
+        if ($val === static::noDataFound()) {
+            return $this->parent instanceof static
+                ? $this->parent->get($key, $default)
+                : $default;
+        }
+
+        return $val;
     }
 
     public static function loadFromName(string $name): static
     {
+        if (\array_key_exists($name, self::$presetCache)) {
+            return self::$presetCache[$name];
+        }
+
         $presetInfo = \config("app.lw_dt_presets.$name", null)
             ?? \config("erickcomp-livewire-data-table.presets.$name", null);
 
@@ -93,6 +117,19 @@ class Preset
             throw new \InvalidArgumentException("Preset '$name' not found in config: app.lw_dt_presets.$name or erickcomp-livewire-data-table.presets.$name");
         }
 
-        return new static($presetInfo);
+        self::$presetCache[$name] = new static($name, $presetInfo);
+
+        return self::$presetCache[$name];
+    }
+
+    protected static final function noDataFound()
+    {
+        static $noDataFound = null;
+
+        if ($noDataFound === null) {
+            $noDataFound = new class {};
+        }
+
+        return $noDataFound;
     }
 }

@@ -219,6 +219,10 @@ class LwDataTable extends LivewireComponent
 
     public function shouldShowFiltersContainer(): bool
     {
+        if (!$this->dataTable->filters->isCollapsible()) {
+            return true;
+        }
+
         if (\is_bool($this->filtersContainerIsOpen)) {
             return $this->filtersContainerIsOpen;
         }
@@ -286,8 +290,6 @@ class LwDataTable extends LivewireComponent
         }
     }
 
-
-
     protected function setupSearchAttributes()
     {
         if ($this->dataTable->isSearchable()) {
@@ -310,7 +312,7 @@ class LwDataTable extends LivewireComponent
     protected function setupFiltersAttributes()
     {
         if ($this->dataTable->isFilterable()) {
-            if ($this->dataTable->filters->shouldShowDefaultIconOnToggleButton()) {
+            if ($this->dataTable->filters->shouldShowIconOnToggleButton()) {
                 $this->dataTable->filters->buttonToggleAttributes = $this->dataTable->filters->buttonToggleAttributes->merge([
                     'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
                     'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',

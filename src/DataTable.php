@@ -10,6 +10,7 @@ use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\DataTable\Search;
+use ErickComp\LivewireDataTable\Livewire\Preset;
 use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
 use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
@@ -21,6 +22,7 @@ use Illuminate\View\ComponentAttributeBag;
 use Livewire\ImplicitlyBoundMethod;
 use Livewire\Wireable;
 use ErickComp\LivewireDataTable\DataTable\Column;
+use ErickComp\LivewireDataTable\DataTable\Footer;
 //use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
 class DataTable extends BaseDataTableComponent implements Wireable
@@ -68,6 +70,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
     //public iterable $rows = [];
     public ?Filters $filters = null;
+    public ?Footer $footer = null;
 
     public ?string $name {
         get {
@@ -107,6 +110,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
     //public array|true $searchable;
 
     public function __construct(
+        public string $preset = 'empty',
         public ?string $dataProvider = null,
         public ?string $dataProviderGetDataMethod = 'dataTable',
 
@@ -119,6 +123,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
         public array $columnsSearch = [],
         public array $actions = [],
         public string $pageName = 'page',
+        public bool $debugPayload = false,
         ?string $paginationView = null,
         string|array $perPageOptions = [],
         ?int $columnsSearchDebounce = null,
@@ -137,7 +142,13 @@ class DataTable extends BaseDataTableComponent implements Wireable
             $perPageOptions = $this->getDefaultPerPageOptions();
         }
 
-        $this->columnsSearchDebounce = $columnsSearchDebounce ?? \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200);
+        $this->columnsSearchDebounce = $columnsSearchDebounce
+            ?? Preset::loadFromName(
+                $this->preset,
+            )->get(
+                    'columns-search-debounce-ms',
+                    \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
+                );
 
         $this->perPageOptions = $perPageOptions;
 
@@ -161,6 +172,10 @@ class DataTable extends BaseDataTableComponent implements Wireable
     public static function fromLivewire($value)
     {
         return \decrypt($value['erickcomp-lw-dt']);
+
+        return $this->$debugPayload
+            ? \unserialize($value['erickcomp-lw-dt'])
+            : \decrypt($value['erickcomp-lw-dt']);
     }
 
     /**
@@ -254,6 +269,16 @@ class DataTable extends BaseDataTableComponent implements Wireable
     {
         //$this->columns[] = Builders\ColumnFactory::make($this, $columnAttributes);
         $this->columns[] = Builders\ColumnFactory::make($columnComponent);
+    }
+
+    public function hasFooter(): bool
+    {
+        return isset($this->footer) && $this->footer instanceof Footer;
+    }
+
+    public function setFooter(ComponentAttributeBag $filterContainerAttributes, string $rendererCode)
+    {
+        $this->footer = new Footer($filterContainerAttributes, $rendererCode);
     }
 
     public function addAction() {}

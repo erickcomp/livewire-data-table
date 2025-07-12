@@ -20,7 +20,7 @@ class Filters
     ];
 
     protected array $defaultButtonToggleAttributes = [
-        'class' => 'filters-toggle-button',
+        //'class' => 'filters-toggle-button',
         //'x-show' => "filtersContainerIsOpen",
         //'x-transition' => '',
         'x-on:click' => "toggleFiltersContainer",
@@ -74,7 +74,7 @@ class Filters
     {
         return $this->containerAttributes->except([
             'collapsible',
-            'filters-toggle-no-default-icon',
+            'filters-toggle-no-icon',
         ]);
     }
 
@@ -87,9 +87,9 @@ class Filters
         return \filter_var($this->containerAttributes['collapsible'], \FILTER_VALIDATE_BOOL);
     }
 
-    public function shouldShowDefaultIconOnToggleButton(): bool
+    public function shouldShowIconOnToggleButton(): bool
     {
-        return !\filter_var($this->containerAttributes['filters-toggle-no-default-icon'], \FILTER_VALIDATE_BOOL);
+        return !\filter_var($this->containerAttributes['filters-toggle-no-icon'], \FILTER_VALIDATE_BOOL);
     }
 
     protected function getAttributeBagsMappings(): array

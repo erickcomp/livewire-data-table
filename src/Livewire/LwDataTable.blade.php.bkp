@@ -42,7 +42,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             <input {{ $dataTable->search->inputAttributes }} />
 
                             <button {{ $dataTable->search->buttonAttributes }}>
-                                @if($dataTable->search->shouldRenderDefaultIconOnApplyButton())
+                                @if($dataTable->search->shouldShowIconOnApplyButton())
                                     <svg xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 512 512"
                                         width="14" height="14"
@@ -62,7 +62,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                     <button {{ $dataTable->filters->buttonToggleAttributes->class(['active' => $___lwDataTable->shouldShowFiltersContainer()]) }}
                         x-bind:class="{ 'active': filtersContainerIsOpen }">
 
-                        @if($dataTable->filters->shouldShowDefaultIconOnToggleButton())
+                        @if($dataTable->filters->shouldShowIconOnToggleButton())
                             <svg xmlns=" http://www.w3.org/2000/svg"
                                 width="14" height="14" viewBox="0 0 24 24"
                                 style="vertical-align: middle;">

@@ -10,100 +10,36 @@ return [
     'presets' => [
         'empty' => [
             'extends' => null,
-            'main-container-class' => [],
-            'actions-container-class' => [],
-            'actions-row-class' => [],
-
-            'search' => [
-                'container-class' => [],
-                'input-class' => [],
-                'button-class' => [],
-                'button-use-default-icon' => true,
-            ],
-
-            'filters' => [
-                'collapsible' => false,
-                'toggle-button-use-default-icon' => false,
-                'toggle-button-class' => [],
-                'apply-button-use-default-icon' => false,
-                'apply-button-container-class' => [],
-                'apply-button-class' => [],
-                'item-class' => [],
-                'content-class' => [],
-                'range-class' => [],
-                'select-class' => [],
-                'input-text-class' => [],
-                'input-date-class' => [],
-                'input-datetime-local-class' => [],
-                'input-number-class' => [],
-            ],
-
-            'applied-filters' => [
-                'container-class' => [],
-                'label-class' => [],
-                'applied-filter-item-class' => [],
-                'button-remove-applied-filter-item-class' => [],
-            ],
-
-            'columns-search' => [
-                'debounce-ms' => 250, // integer
-                'columns', // TODO: Add columns configuration
-            ],
-
-            'sorting' => [
-                'default-sorting-indicators' => false,
-                'indicator-class' => ['lw-dt-sort'],
-                'indicator-asc-class' => ['lw-dt-sort-asc'],
-                'indicator-desc-class' => ['lw-dt-sort-desc'],
-            ],
-
-            'table' => [
-                // TODO: Add table configuration
-            ],
-
-            'pagination' => [
-                'view' => 'livewire::bootstrap',
-                'simple-view' => 'livewire::simple-bootstrap',
-                'default-style-for-pagination' => true,
-            ],
+            'columns-search-debounce-ms' => 250,
+            'query-string-search' => 'search',
+            'query-string-filters' => 'filters',
+            'query-string-param-cols-search' => 'cols-search',
         ],
         'vanilla' => [
             'extends' => 'empty', // ?string
 
             'main-container' => [
-                'class' => [],
+                'class' => ['lw-dt-container'],
             ],
             'actions' => [
                 'container' => [
-                    'class' => ['lw-dt-table-actions' => true],
+                    'class' => ['lw-dt-actions-container'],
                 ],
                 'row' => [
-                    'class' => ['lw-dt-table-actions-row' => true],
+                    'class' => ['lw-dt-actions-row'],
                 ],
             ],
 
             'search' => [
                 'container' => [
-                    'class' => ['lw-dt-table-search-container' => true],
+                    'class' => ['lw-dt-search-container'],
                 ],
                 'input' => [
-                    'class' => ['lw-dt-table-search-input' => true],
+                    'class' => ['lw-dt-search-input'],
                 ],
                 'button' => [
-                    'class' => ['lw-dt-table-search-button' => true],
-                    'use-default-icon' => true,
-                ],
-            ],
-            'search' => [
-                'container' => [
-                    'class' => ['lw-dt-table-search-container' => true],
-                ],
-                'input' => [
-                    'class' => ['lw-dt-table-search-input' => true],
-                ],
-                'button' => [
-                    'class' => ['lw-dt-table-search-button' => true],
-                    'icon' => <<<'ICON'
+                    'class' => ['lw-dt-search-button'],
+                    'icon' => <<<'HTML'
                         <svg xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 512 512"
                             width="14" height="14"
@@ -112,15 +48,21 @@ return [
                             <path
                                 d="M495 466.1l-110.1-110.1c31.1-37.7 48-84.6 48-134 0-56.4-21.9-109.3-61.8-149.2-39.8-39.9-92.8-61.8-149.1-61.8-56.3 0-109.3 21.9-149.2 61.8C33.1 112.7 11.2 165.7 11.2 222c0 56.3 21.9 109.3 61.8 149.2 39.8 39.8 92.8 61.8 149.2 61.8 49.5 0 96.4-16.9 134-48l110.1 110c8 8 20.9 8 28.9 0 8-8 8-20.9 0-28.9zM101.7 342.2c-32.2-32.1-49.9-74.8-49.9-120.2 0-45.4 17.7-88.2 49.8-120.3 32.1-32.1 74.8-49.8 120.3-49.8 45.4 0 88.2 17.7 120.3 49.8 32.1 32.1 49.8 74.8 49.8 120.3 0 45.4-17.7 88.2-49.8 120.3-32.1 32.1-74.9 49.8-120.3 49.8-45.4 0-88.1-17.7-120.2-49.9z" />
                         </svg>
-                    ICON,
+                    HTML,
                 ],
             ],
 
             'filters' => [
                 'collapsible' => true,
+                'container' => [
+                    'class' => [],
+                ],
+                'title' => [
+                    'class' => ['lw-dt-filters-title'],
+                ],
                 'toggle-button' => [
-                    'class' => ['filters-toggle-button'],
-                    'use-default-icon' => true,
+                    'class' => ['lw-dt-filters-toggle-button'],
+                    //'use-default-icon' => true,
                     'icon' => <<<'ICON'
                         <svg xmlns="http://www.w3.org/2000/svg"
                             width="14" height="14" viewBox="0 0 24 24"
@@ -131,32 +73,54 @@ return [
                 ],
                 'apply-button' => [
                     'container' => [
-                        'class' => [],
+                        'class' => ['lw-dt-filter-apply-container'],
                     ],
                     'class' => ['filters-apply-button'],
-                    'use-default-icon' => false,
+                    //'icon' => ''
                 ],
                 'item' => [
-                    'class' => ['filter-item'],
+                    'class' => ['lw-dt-filter-item'],
                     'content' => [
-                        'class' => ['filter-content'],
+                        'class' => ['lw-dt-filter-item-content'],
+                        'legend' => [
+                            'class' => ['lw-dt-filter-item-content-legend'],
+                            'span' => [
+                                'class' => ['lw-dt-filter-item-content-legend-span'],
+                            ],
+                        ],
                         'range' => [
-                            'class' => ['filter-range'],
+                            'class' => ['lw-dt-filter-item-content-filter-range'],
+                            'label' => [
+                                'from' => [
+                                    'class' => ['lw-dt-filter-item-content-filter-range-label-from'],
+                                ],
+                                'to' => [
+                                    'class' => ['lw-dt-filter-item-content-filter-range-label-to'],
+                                ],
+                            ],
+                            'input' => [
+                                'from' => [
+                                    'class' => ['lw-dt-filter-item-content-filter-range-input-from'],
+                                ],
+                                'to' => [
+                                    'class' => ['lw-dt-filter-item-content-filter-range-input-to'],
+                                ],
+                            ],
                         ],
                         'input-text' => [
-                            'class' => [],
+                            'class' => ['lw-dt-filter-item-content-input-text'],
                         ],
                         'input-date' => [
-                            'class' => [],
+                            'class' => ['lw-dt-filter-item-content-input-date'],
                         ],
                         'input-datetime-local' => [
-                            'class' => [],
+                            'class' => ['lw-dt-filter-item-content-input-datetime-local'],
                         ],
                         'input-number' => [
-                            'class' => [],
+                            'class' => ['lw-dt-filter-item-content-input-number'],
                         ],
                         'select' => [
-                            'class' => [],
+                            'class' => ['lw-dt-filter-item-content-select'],
                         ],
                     ],
                 ],
@@ -167,30 +131,70 @@ return [
                     'class' => ['lw-dt-applied-filters-container'],
                 ],
                 'label' => [
-                    'class' => ['active-filters-label'],
+                    'class' => ['lw-dt-active-filters-label'],
                 ],
                 'applied-filter-item' => [
-                    'class' => ['applied-filter'],
+                    'class' => ['applied-filter-item'],
                 ],
                 'button-remove-applied-filter-item' => [
-                    'class' => ['applied-filter'],
+                    'class' => ['applied-filter-remove-button'],
+                    'content' => 'x',
                 ],
-            ],
-
-            'columns-search' => [
-                'debounce-ms' => 250, // integer
-                'columns' => [], // TODO: Add columns configuration
-            ],
-
-            'sorting' => [
-                'default-sorting-indicators' => true,
-                'indicator-class' => ['lw-dt-sort'],
-                'indicator-asc-class' => ['lw-dt-sort-asc'],
-                'indicator-desc-class' => ['lw-dt-sort-desc'],
             ],
 
             'table' => [
-                // TODO: Add table configuration
+                'class' => ['lw-dt-table'],
+                'thead' => [
+                    'class' => ['lw-dt-thead'],
+                    'tr' => [
+                        'class' => ['lw-dt-thead-tr'],
+                        'th' => [
+                            'class' => ['lw-dt-thead-tr-th'],
+                            'sorting' => [
+                                'show-indicators' => true,
+                                'indicator-class' => ['lw-dt-sort'],
+                                'indicator-asc-class' => ['lw-dt-sort', 'lw-dt-sort-asc'],
+                                'indicator-desc-class' => ['lw-dt-sort', 'lw-dt-sort-desc'],
+                                'indicator-none-class' => ['lw-dt-sort', 'lw-dt-sort-none'],
+                            ],
+                        ],
+                        'search' => [
+                            'debounce-ms' => 250,
+                            'class' => ['lw-dt-columns-search'],
+                            'th' => [
+                                'class' => ['lw-dt-columns-search-th'],
+                                'input' => [
+                                    'class' => ['lw-dt-columns-search-input'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'tbody' => [
+                    'class' => ['lw-dt-tbody'],
+                    'tr' => [
+                        'class' => ['lw-dt-tbody-tr'],
+                        'td' => [
+                            'class' => ['lw-dt-tbody-tr-td'],
+                        ],
+                        'nodatafound' => [
+                            'class' => ['lw-dt-nodatafound-td'],
+                        ],
+                    ],
+                ],
+                'tfoot' => [
+                    'class' => ['lw-dt-tfoot'],
+                    'tr' => [
+                        'class' => ['lw-dt-tfoot-tr'],
+
+                        'th' => [
+                            'class' => ['lw-dt-tfoot-tr-th'],
+                        ],
+                        'td' => [
+                            'class' => ['lw-dt-tfoot-tr-td'],
+                        ],
+                    ],
+                ],
             ],
 
             'pagination' => [
@@ -201,7 +205,10 @@ return [
 
             'assets' => [<<<'CSS'
                 <style>
-                    .lw-dt table .lw-dt-nodatafound-td {
+                    .lw-dt table.lw-dt-table {
+                        margin-top: 1rem;
+                    }
+                    .lw-dt table.lw-dt-table .lw-dt-nodatafound-td {
                         text-align: center;
                         vertical-align: middle;
                         padding: 1rem;
@@ -247,17 +254,17 @@ return [
                         text-decoration: none;
                     }
 
-                    .lw-dt .lw-dt-table-actions-row {
+                    .lw-dt .lw-dt-actions-row {
                         display: flex;
                         align-items: flex-end;
                         gap: 10px;
                     }
 
-                    .lw-dt .lw-dt-table-actions-row button.filters-toggle-button {
+                    .lw-dt .lw-dt-actions-row button.lw-dt-filters-toggle-button {
                         cursor: pointer;
                     }
 
-                    .lw-dt .lw-dt-table-actions-row button.filters-toggle-button.active {
+                    .lw-dt .lw-dt-actions-row button.lw-dt-filters-toggle-button.active {
                         border-bottom: none;
                         z-index: 2;
                         padding-bottom: calc(1.0rem + 4px);
@@ -275,7 +282,7 @@ return [
                         background-color: white;
                     }
 
-                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container {
+                    .lw-dt .lw-dt-actions-row .lw-dt-filters-container {
                         width: 80%;
                         min-width: 1024px;
                         border: 1px solid #ccc;
@@ -289,44 +296,64 @@ return [
                         flex-wrap: wrap;
                     }
 
-                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .lw-dt-filter-apply-container {
+                    .lw-dt .lw-dt-actions-row .lw-dt-filters-container .lw-dt-filters-title {
+                        font-size: 1.3rem;
+                        font-weight: bold;
+                        flex-basis: 100%;
+                        padding: 0.25rem;
+                    }
+
+                    .lw-dt .lw-dt-actions-row .lw-dt-filters-container .lw-dt-filter-apply-container {
                         flex-basis: 100%;
                         padding-top: 1rem;
                         padding-left: 0.25rem;
                     }
 
+                    .lw-dt .lw-dt-actions-row .lw-dt-applied-filters-container {
+                        padding-top: 0.75rem;
+                    }
+
+                    .lw-dt .lw-dt-actions-row .lw-dt-applied-filters-container .lw-dt-active-filters-label {
+                        padding: 0.25rem;
+                    }
+
+                    .lw-dt .lw-dt-actions-row .lw-dt-applied-filters-container .applied-filter-item {
+                        padding: 0.25rem;
+                        font-weight: bold;
+                    }
+
                     @media (max-width: 1024px) {
-                        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container {
+                        .lw-dt .lw-dt-actions-row .lw-dt-filters-container {
                             width: 100%;
                             min-width: 90%;
                         }
                     }
 
                     @media (max-width: 640px) {
-                        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container {
+                        .lw-dt .lw-dt-actions-row .lw-dt-filters-container {
                             align-items: center;
                         }
                     }
 
-                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item {
+                    .lw-dt .lw-dt-actions-row .lw-dt-filters-container .lw-dt-filter-item {
                         padding: 0.25rem;
                         min-width: 240px;
                         border-radius: 6px;
                     }
 
                     @media (max-width: 1279px) {
-                        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item {
+                        .lw-dt .lw-dt-actions-row .lw-dt-filters-container .lw-dt-filter-item {
                             flex: 0 0 content;
                         }
                     }
 
                     @media (max-width: 551px) {
-                        .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item {
+                        .lw-dt .lw-dt-actions-row .lw-dt-filters-container .lw-dt-filter-item {
                             min-width: 100%;
                         }
                     }
 
-                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item .filter-content {
+                    .lw-dt .lw-dt-actions-row .lw-dt-filters-container .lw-dt-filter-item .lw-dt-filter-item-content {
                         padding: 0.5em 1em;
                         border: 1px solid #ccc;
                         border-radius: 0.25em;
@@ -334,17 +361,17 @@ return [
                         min-height: 8rem;
                     }
 
-                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item .filter-content legend {
+                    .lw-dt .lw-dt-actions-row .lw-dt-filters-container .lw-dt-filter-item .lw-dt-filter-item-content legend {
                         font-weight: bold;
                     }
 
-                    .lw-dt .lw-dt-table-actions-row .lw-dt-filters-container .filter-item .filter-content.filter-range {
+                    .lw-dt .lw-dt-actions-row .lw-dt-filters-container .lw-dt-filter-item .lw-dt-filter-item-content.lw-dt-filter-item-content-filter-range {
                         display: flex;
                         flex-direction: column;
                         gap: 0.25rem;
                     }
 
-                    .lw-dt-table-actions-row {
+                    .lw-dt-actions-row {
                         display: flex;
                         align-items: flex-end;
                         gap: 10px;
@@ -352,6 +379,8 @@ return [
                 </style>
                 CSS,
             ],
+
+            'scripts' => [],
         ],
     ],
 ];

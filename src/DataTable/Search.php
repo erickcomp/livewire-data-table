@@ -10,7 +10,7 @@ class Search
     use FillsComponentAttributeBags;
 
     protected array $defaultComponentAttributes = [
-        'class' => 'lw-dt-table-search',
+        //'class' => 'lw-dt-table-search',
     ];
 
     protected array $defaultInputAttributes = [
@@ -20,7 +20,7 @@ class Search
     ];
 
     protected array $defaultButtonAttributes = [
-        'class' => 'lw-dt-filter-item',
+        //'class' => 'lw-dt-filter-item',
     ];
 
     public ComponentAttributeBag $componentAttributes;
@@ -53,9 +53,9 @@ class Search
         return !empty($this->customRendererCode);
     }
 
-    public function shouldRenderDefaultIconOnApplyButton()
+    public function shouldShowIconOnApplyButton()
     {
-        return !$this->buttonAttributes->has('no-default-icon');
+        return !$this->buttonAttributes->has('no-icon');
     }
 
     // public function setDataFieldsFromDataTable(DataTable $dataTable)
