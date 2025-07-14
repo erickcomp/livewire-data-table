@@ -10,4 +10,5 @@ return [
     'range_filter_label_from' => 'De',
     'range_filter_label_to' => 'Até',
     'apply_filters_button_label' => 'Aplicar filtros',
+    'reload_required' => "Esta página precisa ser atualizada antes de executar esta ação.\n\nPressione OK para continuar",
 ];

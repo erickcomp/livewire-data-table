@@ -111,20 +111,36 @@ class Filter // extends BaseDataTableComponent
         return "{$inputName}[$range]";
     }
 
-    public function buildWireModelAttribute(string $filterProperty, ?string $range = null): string
+    public function dotName(?string $range = null): string
     {
-        //
-        $wireModel = "$filterProperty.{$this->dataField}.{$this->name}";
+        $dotName = "{$this->dataField}.{$this->name}";
 
         if ($range === null) {
-            return $wireModel;
+            return $dotName;
         }
 
         if (!\in_array(\strtolower($range), ['from', 'to'])) {
             throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
         }
 
-        return "$wireModel.$range";
+        return "$dotName.$range";
+    }
+
+    public function buildWireModelAttribute(string $filterProperty, ?string $range = null): string
+    {
+        return "$filterProperty." . $this->dotName($range);
+
+        // $wireModel = "$filterProperty.{$this->dataField}.{$this->name}";
+
+        // if ($range === null) {
+        //     return $wireModel;
+        // }
+
+        // if (!\in_array(\strtolower($range), ['from', 'to'])) {
+        //     throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
+        // }
+
+        // return "$wireModel.$range";
     }
 
     public function buildXModelAttribute(string $filterProperty, ?string $range = null): string
@@ -143,9 +159,9 @@ class Filter // extends BaseDataTableComponent
         return "{$wireModel}['$range']";
     }
 
-    public function getCustomRendererCodeWithXModel(string $filterProperty): string
+    public function getCustomRendererCodeWithXModel(string $filterProperty, array $data = []): string
     {
-        $renderedCode = Blade::render($this->customRendererCode, ['__dataTableFilter' => $this]);
+        $renderedCode = Blade::render($this->customRendererCode, $data + ['___dataTableFilter' => $this]);
 
         $renderedCode = $this->insertAttributeValueIntoHTML(
             $renderedCode,

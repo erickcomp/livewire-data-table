@@ -10,4 +10,5 @@ return [
     'range_filter_label_from' => 'From',
     'range_filter_label_to' => 'To',
     'apply_filters_button_label' => 'Apply filters',
+    'reload_required' => "This page needs to be refreshed before executing this action.\n\nPress OK to continue",
 ];

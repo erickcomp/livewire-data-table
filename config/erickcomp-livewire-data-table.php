@@ -203,6 +203,32 @@ return [
                 //'default-style-for-pagination' => true,
             ],
 
+            'reload-alert' => [
+                'alert-before-reload' => true,
+                'function-name' => 'reloadRequiredAlert',
+                'function-code' => <<<JS
+                    async function reloadRequiredAlert(message, callback) {
+                        const f = async function f(message) {
+                            const result = await Swal.fire({
+                                title: '',
+                                text: message.replace("\\n", '<br>'),
+                                icon: 'info',
+                                confirmButtonText: 'OK',
+                                allowOutsideClick: false
+                            });
+
+                            return result;
+                        };
+
+                        const result = await f(message);
+
+                        if (result.isConfirmed) {
+                            callback();
+                        }
+                    };
+                JS,
+            ],
+
             'assets' => [<<<'CSS'
                 <style>
                     .lw-dt table.lw-dt-table {

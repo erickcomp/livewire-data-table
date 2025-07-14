@@ -22,10 +22,13 @@ use Illuminate\Support\Uri;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use Livewire\WithPagination;
+use Livewire\Attributes\Locked;
 
 class LwDataTable extends LivewireComponent
 {
     use WithPagination;
+
+    protected const EVENT_RELOAD_REQUIRED = 'lw-dt::reload-required';
     protected const SORT_BY_NONE = '';
     protected const SORT_DIR_NONE = '';
     protected const SORT_DIR_ASC = 'ASC';
@@ -50,11 +53,14 @@ class LwDataTable extends LivewireComponent
 
     #[Url]
     public string $sortDir = '';
-    public ?int $perPage = 15;
-    public DataTable $dataTable;
     public ?bool $filtersContainerIsOpen = null;
-    public string $preset = 'vanilla';
+    public ?int $perPage = 15;
 
+    //#[Locked]
+    public string $dt;
+    protected DataTable $dataTable;
+
+    protected string $preset = 'vanilla';
     protected array $processedFilters = [];
     protected array $appliedFilters = [];
     protected Preset $loadedPreset;
@@ -88,7 +94,7 @@ class LwDataTable extends LivewireComponent
             //'shouldStylePagination' => $shouldStylePagination,
             //'filterUrlParam' => $this->filterUrlParam,
             'initialFilters' => $this->computeInitialFilters(),
-            '___lwDataTable' => $this,
+            //'___lwDataTable' => $this,
         ];
 
         return view()
@@ -107,12 +113,16 @@ class LwDataTable extends LivewireComponent
 
     public function paginationView(): string
     {
-        return $this->dataTable->paginationView();
+        return isset($this->dataTable)
+            ? $this->dataTable->paginationView()
+            : '';
     }
 
     public function paginationSimpleView(): string
     {
-        return $this->dataTable->paginationSimpleView();
+        return isset($this->dataTable)
+            ? $this->dataTable->paginationSimpleView()
+            : '';
     }
 
     public function xData(): string
@@ -229,6 +239,92 @@ class LwDataTable extends LivewireComponent
 
         return !empty($this->filters);
     }
+
+    protected function mountDataTable(DataTable $dataTable)
+    {
+        $this->dataTable = $dataTable;
+        $this->dt = $this->dtToCache($dataTable);
+    }
+
+    protected function hydrateDataTable()
+    {
+        $dataTable = $this->dtFromCache($this->dt);
+
+        // Cache might have been busted for some reason (like a deployment or manually clearing the view cache)
+        if (!$dataTable instanceof DataTable) {
+            $this->skipHydrate();
+            $this->skipRender();
+
+            //$this->dispatchReloadRequired();
+
+            $reloadAlertConfig = $this->preset()->get('reload-alert', null);
+
+            $reloadAlertConfig['alert-before-reload'] ??= true;
+            $reloadAlertConfig['function-name'] ??= 'lwDataTableReloadAlert';
+
+            if ($reloadAlertConfig['alert-before-reload'] === true) {
+                $jsMessage = \Illuminate\Support\Js::from(__('erickcomp_lw_data_table::messages.reload_required'));
+                $reloadJs = <<<JS
+                        {$reloadAlertConfig['function-name']}({$jsMessage}, function () {window.location.reload();});
+                    JS;
+            } else {
+                $reloadJs = 'window.location.reload();';
+            }
+
+            $this->js($reloadJs);
+
+            return;
+        }
+
+        $this->dataTable = $dataTable;
+
+        return null;
+    }
+
+    protected function dispatchReloadRequired()
+    {
+        $this->dispatch(static::EVENT_RELOAD_REQUIRED);
+    }
+
+    protected function dtToCache(DataTable $dataTable): string
+    {
+        $hashPrefix = "{$this->getName()}_x-{$dataTable->componentName}";
+        $serialized = \serialize($dataTable);
+        $cacheFileName = "{$hashPrefix}___" . \md5($serialized);
+
+        $cacheFilePath = \storage_path("framework/views/{$cacheFileName}.php");
+
+        if (!\file_exists($cacheFilePath)) {
+            \file_put_contents(
+                \storage_path("framework/views/{$cacheFileName}.php"),
+                $serialized,
+            );
+        }
+
+        return $cacheFileName;
+    }
+
+    protected function dtFromCache(string $cacheFileName): ?DataTable
+    {
+        $filePath = \storage_path("framework/views/{$cacheFileName}.php");
+
+        if (!\file_exists($filePath)) {
+            return null;
+        }
+
+        try {
+            $dataTable = \unserialize(\file_get_contents($filePath));
+
+            if (!$dataTable instanceof DataTable) {
+                return null;
+            }
+
+            return $dataTable;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     protected function filtersUrlParam(): string
     {
         return \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
@@ -290,44 +386,53 @@ class LwDataTable extends LivewireComponent
         }
     }
 
+    protected function getFilterValue(Filter $filterDefinition): mixed
+    {
+        if (isset($this->filters[$filterDefinition->dataField][$filterDefinition->name])) {
+            return $this->filters[$filterDefinition->dataField][$filterDefinition->name];
+        }
+
+        return null;
+    }
+
     protected function setupSearchAttributes()
     {
-        if ($this->dataTable->isSearchable()) {
-            $this->dataTable->search->inputAttributes = $this->dataTable->search->inputAttributes->merge([
-                'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
-                'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
-            ]);
+        // if ($this->dataTable->isSearchable()) {
+        //     $this->dataTable->search->inputAttributes = $this->dataTable->search->inputAttributes->merge([
+        //         'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
+        //         'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
+        //     ]);
 
-            $this->dataTable->search->buttonAttributes = $this->dataTable->search->buttonAttributes->merge([
-                'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
-                'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
-            ]);
+        //     $this->dataTable->search->buttonAttributes = $this->dataTable->search->buttonAttributes->merge([
+        //         'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
+        //         'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
+        //     ]);
 
-            // if (empty($this->dataTable->search->dataFields)) {
-            //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
-            // }
-        }
+        //     // if (empty($this->dataTable->search->dataFields)) {
+        //     //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
+        //     // }
+        // }
     }
 
     protected function setupFiltersAttributes()
     {
-        if ($this->dataTable->isFilterable()) {
-            if ($this->dataTable->filters->shouldShowIconOnToggleButton()) {
-                $this->dataTable->filters->buttonToggleAttributes = $this->dataTable->filters->buttonToggleAttributes->merge([
-                    'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
-                    'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
-                ]);
-            }
+        // if ($this->dataTable->isFilterable()) {
+        //     if ($this->dataTable->filters->shouldShowIconOnToggleButton()) {
+        //         $this->dataTable->filters->buttonToggleAttributes = $this->dataTable->filters->buttonToggleAttributes->merge([
+        //             'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
+        //             'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
+        //         ]);
+        //     }
 
-            $this->dataTable->search->buttonAttributes = $this->dataTable->search->buttonAttributes->merge([
-                'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-apply',
-                'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-apply',
-            ])->class(['filters-apply-button']);
+        //     $this->dataTable->search->buttonAttributes = $this->dataTable->search->buttonAttributes->merge([
+        //         'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-apply',
+        //         'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-apply',
+        //     ])->class(['filters-apply-button']);
 
-            // if (empty($this->dataTable->search->dataFields)) {
-            //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
-            // }
-        }
+        //     // if (empty($this->dataTable->search->dataFields)) {
+        //     //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
+        //     // }
+        // }
     }
 
 

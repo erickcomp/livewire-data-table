@@ -24,12 +24,18 @@ class ServiceProvider extends LaravelAbstractServiceProvider
 
     public function boot()
     {
+        $this->registerLwDataTableComponentHook();
         $this->loadTranslationsFrom(__DIR__ . '/../lang', 'erickcomp_lw_data_table');
         $this->registerRawBladeComponents();
         $this->registerBladeComponents();
         $this->registerLivewireComponents();
 
-        Paginator::useBootstrap();
+        //Paginator::useBootstrap();
+    }
+
+    protected function registerLwDataTableComponentHook()
+    {
+        $this->app['livewire']->componentHook($this->app->make(LwDataTableComponentHook::class));
     }
 
     protected function setupConfig()
@@ -233,7 +239,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             tag: 'x-data-table.footer',
             openingCode: <<<'FOOTER_COMPILER_CODE'
             <?php
-            \xdebug_break();
+
             if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
                 throw new \LogicException("You can only use the [x-data-table.footer] component as a direct child of the [x-data-table] component");
             }
