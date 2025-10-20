@@ -2,14 +2,23 @@
 
 namespace ErickComp\LivewireDataTable\DataTable;
 
-use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 use Illuminate\Support\Facades\Blade;
+use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 
-class Filter // extends BaseDataTableComponent
+/**
+ * @property-read string $name
+ * @property-read string $label
+ * @property-read string $dataField
+ * @property-read string $inputType
+ * @property-read string $mode
+ */
+class Filter
 {
+    use FillsComponentAttributeBags;
+
     public const TYPE_TEXT = 'text';
     public const TYPE_NUMBER = 'number';
     public const TYPE_NUMBER_RANGE = 'number-range';
@@ -37,38 +46,40 @@ class Filter // extends BaseDataTableComponent
     public const MODE_IN = 'IN'; // IN
 
     public ComponentAttributeBag $attributes;
+    public ComponentAttributeBag $rangeFromAttributes;
+    public ComponentAttributeBag $rangeToAttributes;
 
-    public string $name {
-        get => $this->attributes['name'];
-    }
+    // public string $name {
+    //     get => $this->attributes['name'];
+    // }
 
-    public string $label {
-        get => $this->attributes['label'] ?? Str::headline($this->attributes['data-field']);
-    }
+    // public string $label {
+    //     get => $this->attributes['label'] ?? Str::headline($this->attributes['data-field']);
+    // }
 
-    public string $dataField {
-        get => $this->attributes['data-field'];
-    }
+    // public string $dataField {
+    //     get => $this->attributes['data-field'];
+    // }
 
-    public string $inputType {
-        get => $this->attributes['input-type'] ?? static::TYPE_TEXT;
-    }
+    // public string $inputType {
+    //     get => $this->attributes['input-type'] ?? static::TYPE_TEXT;
+    // }
 
-    public string $mode {
-        get {
-            if ($this->attributes->has('mode')) {
-                return $this->attributes['mode'];
-            }
+    // public string $mode {
+    //     get {
+    //         if ($this->attributes->has('mode')) {
+    //             return $this->attributes['mode'];
+    //         }
 
-            return match ($this->inputType) {
-                static::TYPE_TEXT => static::MODE_CONTAINS,
-                static::TYPE_DATE, static::TYPE_DATE_PICKER, static::TYPE_DATETIME, static::TYPE_DATETIME_PICKER => static::MODE_RANGE,
-                static::TYPE_NUMBER => static::MODE_EQUALS,
-                static::TYPE_SELECT => static::MODE_EQUALS,
-                static::TYPE_SELECT_MULTIPLE => static::MODE_IN
-            };
-        }
-    }
+    //         return match ($this->inputType) {
+    //             static::TYPE_TEXT => static::MODE_CONTAINS,
+    //             static::TYPE_DATE, static::TYPE_DATE_PICKER, static::TYPE_DATETIME, static::TYPE_DATETIME_PICKER => static::MODE_RANGE,
+    //             static::TYPE_NUMBER => static::MODE_EQUALS,
+    //             static::TYPE_SELECT => static::MODE_EQUALS,
+    //             static::TYPE_SELECT_MULTIPLE => static::MODE_IN
+    //         };
+    //     }
+    // }
 
     public ?string $customRendererCode = null;
 
@@ -77,7 +88,10 @@ class Filter // extends BaseDataTableComponent
         $this->validateAttributes($attributes);
 
         // HTML names defaults to data-fields's name
-        $this->attributes = $attributes->merge(['name' => $attributes['data-field']]);
+        $attributes = $attributes->merge(['name' => $attributes['data-field']]);
+
+        $this->fillComponentAttributeBags($attributes);
+
         $this->customRendererCode = $customRendererCode;
     }
 
@@ -190,16 +204,56 @@ class Filter // extends BaseDataTableComponent
         );
     }
 
-    public function inputAttributes(array|string $except = []): ComponentAttributeBag
+    public function inputAttributes(array|string $except = [], ?string $range = null): ComponentAttributeBag
     {
+        if ($range !== null && !\in_array(\strtolower($range), ['from', 'to'])) {
+            throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
+        }
+
         $attrs = $this->attributes->except(\array_merge(['label', 'data-field', 'input-type', 'mode'], Arr::wrap($except)));
+
+        if ($range === 'from') {
+            $attrs = $attrs->merge($this->rangeFromAttributes->all());
+        } elseif ($range === 'to') {
+            $attrs = $attrs->merge($this->rangeToAttributes->all());
+        }
 
         if ($this->inputType === static::TYPE_SELECT_MULTIPLE) {
             return $attrs->merge(['multiple' => true]);
+        } elseif ($this->inputType === static::TYPE_DATETIME_PICKER) {
+            return $attrs->merge(['step' => '1']);
         }
 
         return $attrs;
     }
+
+    public function __get(string $property): mixed
+    {
+        $getMode = function (): string {
+            if ($this->attributes->has('mode')) {
+                return $this->attributes['mode'];
+            }
+
+            return match ($this->inputType) {
+                static::TYPE_TEXT => static::MODE_CONTAINS,
+                static::TYPE_DATE, static::TYPE_DATE_PICKER, static::TYPE_DATETIME, static::TYPE_DATETIME_PICKER => static::MODE_RANGE,
+                static::TYPE_NUMBER => static::MODE_EQUALS,
+                static::TYPE_SELECT => static::MODE_EQUALS,
+                static::TYPE_SELECT_MULTIPLE => static::MODE_IN,
+                default => throw new \RuntimeException('Unknown inputType: ' . \var_export($this->inputType, true))
+            };
+        };
+
+        return match ($property) {
+            'name' => $this->attributes['name'],
+            'label' => $this->attributes['label'] ?? Str::headline($this->attributes['data-field']),
+            'dataField' => $this->attributes['data-field'],
+            'inputType' => $this->attributes['input-type'] ?? static::TYPE_TEXT,
+            'mode' => $getMode(),
+            default => trigger_error("Undefined property: " . static::class . "::$property", \E_USER_WARNING)
+        };
+    }
+
     protected function validateAttributes(ComponentAttributeBag $attributes)
     {
         if (!$attributes->has('data-field')) {
@@ -219,7 +273,7 @@ class Filter // extends BaseDataTableComponent
             throw new \DomainException("Invalid value for the \$notationForMultiple parameter: $notationForMultiple. The valid values are: null, \"[]\", \".\"");
         }
 
-        $dom = \Dom\HTMLDocument::createFromString($html, \LIBXML_HTML_NOIMPLIED);
+        $dom = \Dom\HTMLDocument::createFromString($html, \LIBXML_HTML_NOIMPLIED | \LIBXML_ERR_NONE);
 
         $nodes = $dom->querySelectorAll($selector);
 
@@ -249,5 +303,14 @@ class Filter // extends BaseDataTableComponent
         }
 
         return $dom->saveHtml();
+    }
+
+    protected function getAttributeBagsMappings(): array
+    {
+        return [
+            0 => 'attributes', //default
+            'from-' => 'rangeFromAttributes',
+            'to-' => 'rangeToAttributes',
+        ];
     }
 }

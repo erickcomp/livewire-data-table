@@ -241,7 +241,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                         $modifierViewData = [
                             '__dataTable' => $dataTable,
                             'loop' => $loop,
-                            '__rowData' => $row,
+                            '__row' => $row,
                             '__trAttributes' => $trAttributes,
                         ];
                     @endphp
@@ -259,7 +259,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                         @endphp
                         @if($column instanceof CustomRenderedColumn)
                             @php
-                                $customRenderedColumn = Blade::render($column->customRendererCode, ['loop' => $loop->parent, '__rowData' => $row]);
+                                $customRenderedColumn = Blade::render($column->customRendererCode, ['loop' => $loop->parent, '__row' => $row]);
                                 $trimmed = $customRenderedColumn;
                             @endphp
 

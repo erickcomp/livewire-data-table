@@ -23,12 +23,12 @@ use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use Livewire\WithPagination;
 use Livewire\Attributes\Locked;
+use Illuminate\Support\Facades\Date;
 
 class LwDataTable extends LivewireComponent
 {
     use WithPagination;
 
-    protected const EVENT_RELOAD_REQUIRED = 'lw-dt::reload-required';
     protected const SORT_BY_NONE = '';
     protected const SORT_DIR_NONE = '';
     protected const SORT_DIR_ASC = 'ASC';
@@ -45,6 +45,9 @@ class LwDataTable extends LivewireComponent
     #[Url]
     public array $filters = [];
 
+    #[Locked]
+    public array $rawFilters = [];
+
     #[Url]
     public array $columnsSearch = [];
 
@@ -54,33 +57,42 @@ class LwDataTable extends LivewireComponent
     #[Url]
     public string $sortDir = '';
     public ?bool $filtersContainerIsOpen = null;
-    public ?int $perPage = 15;
+    public ?string $perPage = '15';
 
-    //#[Locked]
+    #[Locked]
     public string $dt;
+
     protected DataTable $dataTable;
 
-    protected string $preset = 'vanilla';
+    //protected string $preset = 'vanilla';
     protected array $processedFilters = [];
     protected array $appliedFilters = [];
     protected Preset $loadedPreset;
 
     public function render()
     {
+        $this->setupMaxMemory();
         $this->processFilters();
-        $this->setupSearchAttributes();
-        $this->setupFiltersAttributes();
+        //$this->setupSearchAttributes();
+        //$this->setupFiltersAttributes();
 
         $rows = $this->getTableData();
 
         if ($rows instanceof LengthAwarePaginator && $this->paginators['page'] > $rows->lastPage()) {
 
-            // Forces page reset on URI level
-            $newUri = Uri::of(url()->full())
-                ->withQuery(['page' => $rows->lastPage()])
-                ->__tostring();
+            // Forces page reset to last page and re-evaluate the data
+            $this->paginators['page'] = $rows->lastPage();
 
-            $this->redirect($newUri, true);
+            $rows = $this->getTableData();
+
+            // // Forces page reset on URI level
+            // //$newUri = Uri::of(url()->full())
+            // $fullUrl = $this->currentUrl;
+            // $newUri = Uri::of($fullUrl)
+            //     ->withQuery(['page' => $rows->lastPage(), ])
+            //     ->__tostring();
+            // 
+            // $this->redirect($newUri, true);
         }
 
         //$inputSearchIdentifier = ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search';
@@ -105,7 +117,7 @@ class LwDataTable extends LivewireComponent
     public function preset(): Preset
     {
         if (!isset($this->loadedPreset)) {
-            $this->loadedPreset = Preset::loadFromName($this->preset);
+            $this->loadedPreset = $this->dataTable->preset();
         }
 
         return $this->loadedPreset;
@@ -130,10 +142,20 @@ class LwDataTable extends LivewireComponent
         return "{
             storeId: '{$this->getId()}',
 
-            filtersContainerIsOpen: " . ($this->shouldShowFiltersContainer() ? 'true' : 'false') . ",
-
             dtData() {
                 return Alpine.store(this.storeId);
+            },
+
+            get filtersContainerIsOpen() {
+                return this.dtData().filtersContainerIsOpen;
+            },
+
+            get changedSearchTerms() {
+                return this.dtData().changedSearchTerms(\$wire);
+            },
+
+            get changedFilters() {
+                return this.dtData().changedFilters(\$wire);
             },
 
             applySearch() {
@@ -153,15 +175,14 @@ class LwDataTable extends LivewireComponent
             },
 
             toggleFiltersContainer(event) {
-                this.filtersContainerIsOpen = !this.filtersContainerIsOpen;
-                \$wire.filtersContainerIsOpen = this.filtersContainerIsOpen;
+                this.dtData().toggleFiltersContainer(\$wire);
             }
         };";
     }
 
     public function updating(string $property, $value)
     {
-        if (\in_array($property, ['search', 'filters']) || \str_starts_with($property, 'columnsSearch.')) {
+        if (\in_array($property, ['search', 'filters', 'perPage']) || \str_starts_with($property, 'columnsSearch.')) {
             $this->resetPage();
         }
     }
@@ -211,13 +232,14 @@ class LwDataTable extends LivewireComponent
 
         $filteredFilters = $removeEmptyValues($inputFilters);
 
+        $this->rawFilters = $inputFilters;
         $this->filters = $filteredFilters;
     }
 
     public function computeInitialFilters()
     {
         $fullFilters = [];
-        foreach ($this->dataTable->filters->filtersItems as $filterItem) {
+        foreach ($this->dataTable->filters?->filtersItems ?? [] as $filterItem) {
             $filterValue = $this->filters[$filterItem->dataField][$filterItem->name]
                 ?? ($filterItem->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '');
 
@@ -229,7 +251,7 @@ class LwDataTable extends LivewireComponent
 
     public function shouldShowFiltersContainer(): bool
     {
-        if (!$this->dataTable->filters->isCollapsible()) {
+        if (!$this->dataTable->filters?->isCollapsible() ?? false) {
             return true;
         }
 
@@ -243,19 +265,17 @@ class LwDataTable extends LivewireComponent
     protected function mountDataTable(DataTable $dataTable)
     {
         $this->dataTable = $dataTable;
-        $this->dt = $this->dtToCache($dataTable);
+        $this->dt = DataTable::toCache($dataTable);
     }
 
     protected function hydrateDataTable()
     {
-        $dataTable = $this->dtFromCache($this->dt);
+        $dataTable = DataTable::fromCache($this->dt);
 
         // Cache might have been busted for some reason (like a deployment or manually clearing the view cache)
         if (!$dataTable instanceof DataTable) {
             $this->skipHydrate();
             $this->skipRender();
-
-            //$this->dispatchReloadRequired();
 
             $reloadAlertConfig = $this->preset()->get('reload-alert', null);
 
@@ -281,50 +301,6 @@ class LwDataTable extends LivewireComponent
         return null;
     }
 
-    protected function dispatchReloadRequired()
-    {
-        $this->dispatch(static::EVENT_RELOAD_REQUIRED);
-    }
-
-    protected function dtToCache(DataTable $dataTable): string
-    {
-        $hashPrefix = "{$this->getName()}_x-{$dataTable->componentName}";
-        $serialized = \serialize($dataTable);
-        $cacheFileName = "{$hashPrefix}___" . \md5($serialized);
-
-        $cacheFilePath = \storage_path("framework/views/{$cacheFileName}.php");
-
-        if (!\file_exists($cacheFilePath)) {
-            \file_put_contents(
-                \storage_path("framework/views/{$cacheFileName}.php"),
-                $serialized,
-            );
-        }
-
-        return $cacheFileName;
-    }
-
-    protected function dtFromCache(string $cacheFileName): ?DataTable
-    {
-        $filePath = \storage_path("framework/views/{$cacheFileName}.php");
-
-        if (!\file_exists($filePath)) {
-            return null;
-        }
-
-        try {
-            $dataTable = \unserialize(\file_get_contents($filePath));
-
-            if (!$dataTable instanceof DataTable) {
-                return null;
-            }
-
-            return $dataTable;
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }
-
     protected function filtersUrlParam(): string
     {
         return \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
@@ -345,29 +321,56 @@ class LwDataTable extends LivewireComponent
         // process query string $data and set it on the DataTable object
     }
 
+    protected function setupMaxMemory()
+    {
+        if (\is_string($this->dataTable->phpMaxMemory)) {
+            \ini_set('memory_limit', $this->dataTable->phpMaxMemory);
+        }
+    }
+
     protected function processFilters()
     {
+        $datetimeTypes = [
+            Filter::TYPE_DATE,
+            Filter::TYPE_DATE_PICKER,
+            Filter::TYPE_DATETIME,
+            Filter::TYPE_DATETIME_PICKER,
+        ];
+
         $this->processedFilters = [];
         $this->appliedFilters = [];
 
-        $filtersItemsCollection = collect($this->dataTable->filters->filtersItems);
+        $filtersItemsCollection = collect($this->dataTable->filters?->filtersItems ?? []);
 
         foreach ($this->filters as $dataField => $filters) {
             foreach ($filters as $filterName => $filterVal) {
-
                 /** @var Filter */
                 $filterDefinition = $filtersItemsCollection->first(
                     fn(Filter $filterDefinition) => $filterDefinition->dataField === $dataField && $filterDefinition->name === $filterName
                 );
 
+                $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
+
+                // Custom formatting/parsing for date/time filter
+                if (\in_array($filterDefinition->inputType, $datetimeTypes)) {
+                    if ($isRangeMode) {
+                        foreach (['from', 'to'] as $key) {
+                            if (isset($filterVal[$key])) {
+                                $filterVal[$key] = Date::parse($filterVal[$key]);
+                            }
+                        }
+                    } else {
+                        $filterVal = Date::parse($filterVal);
+                    }
+                }
+
                 if ($filterDefinition) {
                     $this->processedFilters[] = [
                         'column' => $dataField,
                         'mode' => $filterDefinition->mode,
+                        'type' => $filterDefinition->inputType,
                         'value' => $filterVal,
                     ];
-
-                    $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
 
                     $this->appliedFilters[] = [
                         'wire-name' => $filterDefinition->buildWireModelAttribute($this->filtersUrlParam()),
@@ -395,53 +398,6 @@ class LwDataTable extends LivewireComponent
         return null;
     }
 
-    protected function setupSearchAttributes()
-    {
-        // if ($this->dataTable->isSearchable()) {
-        //     $this->dataTable->search->inputAttributes = $this->dataTable->search->inputAttributes->merge([
-        //         'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
-        //         'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search',
-        //     ]);
-
-        //     $this->dataTable->search->buttonAttributes = $this->dataTable->search->buttonAttributes->merge([
-        //         'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
-        //         'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search-apply',
-        //     ]);
-
-        //     // if (empty($this->dataTable->search->dataFields)) {
-        //     //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
-        //     // }
-        // }
-    }
-
-    protected function setupFiltersAttributes()
-    {
-        // if ($this->dataTable->isFilterable()) {
-        //     if ($this->dataTable->filters->shouldShowIconOnToggleButton()) {
-        //         $this->dataTable->filters->buttonToggleAttributes = $this->dataTable->filters->buttonToggleAttributes->merge([
-        //             'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
-        //             'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-toggle',
-        //         ]);
-        //     }
-
-        //     $this->dataTable->search->buttonAttributes = $this->dataTable->search->buttonAttributes->merge([
-        //         'id' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-apply',
-        //         'name' => ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-filters-apply',
-        //     ])->class(['filters-apply-button']);
-
-        //     // if (empty($this->dataTable->search->dataFields)) {
-        //     //     $this->dataTable->search->setDataFieldsFromDataTable($this->dataTable);
-        //     // }
-        // }
-    }
-
-
-
-    protected function processSorting()
-    {
-        // process query string $data and set it on the DataTable object
-    }
-
     protected function getTableData()
     {
         if (!$this->dataTable->dataProvider) {
@@ -452,7 +408,7 @@ class LwDataTable extends LivewireComponent
             page: Paginator::resolveCurrentPage($this->dataTable->pageName),
             perPage: $this->perPage,
             search: $this->search,
-            searchDataFields: $this->dataTable->search->dataFields,
+            searchDataFields: $this->dataTable?->search->dataFields ?? [],
             columnsSearch: $this->columnsSearch,
             filters: $this->processedFilters,
             sortBy: $this->sortBy,

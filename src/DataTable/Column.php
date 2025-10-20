@@ -19,7 +19,6 @@ class Column
     public const ATTRIBUTE_DATA_FIELD = 'data-field';
     public const ATTRIBUTE_SEARCHABLE = 'searchable';
     public const ATTRIBUTE_SORTABLE = 'sortable';
-
     public ComponentAttributeBag $tdAttributes;
     public ComponentAttributeBag $thAttributes;
     public ComponentAttributeBag $thSearchInputAttributes;
@@ -74,12 +73,50 @@ class Column
         return $this->sortable;
     }
 
+    public function buildThAttributes($presetClass, int $rowsCount): ComponentAttributeBag
+    {
+        $thAttributes = $this->attributes->except(['class', 'style'])->merge($this->thAttributes->except(['class', 'style'])->all())
+            ->class($this->thAttributes['class'] ?? [])
+            ->class($this->attributes['class'] ?? [])
+            ->class($presetClass)
+            ->style($this->thAttributes['style'] ?? [])
+            ->style($this->attributes['style'] ?? []);
+
+        if ($thAttributes['style'] === ';') {
+            unset($thAttributes['style']);
+        }
+
+        if ($this->isSortable() && $rowsCount > 1) {
+            $thAttributes['wire:click'] = "setSortBy('{$this->dataField}')";
+            $thAttributes['role'] = 'button';
+        }
+
+        return $thAttributes;
+    }
+
+    public function buildTdAttributes($presetClass): ComponentAttributeBag
+    {
+        $tdAttributes = $this->attributes->except(['class', 'style'])->merge($this->tdAttributes->except(['class', 'style'])->all())
+            ->class($this->tdAttributes['class'] ?? [])
+            ->class($this->attributes['class'] ?? [])
+            ->class($presetClass)
+            ->style($this->tdAttributes['style'] ?? [])
+            ->style($this->attributes['style'] ?? []);
+
+        if ($tdAttributes['style'] === ';') {
+            unset($tdAttributes['style']);
+        }
+
+        return $tdAttributes;
+    }
+
     protected function getAttributeBagsMappings(): array
     {
         return [
-            0 => 'tdAttributes', //default
+            0 => 'attributes', //default
             'th-search-input-' => 'thSearchInputAttributes',
             'th-' => 'thAttributes',
+            'td-' => 'tdAttributes',
         ];
     }
 }

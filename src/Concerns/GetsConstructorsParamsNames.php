@@ -23,7 +23,7 @@ trait GetsConstructorsParamsNames
         return \array_map(fn(\ReflectionParameter $reflParam) => $reflParam->getName(), $reflMethod->getParameters());
     }
 
-    protected static function extractActionConstructorParamsFromAttributes(string $class, ComponentAttributeBag $attributes): array
+    protected static function extractActionConstructorParamsFromAttributes(string $class, ComponentAttributeBag $attributes, $makeAttributesNewKeysCamelCase = false): array
     {
         $constructorParams = static::getConstructorsParams($class);
 
@@ -35,8 +35,10 @@ trait GetsConstructorsParamsNames
 
             if (\in_array($camelKey, $constructorParams)) {
                 $constructorParamsValues[$camelKey] = $attrVal;
-            } else {
+            } elseif ($makeAttributesNewKeysCamelCase) {
                 $attributesNewValues[$camelKey] = $attrVal;
+            } else {
+                $attributesNewValues[$attrKey] = $attrVal;
             }
         }
 
@@ -52,4 +54,3 @@ trait GetsConstructorsParamsNames
         ];
     }
 }
-    

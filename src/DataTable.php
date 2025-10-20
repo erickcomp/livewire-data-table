@@ -10,6 +10,7 @@ use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\DataTable\Search;
+use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\LivewireDataTable\Livewire\Preset;
 use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
 use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
@@ -23,15 +24,26 @@ use Livewire\ImplicitlyBoundMethod;
 use Livewire\Wireable;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\Footer;
+use Illuminate\Support\Facades\Log;
 //use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
-class DataTable extends BaseDataTableComponent implements Wireable
+class DataTable extends BaseDataTableComponent //implements Wireable
 {
     use FillsComponentAttributeBags;
 
+    public const PER_PAGE_ALL = 'all';
+    public const PER_PAGE_ALL_FORCE = 'all:force';
+    public const PER_PAGE_ALL_OPTION_VALUE = '___all___';
+
+    public ?string $paginationView = null;
+    public ?string $paginationCode = null;
+    public ?string $lengthAwarePaginationView = null;
+    public ?string $simplePaginationView = null;
+    public array $perPageOptions = [];
     public static string $defaultPaginationView = 'livewire::bootstrap';
     public static string $defaultPaginationSimpleView = 'livewire::simple-bootstrap';
     public static ?bool $useDefaultPaginationStylingForDefaultPaginationViews = true;
+
     protected array $defaultContainerAttributes = ['class' => 'lw-dt-container'];
     protected array $defaultTableAttributes = [];
     protected array $defaultTheadAttributes = [];
@@ -41,18 +53,23 @@ class DataTable extends BaseDataTableComponent implements Wireable
     protected array $defaultThAttributes = [];
     protected array $defaultTbodyAttributes = [];
     protected array $defaultTbodyTrAttributes = [];
+
     protected string $trAttributesModifierCode = '';
+
+    protected string $rowLevelClassCode;
+    protected string $rowLevelStyleCode;
+    protected string $rowLevelAttributesCode;
+
+    protected string $rowLevelClassCodePath;
+    protected string $rowLevelStyleCodePath;
+    protected string $rowLevelAttributesCodePath;
+
     protected string $searchRendererCode;
     protected ComponentAttributeBag $searchRendererCodeAttributes;
-
     public bool $noStyles = false;
     public string $dataIdentityColumn = 'id';
     public string $sortingClassPrefix = 'lw-dt-sort';
-    public ?string $paginationView = null;
-    public ?string $paginationCode = null;
-    public ?string $lengthAwarePaginationView = null;
-    public ?string $simplePaginationView = null;
-    public array $perPageOptions = [];
+
     public int $columnsSearchDebounce;
     public ComponentAttributeBag $containerAttributes;
     public ComponentAttributeBag $tableAttributes;
@@ -72,33 +89,33 @@ class DataTable extends BaseDataTableComponent implements Wireable
     public ?Filters $filters = null;
     public ?Footer $footer = null;
 
-    public ?string $name {
-        get {
-            if ($this->tableAttributes->has('name')) {
-                $name = $this->tableAttributes['name'];
+    // public ?string $name {
+    //     get {
+    //         if ($this->tableAttributes->has('name')) {
+    //             $name = $this->tableAttributes['name'];
 
-                if (!empty(\trim($name))) {
-                    return $name;
-                }
-            }
+    //             if (!empty(\trim($name))) {
+    //                 return $name;
+    //             }
+    //         }
 
-            return null;
-        }
-    }
+    //         return null;
+    //     }
+    // }
 
-    public ?string $id {
-        get {
-            if ($this->tableAttributes->has(key: 'id')) {
-                $id = $this->tableAttributes['id'];
+    // public ?string $id {
+    //     get {
+    //         if ($this->tableAttributes->has(key: 'id')) {
+    //             $id = $this->tableAttributes['id'];
 
-                if (!empty(\trim($id))) {
-                    return $id;
-                }
-            }
+    //             if (!empty(\trim($id))) {
+    //                 return $id;
+    //             }
+    //         }
 
-            return null;
-        }
-    }
+    //         return null;
+    //     }
+    // }
 
     /** @var string[] $assets */
     public array $assets = [];
@@ -108,13 +125,14 @@ class DataTable extends BaseDataTableComponent implements Wireable
     public ?Search $search = null;
 
     //public array|true $searchable;
+    protected Preset $loadedPreset;
 
     public function __construct(
         public string $preset = 'empty',
         public ?string $dataProvider = null,
         public ?string $dataProviderGetDataMethod = 'dataTable',
 
-        public bool $withoutSortingIndicators = false,
+        //public bool $withoutSortingIndicators = false,
 
         /** @var Column[] */
         public array $columns = [],
@@ -124,22 +142,39 @@ class DataTable extends BaseDataTableComponent implements Wireable
         public array $actions = [],
         public string $pageName = 'page',
         public bool $debugPayload = false,
+        public ?string $phpMaxMemory = null,
+        public int $maxPerPage = 1000,
         ?string $paginationView = null,
-        string|array $perPageOptions = [],
+        string|array $perPage = [],
         ?int $columnsSearchDebounce = null,
         //string|array|bool $searchable = false,
 
+        ?string $rowLevelClassCode = null,
+        ?string $rowLevelStyleCode = null,
+        ?string $rowLevelAttributesCode = null,
     ) {
         $this->dataProvider = $dataProvider;
         $this->dataProviderGetDataMethod = $dataProviderGetDataMethod;
         $this->paginationView = $paginationView;
 
-        if (\is_string($perPageOptions)) {
-            $perPageOptions = \array_filter(\array_map(trim(...), \explode(',', $perPageOptions)));
+        if (\is_string($perPage)) {
+            $perPage = \array_filter(\array_map(trim(...), \explode(',', $perPage)));
         }
 
-        if (empty($perPageOptions)) {
-            $perPageOptions = $this->getDefaultPerPageOptions();
+        if (empty($perPage)) {
+            $perPage = $this->getDefaultPerPageOptions();
+        }
+
+        if ($rowLevelClassCode !== null) {
+            $this->rowLevelClassCode = \html_entity_decode($rowLevelClassCode);
+        }
+
+        if ($rowLevelStyleCode !== null) {
+            $this->rowLevelStyleCode = \html_entity_decode($rowLevelStyleCode);
+        }
+
+        if ($rowLevelAttributesCode !== null) {
+            $this->rowLevelAttributesCode = \html_entity_decode($rowLevelAttributesCode);
         }
 
         $this->columnsSearchDebounce = $columnsSearchDebounce
@@ -150,7 +185,7 @@ class DataTable extends BaseDataTableComponent implements Wireable
                     \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
                 );
 
-        $this->perPageOptions = $perPageOptions;
+        $this->perPageOptions = $perPage;
 
         // $this->searchable = match (true) {
         //     $searchable === false => [],
@@ -160,36 +195,81 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
         $this->initComponentAttributeBags();
     }
-
-    /**
-     *  
-     * @inheritDoc
-     * 
-     * @see \Livewire\Wireable::fromLivewire
-     * 
-     * @return self
-     */
-    public static function fromLivewire($value)
+    public function __get(string $property): mixed
     {
-        return \decrypt($value['erickcomp-lw-dt']);
+        if ($property === 'name') {
+            if ($this->tableAttributes->has('name')) {
+                $name = $this->tableAttributes['name'];
 
-        return $this->$debugPayload
-            ? \unserialize($value['erickcomp-lw-dt'])
-            : \decrypt($value['erickcomp-lw-dt']);
+                if (!empty(\trim($name))) {
+                    return $name;
+                }
+            }
+
+            return null;
+        }
+
+        if ($property === 'id') {
+            if ($this->tableAttributes->has(key: 'id')) {
+                $id = $this->tableAttributes['id'];
+
+                if (!empty(\trim($id))) {
+                    return $id;
+                }
+            }
+
+            return null;
+        }
+
+        $trace = debug_backtrace(limit: 1);
+
+        $ex = new \ErrorException('Undefined property: ' . static::class . "::$property", severity: E_WARNING, filename: $trace[0]['file'], line: $trace[0]['line']);
+
+        try {
+            $rp = new \ReflectionProperty(\Exception::class, 'trace');
+            $exTrace = $rp->getValue($ex);
+
+            if (!empty($exTrace)) {
+                \array_shift($exTrace);
+            }
+
+            $rp->setValue($ex, $exTrace);
+        } catch (\Throwable $t) {
+        }
+
+        throw $ex;
     }
 
-    /**
-     *  
-     * @inheritDoc
-     * 
-     * @see \Livewire\Wireable::toLivewire
-     * 
-     * @return array
-     */
-    public function toLivewire()
-    {
-        return ['erickcomp-lw-dt' => \encrypt($this)];
-    }
+
+    // /**
+    //  *  
+    //  * @inheritDoc
+    //  * 
+    //  * @see \Livewire\Wireable::fromLivewire
+    //  * 
+    //  * @return self
+    //  */
+    // public static function fromLivewire($value)
+    // {
+    //     return \decrypt($value['erickcomp-lw-dt']);
+
+    //     return $this->$debugPayload
+    //         ? \unserialize($value['erickcomp-lw-dt'])
+    //         : \decrypt($value['erickcomp-lw-dt']);
+    // }
+
+    // /**
+    //  *  
+    //  * @inheritDoc
+    //  * 
+    //  * @see \Livewire\Wireable::toLivewire
+    //  * 
+    //  * @return array
+    //  */
+    // public function toLivewire()
+    // {
+    //     return ['erickcomp-lw-dt' => \encrypt($this)];
+    // }
 
     public function hasTableActions()
     {
@@ -199,6 +279,11 @@ class DataTable extends BaseDataTableComponent implements Wireable
             || $this->hasPerPageOptions();
     }
 
+    public function preset(): Preset
+    {
+        return $this->loadedPreset ??= Preset::loadFromName($this->preset ?? 'empty');
+    }
+
     public function isSearchable(): bool
     {
         return isset($this->search) && $this->search !== null;
@@ -206,9 +291,6 @@ class DataTable extends BaseDataTableComponent implements Wireable
 
     public function isFilterable(): bool
     {
-        // @TODO: implement filters
-        //return false;
-
         return $this->initalizedFilters() && count($this->filters->filtersItems) > 0;
     }
 
@@ -232,6 +314,54 @@ class DataTable extends BaseDataTableComponent implements Wireable
     public function getTrAttributesModifierCode(): string
     {
         return $this->trAttributesModifierCode;
+    }
+
+    public function hasRowLevelConfiguration(): bool
+    {
+        $rowLevelVars = [
+            'rowLevelClassCode',
+            'rowLevelClassCodePath',
+            'rowLevelStyleCode',
+            'rowLevelStyleCodePath',
+            'rowLevelAttributesCode',
+            'rowLevelAttributesCodePath',
+        ];
+
+        foreach ($rowLevelVars as $var) {
+            if (isset($this->$var)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function getTrAttributesForRow(
+        LwDataTable $lwDataTable,
+        mixed $row,
+        object $loop,
+    ): ComponentAttributeBag {
+
+        $trAttributes = $this->tbodyTrAttributes;
+
+        if (isset($this->rowLevelAttributesCodePath)) {
+            $trAttributes = $trAttributes->merge($this->evaluateRowModifierUsingContext($this->rowLevelAttributesCodePath, $lwDataTable, $row, $loop));
+        }
+
+        if (isset($this->rowLevelClassCodePath)) {
+            $trAttributes = $trAttributes->class($this->evaluateRowModifierUsingContext($this->rowLevelClassCodePath, $lwDataTable, $row, $loop));
+        }
+
+        if (isset($this->rowLevelStyleCodePath)) {
+            $trAttributes = $trAttributes->style($this->evaluateRowModifierUsingContext($this->rowLevelStyleCodePath, $lwDataTable, $row, $loop));
+        }
+
+        return $trAttributes;
+    }
+
+    protected function evaluateRowModifierUsingContext(string $filepath, LwDataTable $___lwDataTable, mixed $__row, object $loop)
+    {
+        return include $filepath;
     }
 
     public function setTrAttributesModifierCode(string $trAttributesModifierCode)
@@ -264,11 +394,6 @@ class DataTable extends BaseDataTableComponent implements Wireable
     {
         //$this->columns[] = Builders\ColumnFactory::make($this, $columnAttributes);
         $this->columns[] = CustomRenderedColumn::fromComponentAttributeBag($columnAttributes, customRendererCode: $customRendererCode);
-    }
-    public function OLD_addColumn(Column $columnComponent)
-    {
-        //$this->columns[] = Builders\ColumnFactory::make($this, $columnAttributes);
-        $this->columns[] = Builders\ColumnFactory::make($columnComponent);
     }
 
     public function hasFooter(): bool
@@ -337,6 +462,49 @@ class DataTable extends BaseDataTableComponent implements Wireable
         return count($this->perPageOptions) > 1;
     }
 
+    public function perPageOptionsForSelect(int $totalRows): array
+    {
+        $options = \array_combine($this->perPageOptions, $this->perPageOptions);
+        $toRemove = [];
+
+        foreach ($options as $optionVal => $optionLabel) {
+
+            if ($optionVal === static::PER_PAGE_ALL) {
+                $toRemove[] = $optionVal;
+
+                $options[$this->maxPerPage] = $this->maxPerPage;
+
+                continue;
+
+            }
+
+            if ($optionVal === static::PER_PAGE_ALL_FORCE) {
+                $toRemove[] = $optionVal;
+
+                $options[static::PER_PAGE_ALL_OPTION_VALUE] = __('erickcomp_lw_data_table::messages.per_page_option_all_label');
+
+                continue;
+            }
+
+            $intOptionVal = (int) $optionVal;
+
+            if ($intOptionVal > $this->maxPerPage) {
+                $toRemove[] = $optionVal;
+            }
+        }
+
+        foreach ($toRemove as $key) {
+            unset($options[$key]);
+        }
+
+        // if (\array_key_exists(static::PER_PAGE_ALL, $options)) {
+        //     unset($options[static::PER_PAGE_ALL]);
+        //     $options[static::PER_PAGE_ALL_OPTION_VALUE] = __('erickcomp_lw_data_table::messages.per_page_option_all_label');
+        // }
+
+        return $options;
+    }
+
     public function isUsingDefaultPaginationViews(): bool
     {
         return $this->paginationView === null;
@@ -369,6 +537,140 @@ class DataTable extends BaseDataTableComponent implements Wireable
             'tailwind' => 'livewire::simple-tailwind',
             default => $this->paginationView
         };
+    }
+
+    public function buildXModelAttribute(string $filterProperty, ?string $range = null): string
+    {
+        //
+        $xModel = "dtData()['$filterProperty']['$this->dataField']['$this->name']";
+
+        if ($range === null) {
+            return $xModel;
+        }
+
+        if (!\in_array(\strtolower($range), ['from', 'to'])) {
+            throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
+        }
+
+        return "{$xModel}['$range']";
+    }
+
+    /**
+     * Caches a DataTable instance to a file
+     * 
+     * @return string Returns the base filename used to create the DataTable object caches
+     */
+    public static function toCache(DataTable $dataTable): string
+    {
+        $cacheBaseFilename = $dataTable->cacheBaseFilename();
+        $cacheFilePath = \storage_path("framework/views/{$cacheBaseFilename}.php");
+
+        static::createCodeCachesFiles($dataTable);
+
+        if (!\file_exists($cacheFilePath)) {
+            \file_put_contents(
+                $cacheFilePath,
+                \serialize($dataTable),
+            );
+        }
+
+        return $cacheBaseFilename;
+    }
+
+    public static function fromCache(string $cacheBaseFilename): null|static
+    {
+        $filePath = \storage_path("framework/views/{$cacheBaseFilename}.php");
+
+        if (!\file_exists($filePath)) {
+            return null;
+        }
+
+        try {
+            $dataTable = \unserialize(\file_get_contents($filePath));
+
+            if (!$dataTable instanceof static) {
+                return null;
+            }
+
+            return $dataTable;
+        } catch (\Throwable $t) {
+            $log = 'Could not restore [' . static::class . '] object from file: [' . $filePath . '].' . PHP_EOL
+                . PHP_EOL
+                . $t::class . ": {$t->getMessage()}" . PHP_EOL
+                . 'Stack trace:' . PHP_EOL
+                . $t->getTraceAsString();
+
+            Log::notice($log);
+
+            return null;
+        }
+    }
+
+    protected function cacheBaseFilename(): string
+    {
+        if (!isset($this->cacheBaseFilename)) {
+            $varsToExcludeFromSerializationHash = [
+                'rowLevelClassCode',
+                'rowLevelClassCodePath',
+                'rowLevelStyleCode',
+                'rowLevelStyleCodePath',
+                'rowLevelAttributesCode',
+                'rowLevelAttributesCodePath',
+            ];
+
+            foreach ($varsToExcludeFromSerializationHash as $var) {
+                if (isset($dataTable->$var)) {
+                    $$var = $dataTable->$var;
+
+                    unset($dataTable->$var);
+                }
+            }
+
+            $serialized = \serialize($this);
+            $this->cacheBaseFilename = "x-{$this->componentName}___" . \md5($serialized);
+
+            foreach ($varsToExcludeFromSerializationHash as $var) {
+                if (isset($$var)) {
+                    $dataTable->$var = $$var;
+                }
+            }
+        }
+
+        return $this->cacheBaseFilename;
+    }
+
+    protected static function createCodeCachesFiles(DataTable $dataTable)
+    {
+        $varsToHandle = [
+            'rowLevelClass',
+            'rowLevelStyle',
+            'rowLevelAttributes',
+        ];
+
+        foreach ($varsToHandle as $var) {
+            $codeVar = "{$var}Code";
+
+            if (isset($dataTable->$codeVar)) {
+                $code = $dataTable->$codeVar;
+                unset($dataTable->$codeVar);
+
+                $wrappedCode = <<<PHP
+                    <?php
+                    return ($code);
+                    PHP;
+
+                $pathVar = "{$codeVar}Path";
+                $cacheFilePath = \storage_path("framework/views/{$dataTable->cacheBaseFilename()}___$var.php");
+                $dataTable->$pathVar = $cacheFilePath;
+
+                if (!file_exists($cacheFilePath)) {
+                    \file_put_contents(
+                        $cacheFilePath,
+                        $wrappedCode,
+                    );
+                }
+            }
+        }
     }
 
     // public function runAction(string $action, ...$params)
@@ -441,7 +743,6 @@ class DataTable extends BaseDataTableComponent implements Wireable
             'tbody-' => 'tbodyAttributes',
         ];
     }
-
     protected function getDefaultPerPageOptions(): array
     {
         if (\is_a($this->dataProvider, EloquentModel::class, true)) {

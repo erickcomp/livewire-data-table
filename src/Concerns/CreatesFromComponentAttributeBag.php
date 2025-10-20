@@ -8,7 +8,7 @@ trait CreatesFromComponentAttributeBag
 {
     use GetsConstructorsParamsNames;
 
-    protected ComponentAttributeBag $attributes;
+    public ComponentAttributeBag $attributes;
 
     /**
      * Calls the constructor using data from the provided instance of \Illuminate\View\ComponentAttributeBag,

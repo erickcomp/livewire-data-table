@@ -11,4 +11,7 @@ return [
     'range_filter_label_to' => 'To',
     'apply_filters_button_label' => 'Apply filters',
     'reload_required' => "This page needs to be refreshed before executing this action.\n\nPress OK to continue",
+    'bulk_actions_label' => 'Actions',
+    'per_page_label' => 'Per page',
+    'per_page_option_all_label' => 'All',
 ];

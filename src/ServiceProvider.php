@@ -14,6 +14,7 @@ use ErickComp\RawBladeComponents\RawComponent;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
+use Illuminate\Support\Str;
 
 class ServiceProvider extends LaravelAbstractServiceProvider
 {
@@ -26,6 +27,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     {
         $this->registerLwDataTableComponentHook();
         $this->loadTranslationsFrom(__DIR__ . '/../lang', 'erickcomp_lw_data_table');
+        $this->registerEarlyBladeDirectives();
         $this->registerRawBladeComponents();
         $this->registerBladeComponents();
         $this->registerLivewireComponents();
@@ -49,17 +51,271 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     protected function registerBladeComponents()
     {
         Blade::component(DataTable::class, 'data-table');
-        //Blade::component(Column::class, 'data-table.column');
-        //Blade::component(Action::class, 'data-table.action');
-        //Blade::component(Filters::class, 'data-table.filters');
-        //Blade::component(Filter::class, 'data-table.filter');
-        //Blade::component(BulkActions::class, 'data-table.bulk-actions');
-        //Blade::component(BulkAction::class, 'data-table.bulk-action');
     }
 
     protected function registerLivewireComponents()
     {
         Livewire::component('lw-data-table', LwDataTable::class);
+    }
+
+    protected function registerEarlyBladeDirectives()
+    {
+        $codePropSetter = function (string $componentCodeProp, string $expression) {
+
+            $compiled = Str::kebab($componentCodeProp) . "=\"$expression\"";
+            return $compiled;
+
+            //$code = '<?php' . PHP_EOL . 'return ' . $expression . ';' . PHP_EOL;
+            /*
+            $code = <<<PHP_CODE
+                    <?php
+                    return $expression;
+
+                PHP_CODE;
+
+            $escapedCode = <<<PHP_CODE
+                    <?php \$component->$componentCodeProp = <<<'___LW_DT_PHP_CODE___'
+                    $code
+                    ___LW_DT_PHP_CODE___;
+                    ?>
+                PHP_CODE;
+
+            return $escapedCode;
+            //$componentParsedProp = Str::kebab($componentCodeProp) . '="' . $code . '"';
+
+            //return $componentParsedProp;
+            */
+        };
+
+        $componentPattern = "/
+            <
+                \s*
+                x[-\:]([\w\-\:\.]*)
+                (?<attributes>
+                    (?:
+                        \s+
+                        (?:
+                            (?=.*@(rowClass|rowAttributes|rowStyle))
+                            (?:
+                                @(?:class)(\( (?: (?>[^()]+) | (?-1) )* \))
+                            )
+                            |
+                            (?:
+                                @(?:style)(\( (?: (?>[^()]+) | (?-1) )* \))
+                            )
+                            |
+                            (?:
+                                @(?:rowClass)(\( (?: (?>[^()]+) | (?-1) )* \))
+                            )
+                            |
+                            (?:
+                                @(?:rowStyle)(\( (?: (?>[^()]+) | (?-1) )* \))
+                            )
+                            |
+                            (?:
+                                @(?:rowAttributes)(\( (?: (?>[^()]+) | (?-1) )* \))
+                            )
+                            |
+                            (?:
+                                \{\{\s*\\\$attributes(?:[^}]+?)?\s*\}\}
+                            )
+                            |
+                            (?:
+                                (\:\\\$)(\w+)
+                            )
+                            |
+                            (?:
+                                [\w\-:.@%]+
+                                (
+                                    =
+                                    (?:
+                                        \\\"[^\\\"]*\\\"
+                                        |
+                                        \'[^\']*\'
+                                        |
+                                        [^\'\\\"=<>]+
+                                    )
+                                )?
+                            )
+                        )
+                    )*
+                    \s*
+                )
+                (?<![\/=\-])
+            >
+        /x";
+
+
+        $directivePattern = '/
+            (?<!@)
+            @(rowClass|rowStyle|rowAttributes)
+            \(
+                (
+                    (?>
+                        [^()]+
+                        |
+                        \( (?2) \)
+                    )*
+                )
+            \)
+        /xms';
+
+        $rowDirectivesCompiler = function (string $templateStr) use ($componentPattern, $directivePattern, $codePropSetter) {
+            $templateStrWithoutComments = \preg_replace('/{{--(.*?)--}}/s', '', $templateStr);
+            $templateStrWithCompiledDirectives = preg_replace_callback(
+                $componentPattern,
+                function ($matches) use ($directivePattern, $codePropSetter) {
+                    $tag = $matches[0];
+
+                    return preg_replace_callback(
+                        $directivePattern,
+
+                        function ($m) use ($codePropSetter) {
+                            [$full, $directive, $innerExpression] = $m;
+                            $innerExpression = \htmlentities($innerExpression);
+
+                            $directiveWithoutAtTr = Str::replaceStart('row', '', $directive);
+                            $replacedDirective = 'row-level-' . Str::kebab($directiveWithoutAtTr) . "-code=\"$innerExpression\"";
+
+                            return $replacedDirective;
+                        },
+                        $tag,
+                    );
+                },
+                $templateStrWithoutComments,
+            );
+
+            return $templateStrWithCompiledDirectives;
+        };
+
+        Blade::prepareStringsForCompilationUsing($rowDirectivesCompiler);
+    }
+
+    protected function olodRegisterEarlyBladeDirectives()
+    {
+        $codePropSetter = function (string $componentCodeProp, string $expression) {
+            //$code = '<?php' . PHP_EOL . 'return ' . $expression . ';' . PHP_EOL;
+            $code = <<<PHP_CODE
+                    <?php
+                    return $expression;
+
+                PHP_CODE;
+
+            $escapedCode = <<<PHP_CODE
+                    <?php \$component->$componentCodeProp = <<<'___LW_DT_PHP_CODE___'
+                    $code
+                    ___LW_DT_PHP_CODE___;
+                    ?>
+                PHP_CODE;
+
+            return $escapedCode;
+            //$componentParsedProp = Str::kebab($componentCodeProp) . '="' . $code . '"';
+
+            //return $componentParsedProp;
+        };
+
+        $componentPattern = '/
+            <
+                \s*
+                x[-\:]([\w\-\:\.]+)
+                (?<attributes>
+                    (?:
+                        (?!
+                            \/?>
+                        )
+                        .
+                    )*?
+                    @(?:trClass|trAttributes|trStyle)
+                    (?:
+                        (?!\/?>)
+                        .
+                    )*
+                )
+                \s*
+                (?:\/>|>)
+            /xsi';
+
+
+        $directivePattern = '/
+            (?<!@)
+            @(trClass|trAttributes|trStyle)
+            \(
+                (
+                    (?>
+                        [^()]+
+                        |
+                        \( (?2) \)
+                    )*
+                )
+            \)
+        /xms';
+
+
+
+        /*
+        $earlyDirectivesFinders = [
+            '/@trAttributes\((( (?>[^()]+) | (?2) )*)\)/x', fn($match) => $codePropSetter('rowLevelAttributesCode', $match[1] ?? '')],
+            '/@trClass\((( (?>[^()]+) | (?2) )*)\)/x', fn($match) => $codePropSetter('rowLevelClassCode', $match[1] ?? '')],
+            '/@trStyle\((( (?>[^()]+) | (?2) )*)\)/x', fn($match) => $codePropSetter('rowLevelStyleCode', $match[1] ?? '')]],
+        ];
+        */
+
+        $directiveRegexes = [
+            '@trAttributes' => [
+                'pattern' => '/@trAttributes\((( (?>[^()]+) | (?2) )*)\)/x',
+                'callback' => fn($match) => $codePropSetter('rowLevelAttributesCode', $match[1] ?? '')
+            ],
+            '@trClass' => [
+                'pattern' => '/@trClass\((( (?>[^()]+) | (?2) )*)\)/x',
+                'callback' => fn($match) => $codePropSetter('rowLevelClassCode', $match[1] ?? '')
+            ],
+            '@trStyle' => [
+                'pattern' => '/@trStyle\((( (?>[^()]+) | (?2) )*)\)/x',
+                'callback' => fn($match) => $codePropSetter('rowLevelStyleCode', $match[1] ?? '')
+            ],
+        ];
+
+        $preg_replace_directives = function ($directive, $componentTagMatch) use ($directiveRegexes) {
+            $componentTag = $componentTagMatch[0];
+            $replaced = preg_replace_callback($directiveRegexes[$directive]['pattern'], $directiveRegexes[$directive]['callback'], $componentTag);
+
+            return $replaced;
+        };
+
+        $componentsTagsPatterns = [
+            '/<x-[\w\.-:]+[^>]*@trAttributes([^>]*)\/?>/s' => fn($componentTag) => $preg_replace_directives('@trAttributes', $componentTag),
+            '/<x-[\w\.-:]+[^>]*@trClass([^>])*\/?>/s' => fn($componentTag) => $preg_replace_directives('@trClass', $componentTag),
+            '/<x-[\w\.-:]+[^>]*@trStyle([^>])*\/?>/s' => fn($componentTag) => $preg_replace_directives('@trStyle', $componentTag),
+        ];
+
+        Blade::prepareStringsForCompilationUsing(
+            function (string $templateStr) use ($componentsTagsPatterns) {
+                $templateStr = \preg_replace_callback_array($componentsTagsPatterns, $templateStr);
+
+                return $templateStr;
+            }
+        );
+
+
+        //$templateWithParsedDirectives = preg_replace_callback_array()
+
+        /*
+        $earlyDirectivesPatternReplacers = [
+            '/@trAttributes\((.*?)\)/s' => fn($match) => $codePropSetter('rowLevelAttributesCode', $match[1] ?? ''),
+            '/@trClass\((.*?)\)/s' => fn($match) => $codePropSetter('rowLevelClassCode', $match[1] ?? ''),
+            '/@trStyle\((.*?)\)/s' => fn($match) => $codePropSetter('rowLevelStyleCode', $match[1] ?? ''),
+        ];
+        */
+
+        //Blade::prepareStringsForCompilationUsing(
+        //    function (string $templateStr) use ($earlyDirectivesPatternReplacers) {
+        //        foreach ($earlyDirectivesPatternReplacers as $pattern => $callback) {
+        //            $templateStr = \preg_replace_callback($pattern, $callback, $templateStr);
+        //        }
+        //
+        //        return $templateStr;
+        //    }
+        //);
     }
 
     protected function registerRawBladeComponents()
@@ -122,6 +378,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             closingCode: PHP_EOL . '___DATATABLE__RENDERER___); ?>',
         );
     }
+
     protected function registerSearchRawComponent()
     {
         $searchCode = <<<'SEARCH_CODE'
@@ -263,7 +520,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             $openingCode,
             $closingCode,
             $selfClosingCode,
-            defaultAttributes: $defaultAttributes,
+            $defaultAttributes,
         );
     }
 }

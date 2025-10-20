@@ -8,13 +8,13 @@ class LwDataRetrievalParams
      * @param string[] $searchDataFields
      */
     public function __construct(
-        public protected(set) ?int $page,
-        public protected(set) ?int $perPage,
-        public protected(set) ?string $search,
-        public protected(set) array|true $searchDataFields,
-        public protected(set) ?array $columnsSearch,
-        public protected(set) ?array $filters,
-        public protected(set) ?string $sortBy,
-        public protected(set) ?string $sortDir,
+        public ?int $page,
+        public ?string $perPage,
+        public ?string $search,
+        public array|true $searchDataFields,
+        public ?array $columnsSearch,
+        public ?array $filters,
+        public ?string $sortBy,
+        public ?string $sortDir,
     ) {}
 }

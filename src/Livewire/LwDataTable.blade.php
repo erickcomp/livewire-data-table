@@ -4,31 +4,28 @@ use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 
-
 /** @var \ErickComp\LivewireDataTable\DataTable $this->dataTable */
 /** @var \ErickComp\LivewireDataTable\Livewire\LwDataTable $this */
 /** @var \ErickComp\LivewireDataTable\DataTable\Filter $filterItem */
+/** @var LengthAwarePaginator $rows */
 
 $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAttributeBag {
     return $columnThAttributes->merge($tableThAttributes->all());
 };
 
-//$onClickSortableColumn = function (BaseColumn $column): string {
-//    return $column->isSortable() ? 'wire:click="setSortBy(\'' . $column->name . '\')"' : '';
-//};
 ?>
+{{-- @debugger --}}
 <div {{ $this->dataTable->containerAttributes->class([...$this->preset()->get('main-container.class'), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
     @if($this->dataTable->hasTableActions())
         <div @class($this->preset()->get('actions.container.class'))>
             <div @class($this->preset()->get('actions.row.class'))>
                 @if($this->dataTable->isSearchable())
-                    <div {{ $this->dataTable->search->componentAttributes->class($this->preset()->get('search.container.class')) }}>
+                    <div {{ $this->dataTable->search->componentAttributes->class($this->preset()->get('search.container.class', [])) }}>
                         @if ($this->dataTable->search->hasCustomRenderer()))
                             @php
                                 $searchViewData = [
@@ -39,44 +36,73 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             {!! Blade::render($this->dataTable->search->customRendererCode, $searchViewData) !!}
                             @php unset($searchViewData); @endphp
                         @else
-                            <input {{ $this->dataTable->search->inputAttributes->class($this->preset()->get('search.input.class')) }} />
+                            <input {{ $this->dataTable->search->inputAttributes->class($this->preset()->get('search.input.class', [])) }} />
 
-                            <button {{ $this->dataTable->search->buttonAttributes->class($this->preset()->get('search.button.class')) }}>
-                                @if($this->dataTable->search->shouldShowIconOnApplyButton())
-                                    {!! $this->preset()->get('search.button.icon') !!}
+                            <button {{ $this->dataTable->search->buttonAttributes->class($this->preset()->get('search.button.class', [])) }}
+                                {{--  x-bind:disabled="!changedSearchTerms" --}} x-on:click="applySearch()" > {{-- @TODO: applySearch: It's buggy sometimes when toggling the state of the filters tab --}}
+                                @php
+                                $shouldUseIconInSearchButton = $this->dataTable->search->shouldShowIconOnApplyButton();
+                                $iconSearchButtonPosition = $this->preset()->get('search.button.icon-position','none');
+                                @endphp
+
+                                @if($shouldUseIconInSearchButton && $iconSearchButtonPosition === 'left')
+                                    {!! $this->preset()->get('search.button.icon', '') !!}
                                 @endif
-                                @lang('erickcomp_lw_data_table::messages.search_button_label')
+
+                                {{ __('erickcomp_lw_data_table::messages.search_button_label') }}
+
+                                @if($shouldUseIconInSearchButton && $iconSearchButtonPosition === 'right')
+                                    {!! $this->preset()->get('search.button.icon', '') !!}
+                                @endif
                             </button>
                         @endif
                     </div>
                 @endif
 
                 @if($this->dataTable->isFilterable() && $this->dataTable->filters->isCollapsible())
-                    <button {{ $this->dataTable->filters->buttonToggleAttributes->class([...$this->preset()->get('filters.toggle-button.class'), 'active' => $this->shouldShowFiltersContainer()]) }}
-                        x-bind:class="{ 'active': filtersContainerIsOpen }">
 
-                        @if($this->dataTable->filters->shouldShowIconOnToggleButton())
-                            {!! $this->preset()->get('filters.toggle-button.icon') !!}
+                    <button {{ $this->dataTable->filters->getToggleButtonAttributes($this->preset(), $this->shouldShowFiltersContainer()) }}
+                        x-bind:class="{ 'active': filtersContainerIsOpen }"
+                        x-on:click="toggleFiltersContainer()"
+                         >
+
+                        @php
+                        $shouldUseIconInToggleFilterButton = $this->dataTable->filters->shouldShowIconOnToggleButton();
+                        $iconToggleFiltersButtonPosition = $this->preset()->get('filters.toggle-button.icon-position','none');
+                        @endphp
+
+                        @if($shouldUseIconInToggleFilterButton && $iconToggleFiltersButtonPosition === 'left')
+                            {!! $this->preset()->get('filters.toggle-button.icon', '') !!}
                         @endif
                         
-                        @lang('erickcomp_lw_data_table::messages.toggle_filters_button_label')
+                        {{ __('erickcomp_lw_data_table::messages.toggle_filters_button_label') }}
+
+                        @if($shouldUseIconInToggleFilterButton && $iconToggleFiltersButtonPosition === 'right')
+                            {!! $this->preset()->get('filters.toggle-button.icon', '') !!}
+                        @endif
                     </button>
                 @endif
             </div> <!-- end: lw-dt-table-actions-row -->
             @if($this->dataTable->isFilterable())
-                <div @class($this->preset()->get('actions.row.class'))>
-                    <div {{ $this->dataTable->filters->containerAttributes()->class($this->preset()->get('filters.container.class')) }}>
+                <div @class($this->preset()->get('actions.row.class', [])) {{-- @style(['display: none' => !$this->shouldShowFiltersContainer() && false]) --}}>
+                    <div {{ $this->dataTable->filters->containerAttributes($this->preset()) }}>
                         @if(!$this->dataTable->filters->isCollapsible())
-                            <span @class($this->preset()->get('filters.title.class'))>
+                            <span @class($this->preset()->get('filters.title.class', []))>
+                                @if($this->preset()->get('filters.title.icon-position') === 'left')
+                                    {!! $this->preset()->get('filters.title.icon', '') !!}
+                                @endif
                                 {{ $this->dataTable->filters->title() }}
+                                @if($this->preset()->get('filters.title.icon-position') === 'rigth')
+                                    {!! $this->preset()->get('filters.title.icon', '') !!}
+                                @endif
                             </span>
                         @endif
                         @php $renderedFilterItemsNames = []; @endphp
                         @foreach($this->dataTable->filters->filtersItems as $filterItem)
-                            <div @class($this->preset()->get('filters.item.class'))>
+                            <div @class($this->preset()->get('filters.item.class', []))>
                                 <div @class([
-                                    ...$this->preset()->get('filters.item.content.class') ,
-                                    ...($filterItem->mode === Filter::MODE_RANGE ? $this->preset()->get('filters.item.content.range.class') : [])
+                                    ...$this->preset()->get('filters.item.content.class', []) ,
+                                    ...($filterItem->mode === Filter::MODE_RANGE ? $this->preset()->get('filters.item.content.range.class', []) : [])
                                     ])>
                                     @if(!empty($filterItem->customRendererCode))
                                         {!! $filterItem->getCustomRendererCodeWithXModel('inputFilters', ['___lwDataTable' => $this]) !!}
@@ -89,9 +115,9 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                             $renderedFilterItemsNames[] = $filterItem->attributes['name'];
                                         @endphp
 
-                                        <legend @class($this->preset()->get('filters.item.content.legend.class'))>
+                                        <legend @class($this->preset()->get('filters.item.content.legend.class', []))>
                                             {{-- ilterItem-?label . ?({$filterItem-?inputType})? --}}
-                                            <span @class($this->preset()->get('filters.item.content.legend.span.class'))>
+                                            <span @class($this->preset()->get('filters.item.content.legend.span.class', []))>
                                                 {{-- ilterItem-?label . ?({$filterItem-?inputType})? --}}
                                                 {{ $filterItem->label }}
                                             </span>
@@ -104,7 +130,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                                 {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}"> --}}
                                                 {{-- x-on:input="updateFilterInput('{{ $filterItem->buildWireModelAttribute('inputFilters')
                                                 }}')" --}}
-                                                x-model="{{ $filterItem->buildXModelAttribute('inputFilters') }}"
+                                                x-model="{{ $filterItem->buildXModelAttribute('inputFilters') }}">
                                                 @foreach($filterItem->getSelectOptions() as $value => $label)
                                                     <option value="{{ $value }}">{{ $label }}</option>
                                                 @endforeach
@@ -121,11 +147,11 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                                     )->class($this->preset()->get("filters.item.content.range.input.to.class", []));
                                                 @endphp
                                                 <span @class($this->preset()->get("filters.item.content.range.label.from.class", ''))>
-                                                    @lang('erickcomp_lw_data_table::messages.range_filter_label_from'):
+                                                    {{ __('erickcomp_lw_data_table::messages.range_filter_label_from') }}:
                                                 </span>
                                                 <input
                                                     type="{{ $filterItem->htmlInputType() }}"
-                                                    {{ $filterItem->inputAttributes(except: 'name')->class($inputFromClasses['class']) }}
+                                                    {{ $filterItem->inputAttributes(except: 'name', range: 'from')->class($inputFromClasses['class']) }}
                                                     name="{{ $filterItem->buildInputNameAttribute($this->filtersUrlParam(), 'from') }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
                                                     {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'from') }}" --}}
@@ -136,11 +162,11 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                                     x-on:keydown.enter="applyFilters()"
                                                     value="{{ $this->getFilterValue($filterItem)['from'] ?? '' }}">
                                                 <span @class($this->preset()->get("filters.item.content.range.label.to.class", ''))>
-                                                    @lang('erickcomp_lw_data_table::messages.range_filter_label_to'):
+                                                    {{ __('erickcomp_lw_data_table::messages.range_filter_label_to') }}:
                                                 </span>
                                                 <input
                                                     type="{{ $filterItem->htmlInputType() }}"
-                                                    {{ $filterItem->inputAttributes(except: 'name')->class($inputToClasses['class']) }}
+                                                    {{ $filterItem->inputAttributes(except: 'name', range: 'to')->class($inputToClasses['class']) }}
                                                     name="{{ $filterItem->buildInputNameAttribute($this->filtersUrlParam(), 'to') }}"
                                                     {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
                                                     {{-- x-model="{{ $filterItem->buildWireModelAttribute('inputFilters', 'to') }}" --}}
@@ -174,8 +200,8 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                         @endforeach
                         <div @class($this->preset()->get('filters.apply-button.container.class'))>
                             {{-- <button wire:click="applyFilters()" {{ $this->dataTable->filters->buttonApplyAttributes }}> --}}
-                            <button {{ $this->dataTable->filters->buttonApplyAttributes->class($this->preset()->get('filters.apply-button.class')) }}>
-                                @lang('erickcomp_lw_data_table::messages.apply_filters_button_label')
+                            <button {{--  x-bind:disabled="!changedFilters" --}} x-on:click="applyFilters()" {{ $this->dataTable->filters->buttonApplyAttributes->class($this->preset()->get('filters.apply-button.class')) }}>
+                                {{ __('erickcomp_lw_data_table::messages.apply_filters_button_label') }}
                             </button>
                         </div>
                     </div> {{-- end: $this->dataTable->filters->containerAttributes --}}
@@ -186,39 +212,99 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             @if (!empty($search) || (!empty($this->dataTable->filters) && !empty($this->appliedFiltersData())))
                 <div @class($this->preset()->get('actions.row.class'))>
                     <div @class($this->preset()->get('applied-filters.container.class')) >
-                        @if(count($this->appliedFiltersData()) > 0)
+                        @if(count($this->appliedFiltersData()) > 0 || !empty($search))
                             <span @class($this->preset()->get('applied-filters.label.class'))>
-                                @lang('erickcomp_lw_data_table::messages.active_filters_label'):
+                                {{ __('erickcomp_lw_data_table::messages.active_filters_label') }}:
                             </span>
                         @endif
-                        @if(!empty(\trim($search)))
 
-                            <span @class($this->preset()->get('applied-filters.applied-filter-item.class'))>
-                                {{-- <button wire:click="clearSearch()">x</button> --}}
+                        @php
+                            $removeFilterButtonPosition = $this->preset()->get('applied-filters.applied-filter-item.position', 'right');
+                        @endphp
+
+                        @if(!empty(\trim($search)))
+                            <span @class($this->preset()->get('applied-filters.applied-filter-item.class', []))>
+                                @if ($removeFilterButtonPosition === 'right')
+                                    <span @class($this->preset()->get('applied-filters.applied-filter-item.label-class', []))>
+                                        {{ __('erickcomp_lw_data_table::messages.applied_search_label') }}: "{{ $search }}"
+                                    </span>
+                                @endif
+                                
                                 <button
                                     x-on:click="clearSearch()"
-                                    @class($this->preset()->get('applied-filters.button-remove-applied-filter-item.class'))
+                                    @class($this->preset()->get('applied-filters.button-remove-applied-filter-item.class', []))
                                     >
-                                    {!! $this->preset()->get('applied-filters.button-remove-applied-filter-item.content') !!}
+                                    {!! $this->preset()->get('applied-filters.button-remove-applied-filter-item.content', '') !!}
                                 </button>
-                                @lang('erickcomp_lw_data_table::messages.applied_search_label'): "{{ $search }}"
+                                
+                                @if ($removeFilterButtonPosition === 'left')
+                                    <span @class($this->preset()->get('applied-filters.applied-filter-item.label-class', []))>
+                                        {{ __('erickcomp_lw_data_table::messages.applied_search_label') }}: "{{ $search }}"
+                                    </span>
+                                @endif
                             </span>
-
                         @endif
-
+                        
                         @foreach ($this->appliedFiltersData() as $appliedFilterData)
-                            <span @class($this->preset()->get('applied-filters.applied-filter-item.class'))>
+                            <span @class($this->preset()->get('applied-filters.applied-filter-item.class', []))>
                                 {{-- <button wire:click="removeFilter('{{ $appliedFilterData['wire-name'] }}')">x</button></button>
                                 --}}
+
+                                @if ($removeFilterButtonPosition === 'right')
+                                    <span @class($this->preset()->get('applied-filters.applied-filter-item.label-class', []))>
+                                        {{ $appliedFilterData['label'] }}
+                                    </span>
+                                @endif
+                                
                                 <button
                                     x-on:click="removeFilter('{{ Str::chopStart($appliedFilterData['wire-name'], "{$this->filtersUrlParam()}.") }}')"
-                                    @class($this->preset()->get('applied-filters.button-remove-applied-filter-item.class'))>
+                                    @class($this->preset()->get('applied-filters.button-remove-applied-filter-item.class', []))>
                                     {!! $this->preset()->get('applied-filters.button-remove-applied-filter-item.content') !!}
                                 </button>
-                                {{ $appliedFilterData['label'] }}
+
+                                @if ($removeFilterButtonPosition === 'left')
+                                    <span @class($this->preset()->get('applied-filters.applied-filter-item.label-class', []))>
+                                        {{ $appliedFilterData['label'] }}
+                                    </span>
+                                @endif
                             </span>
                         @endforeach
                     </div>
+                </div>
+            @endif
+
+            @if ($this->dataTable->hasBulkActions() || count($this->dataTable->perPageOptions) > 1)
+                <div @class($this->preset()->get('actions.bulk-actions-and-per-page.container.class', []))>
+                    @if ($this->dataTable->hasBulkActions() && false)
+                        <select @class($this->preset()->get('actions.bulk-actions-and-per-page.bulk-actions-select.class', []))>
+                            @foreach(['' => __('erickcomp_lw_data_table::messages.bulk_actions_label') , 1 => 'mock bulk action 1', 2 => 'mock bulk action 2'] as $bulkAction => $bulkActionLabel)
+                                <option value="{{ $bulkAction }}">{{ $bulkActionLabel }}</option>
+                            @endforeach
+                        </select>
+                    @endif
+                    @if(count($this->dataTable->perPageOptions) > 1)
+                        <div @class($this->preset()->get('actions.bulk-actions-and-per-page.per-page.container.class', []))>
+
+                            @if($this->preset()->get('actions.bulk-actions-and-per-page.per-page.label.position', 'after') === 'before')
+                                <span @class($this->preset()->get('actions.bulk-actions-and-per-page.per-page.label.class', []))>
+                                    {{ __('erickcomp_lw_data_table::messages.per_page_label') }}
+                                </span>
+                            @endif
+                            
+                            <select @class($this->preset()->get('actions.bulk-actions-and-per-page.per-page.select.class', []))
+                                wire:model.live="perPage">
+                                @foreach($this->dataTable->perPageOptionsForSelect($rows->total()) as $perPageOptionVal => $perPageOptionLabel)
+                                    <option value="{{ $perPageOptionVal }}">{{ $perPageOptionLabel }}</option>
+                                @endforeach
+                            </select>
+
+                            @if ($this->preset()->get('actions.bulk-actions-and-per-page.per-page.label.position', 'after') === 'after')
+                                <span @class($this->preset()->get('actions.bulk-actions-and-per-page.per-page.label.class', []))>
+                                    {{ __('erickcomp_lw_data_table::messages.per_page_label') }}
+                                </span>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             @endif
         </div> <!-- end: lw-dt-table-actions -->
@@ -246,33 +332,18 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
         <thead {{ $this->dataTable->theadAttributes->class($this->preset()->get('table.thead.class')) }}>
             <tr {{ $this->dataTable->theadTrAttributes->class($this->preset()->get('table.thead.tr.class')) }}>
                 @foreach ($this->dataTable->columns as $column)
-                    @php
-                        $thAttributes = $column->thAttributes->merge($this->dataTable->thAttributes->all());
-                        //$thAttributes = $this->dataTable->thAttributes->merge($column->thAttributes->all());
-
-                        if ($column->isSortable() && count($rows) > 1) {
-                            $thAttributes['wire:click'] = "setSortBy('{$column->dataField}')";
-                        }
-                    @endphp
-                    <th {{ $thAttributes->class($this->preset()->get('table.thead.tr.th.class')) }}>
+                    <th {{ $column->buildThAttributes($this->preset()->get('table.thead.tr.th.class'), count($rows)) }}>
                         {{ $column->title }}
+
                         @if ($column->isSortable() && count($rows) > 1 && $this->preset()->get('table.thead.tr.th.sorting.show-indicators'))
                             @php
                                 $lowercaseSortDir = $column->dataField === $sortBy
                                     ? \strtolower(empty($sortDir) ? 'none' : $sortDir)
                                     : 'none';
 
-                                $sortingPresetKey = "table.thead.tr.th.sorting.indicator-$lowercaseSortDir-class";
+                                $sortingHtml = $this->preset()->get("table.thead.tr.th.sorting.indicator-$lowercaseSortDir");
                             @endphp
-                            <span @class($this->preset()->get($sortingPresetKey))></span>
-                        {{--
-                            @php
-                                $columnSortClass = $column->dataField === $sortBy
-                                    ? Str::kebab("{$this->dataTable->sortingClassPrefix}-" . \strtolower(empty($sortDir) ? 'none' : $sortDir))
-                                    : "{$this->dataTable->sortingClassPrefix}-none";
-                            @endphp
-                            <span class="{{$this->dataTable->sortingClassPrefix}} {{ $columnSortClass }}"></span>
-                        --}}
+                            {!! $sortingHtml !!}
                         @endif
                         
                     </th>
@@ -288,6 +359,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                     type="text"
                                     wire:model.live.debounce.{{ $this->preset()->get('table.thead.tr.search.debounce-ms') }}ms="columnsSearch.{{ $column->dataField }}"
                                     {{ $column->thSearchInputAttributes->class($this->preset()->get('table.thead.tr.search.th.input.class')) }}
+                                    value="{{ Arr::get($this->columnsSearch, $column->dataField, '') }}"
                                     />
                             @endif
                         </th>
@@ -296,66 +368,43 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             @endif
         </thead>
         <tbody {{$this->dataTable->tbodyAttributes->class($this->preset()->get('table.tbody.class')) }}>
-            
             @forelse ($rows as $row)
-                @php
-                    $trAttributes = new ComponentAttributeBag();
-                    $trAttributesModifierCode = $this->dataTable->getTrAttributesModifierCode();
-                @endphp
-                @if(!empty($trAttributesModifierCode))
-                    @php
-                        $trAttributes = clone $this->dataTable->tbodyTrAttributes;
-
-                        $modifierViewData = [
-                            '___lwDataTable' => $this,
-                            //'__dataTable' => $this->dataTable,
-                            '___row' => $row,
-                            '___trAttributes' => $trAttributes,
-                            'loop' => $loop,
-                        ];
-                    @endphp
-                    {!! Blade::render($trAttributesModifierCode, $modifierViewData) !!}
-                @else
-                    @php
-                        $trAttributes = $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.class'));
-                    @endphp
-                @endif
-
-                <tr {{ $trAttributes }} wire:key="{{ $row->{$this->dataTable->dataIdentityColumn} }}">
+                <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ $row->{$this->dataTable->dataIdentityColumn} }}">
                     @foreach ($this->dataTable->columns as $column)
                         @php
-                            $customRenderedColumn = '';
+                            $tdAttributes = $column->buildTdAttributes($this->preset()->get('table.tbody.tr.td.class'));
                         @endphp
+                        
                         @if($column instanceof CustomRenderedColumn)
                             @php
-                                $customRenderedColumn = Blade::render($column->customRendererCode, ['loop' => $loop->parent, '__rowData' => $row]);
-                                $trimmed = $customRenderedColumn;
+                                $customRenderedColumn = Blade::render($column->customRendererCode, ['attributes' => $tdAttributes,'loop' => $loop->parent, '__row' => $row]);
+                                $trimmed = trim($customRenderedColumn);
                             @endphp
 
-                            @if (preg_match('/^<\s*td\s*.*>.*<\/\s*td\s*>$/is', $trimmed))
+                            @if (\preg_match('/^<\s*td\s*.*>.*<\/\s*td\s*>$/is', $trimmed))
                                 {!! $customRenderedColumn !!}
                             @else
-                                <td {{ $column->tdAttributes?->class($this->preset()->get('table.tbody.tr.td.class')) }}>
+                                <td {{ $tdAttributes }} >
                                     {!! $customRenderedColumn !!}
                                 </td>
                             @endif
 
                             @continue
+                        @elseif ($column instanceof DataColumn)
+                            <td {{ $tdAttributes }}>
+                                {{ $row->{$column->dataField} }}
+                            </td>
+                        @else
+                            @php throw new \InvalidArgumentException('Cannot render column of type ' . \get_debug_type($column)); @endphp
                         @endif
 
-                        <td {{ $column->tdAttributes?->class($this->preset()->get('table.tbody.tr.td.class')) }} >
-                            @if (!empty($customRenderedColumn))
-                                {!! $customRenderedColumn !!}
-                            @elseif($column instanceof DataColumn)
-                                {{ $row->{$column->dataField} }}
-                            @endif
-                        </td>
+                        
                     @endforeach
                 </tr>
             @empty
                 <tr {{ $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.nodatafound.class')) }}>
                     <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns), 1]) }}">
-                        @lang('erickcomp_lw_data_table::messages.no_data_found_table_td_text')
+                        {{ __('erickcomp_lw_data_table::messages.no_data_found_table_td_text')  }}
                     </td>
                 </tr>
             @endforelse
@@ -395,11 +444,21 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             </div>
         @endif
     @endif
+
+    @if(!empty($this->preset()->get('loader-overlay.html', null)))
+        {!! $this->preset()->get('loader-overlay.html') !!}
+    @endif
+
+
 </div>
 
 @assets
 
-@foreach ($this->preset()->get('assets') as $asset)
+@foreach ($this->preset()->get('loader-overlay.assets', []) as $asset)
+    {!! $asset !!}
+@endforeach
+
+@foreach ($this->preset()->get('assets', []) as $asset)
     {!! $asset !!}
 @endforeach
 
@@ -409,6 +468,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 
 <script>
     @php
+        \xdebug_break();
         $reloadAlertConfig = $this->preset()->get('reload-alert', null);
 
         $reloadAlertConfig['alert-before-reload'] ??= true;
@@ -446,18 +506,47 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
     Alpine.store(
         '{{ $this->getId() }}',
         Alpine.reactive({
+            filtersContainerIsOpen: {!! $this->shouldShowFiltersContainer() ? 'true' : 'false' !!},
             inputSearch: {{ Illuminate\Support\Js::from($search) }},
             inputFilters: {{ Illuminate\Support\Js::from($this->computeInitialFilters()) }},
 
+            toggleFiltersContainer(wireHandler) {
+                this.filtersContainerIsOpen = !this.filtersContainerIsOpen;
+                wireHandler.filtersContainerIsOpen = this.filtersContainerIsOpen;
+            },
+
+            changedSearchTerms(wireHandler) {
+                return wireHandler.get('search') !== this.inputSearch;
+            },
+
+            changedFilters(wireHandler) {
+                return JSON.stringify(wireHandler.get('rawFilters')) !== JSON.stringify(this.inputFilters);
+            },
+
             applySearch(wireHandler) {
+                // No changes, no server roundtrip
+                if (!this.changedSearchTerms(wireHandler)) {
+                    return;
+                }
+
                 wireHandler.set('search', this.inputSearch);
             },
 
             applyFilters(wireHandler) {
+                // No changes in filters, no server roundtrip needed
+                if (!this.changedFilters(wireHandler)) {
+                    return;
+                }
+
                 wireHandler.applyFilters(this.inputFilters);
             },
 
             clearSearch(wireHandler) {
+                // Already empty, no server roundtrip needed
+                if (this.inputSearch === '')  {
+                    return;
+                }
+
                 this.inputSearch = '';
                 this.applySearch(wireHandler);
             },
@@ -494,6 +583,31 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
     );
 
     {{--
+    debugger;
+    document.addEventListener('livewire:init', () => {
+        Livewire.hook('request', ({ fail }) => {
+            fail(({ status, preventDefault }) => {
+                debugger;
+                if (status === 419) {
+                    //confirm('Your custom page expiration behavior...')
+                    @if ($reloadAlertConfig === null || ($reloadAlertConfig['alert-before-reload'] ?? true) === true)
+                        @php
+                        $reloadRequiredmessage = 'Hue';
+                        @endphp
+                        {{ $reloadAlertConfig['function-name'] }}('{{ $reloadRequiredmessage }}', function () {window.location.reload();});
+                    @else
+                        //alert('sem alert. =P');
+                        window.location.reload();
+                    @endif
+ 
+                    preventDefault();
+                }
+            });
+        });
+    });
+    --}}
+
+    {{-- 
     $wire.on('{{ $this::EVENT_RELOAD_REQUIRED }}', () => {
         @if ($reloadAlertConfig === null || ($reloadAlertConfig['alert-before-reload'] ?? true) === true)
             {{ $reloadAlertConfig['function-name'] }}('{{ $message }}', function () {window.location.reload();});
@@ -504,9 +618,10 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
         
     });
     --}}
+    
 </script>
 
-@foreach ($this->preset()->get('scripts') as $script)
+@foreach ($this->preset()->get('scripts', []) as $script)
     {!! $script !!}
 @endforeach
 

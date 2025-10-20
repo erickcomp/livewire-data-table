@@ -91,8 +91,12 @@ class Preset
         throw new \BadMethodCallException("Undefined property: " . static::class . "::$key for preset [{$this->name}]");
     }
 
-    public function get(string $key, mixed $default = null): mixed
+    public function get(?string $key = null, mixed $default = null): mixed
     {
+        if ($key === null) {
+            return $this->presetInfo;
+        }
+
         $val = Arr::get($this->presetInfo, $key, static::noDataFound());
 
         if ($val === static::noDataFound()) {

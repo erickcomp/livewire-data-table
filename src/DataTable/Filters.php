@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\DataTable;
 
+use ErickComp\LivewireDataTable\Livewire\Preset;
 use Illuminate\View\ComponentAttributeBag;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 
@@ -12,27 +13,27 @@ class Filters
     protected array $defaultContainerAttributes = [
         //'row-length' => 4,
         //'class' => 'lw-dt-filters-container',
-        'collapsible' => '',
-        'x-show' => "filtersContainerIsOpen",
-        'x-transition.scale.origin.top' => '',
-        'x-transition:enter.duration.200ms' => '',
-        'x-transition:leave.duration.270ms' => '',
+        //'collapsible' => '',
+        'x-show.important' => "filtersContainerIsOpen",
+        //'x-transition.scale.origin.top' => '',
+        //'x-transition:enter.duration.200ms' => '',
+        //'x-transition:leave.duration.270ms' => '',
     ];
 
     protected array $defaultButtonToggleAttributes = [
         //'class' => 'filters-toggle-button',
         //'x-show' => "filtersContainerIsOpen",
         //'x-transition' => '',
-        'x-on:click' => "toggleFiltersContainer",
+        //'x-on:click' => "toggleFiltersContainer",
     ];
 
     protected array $defaultButtonApplyAttributes = [
-        'class' => 'filters-apply-button',
-        'x-on:click' => 'applyFilters()',
+        //'class' => 'filters-apply-button',
+        //'x-on:click' => 'applyFilters()',
     ];
 
     protected array $defaultFilterItemsAttributes = [
-        'class' => 'lw-dt-filter-item',
+        //'class' => 'lw-dt-filter-item',
     ];
 
     // public string $title {
@@ -55,7 +56,7 @@ class Filters
     public ComponentAttributeBag $filterItemsAttributes;
 
     /** @var Filter[] */
-    public array $filtersItems;
+    public array $filtersItems = [];
 
     public function __construct(ComponentAttributeBag $componentAttributes)
     {
@@ -70,12 +71,18 @@ class Filters
         $this->filterItemsAttributes = $this->filterItemsAttributes->merge($this->defaultFilterItemsAttributes);
     }
 
-    public function containerAttributes(): ComponentAttributeBag
+    public function containerAttributes(Preset $preset): ComponentAttributeBag
     {
+        $alpineTransition = \array_fill_keys($preset->get('filters.toggle-button.alpine-transition', []), '');
+        $collapsible = ['collapsible' => $preset->get('filters.collapsible', true)];
+
         return $this->containerAttributes->except([
             'collapsible',
             'filters-toggle-no-icon',
-        ]);
+        ])
+            ->merge($alpineTransition)
+            ->merge($collapsible)
+            ->class($preset->get('filters.container.class', []));
     }
 
     public function title(): string
@@ -84,12 +91,18 @@ class Filters
     }
     public function isCollapsible(): bool
     {
+
         return \filter_var($this->containerAttributes['collapsible'], \FILTER_VALIDATE_BOOL);
     }
 
     public function shouldShowIconOnToggleButton(): bool
     {
         return !\filter_var($this->containerAttributes['filters-toggle-no-icon'], \FILTER_VALIDATE_BOOL);
+    }
+
+    public function getToggleButtonAttributes(Preset $preset, bool $shouldShowFiltersContainer): ComponentAttributeBag
+    {
+        return $this->buttonToggleAttributes->class([...$preset->get('filters.toggle-button.class', []), 'active' => $shouldShowFiltersContainer]);
     }
 
     protected function getAttributeBagsMappings(): array
