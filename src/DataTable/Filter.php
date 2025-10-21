@@ -273,7 +273,8 @@ class Filter
             throw new \DomainException("Invalid value for the \$notationForMultiple parameter: $notationForMultiple. The valid values are: null, \"[]\", \".\"");
         }
 
-        $dom = \Dom\HTMLDocument::createFromString($html, \LIBXML_HTML_NOIMPLIED | \LIBXML_ERR_NONE);
+        //$dom = \Dom\HTMLDocument::createFromString($html, \LIBXML_HTML_NOIMPLIED | \LIBXML_ERR_NONE);
+        $dom = new \Gt\Dom\HTMLDocument($html);
 
         $nodes = $dom->querySelectorAll($selector);
 

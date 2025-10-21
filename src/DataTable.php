@@ -129,8 +129,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     public function __construct(
         public string $preset = 'empty',
-        public ?string $dataProvider = null,
-        public ?string $dataProviderGetDataMethod = 'dataTable',
+        public ?string $dataSrc = null,
+        //public ?string $dataProviderGetDataMethod = 'dataTable',
 
         //public bool $withoutSortingIndicators = false,
 
@@ -153,8 +153,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         ?string $rowLevelStyleCode = null,
         ?string $rowLevelAttributesCode = null,
     ) {
-        $this->dataProvider = $dataProvider;
-        $this->dataProviderGetDataMethod = $dataProviderGetDataMethod;
+        //$this->dataSrc = $dataSrc;
+        //$this->dataProviderGetDataMethod = $dataProviderGetDataMethod;
         $this->paginationView = $paginationView;
 
         if (\is_string($perPage)) {
@@ -745,8 +745,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     }
     protected function getDefaultPerPageOptions(): array
     {
-        if (\is_a($this->dataProvider, EloquentModel::class, true)) {
-            $model = new $this->dataProvider;
+        if (\is_a($this->dataSrc, EloquentModel::class, true)) {
+            $model = new $this->dataSrc;
         } else {
             $model = new class () extends EloquentModel {};
         }

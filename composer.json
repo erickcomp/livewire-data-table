@@ -15,8 +15,35 @@
     "require": {
         "php": "^8.2",
         "livewire/livewire": "^3.0",
-        "erickcomp/laravel-raw-blade-components": "dev-master"
+        "erickcomp/laravel-raw-blade-components": "dev-master",
+        "phpgt/dom": "^4.1"
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../erickcomp-livewire-dependent-selects"
+        },
+        {
+            "type": "path",
+            "url": "../erickcomp-livewire-non-public-properties"
+        },
+        {
+            "type": "path",
+            "url": "../erickcomp-livewire-data-table"
+        },
+        {
+            "type": "path",
+            "url": "../erickcomp-laravel-raw-blade-components"
+        },
+        {
+            "type": "path",
+            "url": "../erickcomp-laravel-stacked-components"
+        },
+        {
+            "type": "path",
+            "url": "../erickcomp-laravel-route-call"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "ErickComp\\LivewireDataTable\\": "src/"

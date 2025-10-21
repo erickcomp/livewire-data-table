@@ -78,7 +78,7 @@ class LwDataTable extends LivewireComponent
 
         $rows = $this->getTableData();
 
-        if ($rows instanceof LengthAwarePaginator && $this->paginators['page'] > $rows->lastPage()) {
+        if ($rows instanceof LengthAwarePaginator && ($this->paginators['page'] ?? 1) > $rows->lastPage()) {
 
             // Forces page reset to last page and re-evaluate the data
             $this->paginators['page'] = $rows->lastPage();
@@ -400,8 +400,8 @@ class LwDataTable extends LivewireComponent
 
     protected function getTableData()
     {
-        if (!$this->dataTable->dataProvider) {
-            return [];
+        if (!$this->dataTable->dataSrc) {
+            return new \Illuminate\Pagination\LengthAwarePaginator(collect(), 0, 15, 1);
         }
 
         $params = new LwDataRetrievalParams(
@@ -424,19 +424,19 @@ class LwDataTable extends LivewireComponent
             $this->dataProviderProvidesDataTableData() => $this->getDataUsingDataProviderObject($params),
             $this->dataProviderBuildsDataTableQuery() => $this->getDataUsingDataTableQuery($params),
             $this->dataProviderIsEloquentModel() => $this->getDataUsingEloquenModel($params),
-            $this->dataProviderIsClass() => $this->getDataUsingClassObject($params),
+            //$this->dataProviderIsClass() => $this->getDataUsingClassObject($params),
             $this->dataProviderIsCallable() => $this->getDataUsingCallable($params),
-            default => throw new \LogicException("Cannot get data from [{$this->dataTable->dataProvider}]")
+            default => throw new \LogicException("Cannot get data from [{$this->dataTable->dataSrc}]")
         };
 
         // process query string $data and set it on the DataTable object
-        //return $this->executeCallable($this->dataTable->dataProvider, ...$params);
+        //return $this->executeCallable($this->dataTable->dataSrc, ...$params);
     }
 
     protected function getDataUsingDataProviderObject(LwDataRetrievalParams $params): LengthAwarePaginator
     {
         /** @var ProvidesDataTableData */
-        $dataProvider = App::make($this->dataTable->dataProvider);
+        $dataProvider = App::make($this->dataTable->dataSrc);
 
         return $dataProvider->dataTableData($params);
     }
@@ -444,14 +444,14 @@ class LwDataTable extends LivewireComponent
     protected function getDataUsingDataTableQuery(LwDataRetrievalParams $params): LengthAwarePaginator
     {
         /** @var BuildsDataTableQuery */
-        $queryProvider = App::make($this->dataTable->dataProvider);
+        $queryProvider = App::make($this->dataTable->dataSrc);
 
         return $queryProvider->buildLwDataTableQuery($params)->paginate();
     }
 
     protected function getDataUsingEloquenModel(LwDataRetrievalParams $params)
     {
-        $model = $this->dataTable->dataProvider;
+        $model = $this->dataTable->dataSrc;
 
         /** @var EloquentBuilder $query */
         $query = (new $model)->query();
@@ -465,134 +465,50 @@ class LwDataTable extends LivewireComponent
         return $query->paginate();
     }
 
-    protected function getDataUsingClassObject(LwDataRetrievalParams $params)
-    {
-        //
-        $dataProvideObject = App::make($this->dataTable->dataProvider);
-        $dataProviderMethod = $this->dataTable->dataProviderGetDataMethod;
+    // protected function getDataUsingClassObject(LwDataRetrievalParams $params)
+    // {
+    //     //
+    //     $dataProvideObject = App::make($this->dataTable->dataSrc);
+    //     $dataProviderMethod = $this->dataTable->dataSrcGetDataMethod;
 
-        return App::call([$dataProvideObject, $dataProviderMethod], ['params' => $params]);
+    //     return App::call([$dataProvideObject, $dataProviderMethod], ['params' => $params]);
 
-    }
+    // }
 
     protected function getDataUsingCallable(LwDataRetrievalParams $params)
     {
         //
     }
 
-    protected function applyDataTableFiltersOnEloquentQuery(EloquentBuilder $query, ?array $filters)
-    {
-        //
-        dd($filters);
-    }
-
-    protected function applyDataTableColumnsSearchOnEloquentQuery(EloquentBuilder $query, ?array $columnsSearch)
-    {
-        if (empty($columnsSearch)) {
-            return;
-        }
-
-        if (\is_a($this->dataTable->dataProvider, SearchesDataTableColumns::class, true)) {
-            $model = $this->dataTable->dataProvider;
-            new $model()->applyLwDataTableColumnsSearch($query, $columnsSearch);
-        } else {
-            foreach ($columnsSearch as $dataField => $value) {
-                $query->whereLike($dataField, "%$value%");
-            }
-        }
-    }
-
-    protected function applyDataTableSearchOnEloquentQuery(EloquentBuilder $query, ?string $search)
-    {
-        if (empty($search)) {
-            return;
-        }
-
-        $modelClass = $this->dataTable->dataProvider;
-        if (\is_a($this->dataTable->dataProvider, SearchesDataTable::class, true)) {
-            new $modelClass()->applyLwDataTableColumnsSearch($query, $search);
-        } else {
-            $model = new $modelClass();
-            $columnsToSearch = collect(Schema::getColumns($model->getTable()))
-                ->pluck('name')
-                ->diff($model->getHidden());
-
-            if ($columnsToSearch->isNotEmpty()) {
-                $query->where(function ($orQuery) use ($columnsToSearch, $search) {
-                    foreach ($columnsToSearch as $dataField) {
-                        $orQuery->orWhereLike($dataField, "%$search%");
-                    }
-                });
-            }
-        }
-    }
-
-    protected function applyDataTableColumnsSortingOnEloquentQuery(EloquentBuilder $query, ?string $sortBy, string $sortDir = 'ASC')
-    {
-        if (empty(\trim($sortBy ?? ''))) {
-            return;
-        }
-
-        $modelClass = $this->dataTable->dataProvider;
-        if (\is_a($this->dataTable->dataProvider, SortsDataTable::class, true)) {
-            new $modelClass()->applyLwDataTableSorting($query, $sortBy, $sortDir);
-        } else {
-            $sortDir = \in_array(\strtoupper($sortDir), ['ASC', 'DESC'])
-                ? \strtoupper($sortDir)
-                : 'ASC';
-
-            $query->orderBy($sortBy, $sortDir);
-        }
-    }
-
-    protected function applyDataTableSortingDirectionOnEloquentQuery(EloquentBuilder $query, ?string $sortDir)
-    {
-        if (empty($search)) {
-            return;
-        }
-
-        $modelClass = $this->dataTable->dataProvider;
-        if (\is_a($this->dataTable->dataProvider, SearchesDataTable::class, true)) {
-            new $modelClass()->applyLwDataTableColumnsSearch($query, $search);
-        } else {
-            $model = new $modelClass();
-            $columnsToSearch = collect(Schema::getColumns($model->getTable()))
-                ->pluck('name')
-                ->diff($model->getHidden());
-
-            foreach ($columnsToSearch as $col) {
-                $query->whereLike($col, "%$search%");
-            }
-        }
-    }
+    
 
     protected function dataProviderProvidesDataTableData(): bool
     {
-        return \is_a($this->dataTable->dataProvider, ProvidesDataTableData::class, true);
+        return \is_a($this->dataTable->dataSrc, ProvidesDataTableData::class, true);
     }
 
     protected function dataProviderBuildsDataTableQuery(): bool
     {
-        return \is_a($this->dataTable->dataProvider, BuildsDataTableQuery::class, true);
+        return \is_a($this->dataTable->dataSrc, BuildsDataTableQuery::class, true);
     }
 
     protected function dataProviderIsEloquentModel(): bool
     {
-        return \is_a($this->dataTable->dataProvider, EloquentModel::class, true);
+        return \is_a($this->dataTable->dataSrc, EloquentModel::class, true);
     }
 
     protected function dataProviderIsClass(): bool
     {
-        return \class_exists($this->dataTable->dataProvider);
+        return \class_exists($this->dataTable->dataSrc);
     }
 
     protected function dataProviderIsCallable(): bool
     {
-        if (\is_callable($this->dataTable->dataProvider)) {
+        if (\is_callable($this->dataTable->dataSrc)) {
             return true;
         }
 
-        $callable = Str::parseCallback($this->dataTable->dataProvider);
+        $callable = Str::parseCallback($this->dataTable->dataSrc);
 
         return \is_callable([$callable[0], $callable[1]])
             || \is_callable([App::make($callable[0]), $callable[1]]);
