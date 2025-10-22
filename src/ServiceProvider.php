@@ -191,133 +191,6 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         Blade::prepareStringsForCompilationUsing($rowDirectivesCompiler);
     }
 
-    protected function olodRegisterEarlyBladeDirectives()
-    {
-        $codePropSetter = function (string $componentCodeProp, string $expression) {
-            //$code = '<?php' . PHP_EOL . 'return ' . $expression . ';' . PHP_EOL;
-            $code = <<<PHP_CODE
-                    <?php
-                    return $expression;
-
-                PHP_CODE;
-
-            $escapedCode = <<<PHP_CODE
-                    <?php \$component->$componentCodeProp = <<<'___LW_DT_PHP_CODE___'
-                    $code
-                    ___LW_DT_PHP_CODE___;
-                    ?>
-                PHP_CODE;
-
-            return $escapedCode;
-            //$componentParsedProp = Str::kebab($componentCodeProp) . '="' . $code . '"';
-
-            //return $componentParsedProp;
-        };
-
-        $componentPattern = '/
-            <
-                \s*
-                x[-\:]([\w\-\:\.]+)
-                (?<attributes>
-                    (?:
-                        (?!
-                            \/?>
-                        )
-                        .
-                    )*?
-                    @(?:trClass|trAttributes|trStyle)
-                    (?:
-                        (?!\/?>)
-                        .
-                    )*
-                )
-                \s*
-                (?:\/>|>)
-            /xsi';
-
-
-        $directivePattern = '/
-            (?<!@)
-            @(trClass|trAttributes|trStyle)
-            \(
-                (
-                    (?>
-                        [^()]+
-                        |
-                        \( (?2) \)
-                    )*
-                )
-            \)
-        /xms';
-
-
-
-        /*
-        $earlyDirectivesFinders = [
-            '/@trAttributes\((( (?>[^()]+) | (?2) )*)\)/x', fn($match) => $codePropSetter('rowLevelAttributesCode', $match[1] ?? '')],
-            '/@trClass\((( (?>[^()]+) | (?2) )*)\)/x', fn($match) => $codePropSetter('rowLevelClassCode', $match[1] ?? '')],
-            '/@trStyle\((( (?>[^()]+) | (?2) )*)\)/x', fn($match) => $codePropSetter('rowLevelStyleCode', $match[1] ?? '')]],
-        ];
-        */
-
-        $directiveRegexes = [
-            '@trAttributes' => [
-                'pattern' => '/@trAttributes\((( (?>[^()]+) | (?2) )*)\)/x',
-                'callback' => fn($match) => $codePropSetter('rowLevelAttributesCode', $match[1] ?? '')
-            ],
-            '@trClass' => [
-                'pattern' => '/@trClass\((( (?>[^()]+) | (?2) )*)\)/x',
-                'callback' => fn($match) => $codePropSetter('rowLevelClassCode', $match[1] ?? '')
-            ],
-            '@trStyle' => [
-                'pattern' => '/@trStyle\((( (?>[^()]+) | (?2) )*)\)/x',
-                'callback' => fn($match) => $codePropSetter('rowLevelStyleCode', $match[1] ?? '')
-            ],
-        ];
-
-        $preg_replace_directives = function ($directive, $componentTagMatch) use ($directiveRegexes) {
-            $componentTag = $componentTagMatch[0];
-            $replaced = preg_replace_callback($directiveRegexes[$directive]['pattern'], $directiveRegexes[$directive]['callback'], $componentTag);
-
-            return $replaced;
-        };
-
-        $componentsTagsPatterns = [
-            '/<x-[\w\.-:]+[^>]*@trAttributes([^>]*)\/?>/s' => fn($componentTag) => $preg_replace_directives('@trAttributes', $componentTag),
-            '/<x-[\w\.-:]+[^>]*@trClass([^>])*\/?>/s' => fn($componentTag) => $preg_replace_directives('@trClass', $componentTag),
-            '/<x-[\w\.-:]+[^>]*@trStyle([^>])*\/?>/s' => fn($componentTag) => $preg_replace_directives('@trStyle', $componentTag),
-        ];
-
-        Blade::prepareStringsForCompilationUsing(
-            function (string $templateStr) use ($componentsTagsPatterns) {
-                $templateStr = \preg_replace_callback_array($componentsTagsPatterns, $templateStr);
-
-                return $templateStr;
-            }
-        );
-
-
-        //$templateWithParsedDirectives = preg_replace_callback_array()
-
-        /*
-        $earlyDirectivesPatternReplacers = [
-            '/@trAttributes\((.*?)\)/s' => fn($match) => $codePropSetter('rowLevelAttributesCode', $match[1] ?? ''),
-            '/@trClass\((.*?)\)/s' => fn($match) => $codePropSetter('rowLevelClassCode', $match[1] ?? ''),
-            '/@trStyle\((.*?)\)/s' => fn($match) => $codePropSetter('rowLevelStyleCode', $match[1] ?? ''),
-        ];
-        */
-
-        //Blade::prepareStringsForCompilationUsing(
-        //    function (string $templateStr) use ($earlyDirectivesPatternReplacers) {
-        //        foreach ($earlyDirectivesPatternReplacers as $pattern => $callback) {
-        //            $templateStr = \preg_replace_callback($pattern, $callback, $templateStr);
-        //        }
-        //
-        //        return $templateStr;
-        //    }
-        //);
-    }
-
     protected function registerRawBladeComponents()
     {
         //$this->registerColumnTdRawComponent();
@@ -327,6 +200,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerFiltersRawComponent();
         $this->registerFilterRawComponent();
         $this->registerAssetRawComponent();
+        $this->registerPaginationRawComponent();
         $this->registerFooterRawComponent();
     }
 
@@ -487,6 +361,26 @@ class ServiceProvider extends LaravelAbstractServiceProvider
             ___DATATABLE__RENDERER___;
             ?>
             CLOSING_CODE,
+        );
+    }
+
+    protected function registerPaginationRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.pagination',
+            openingCode: <<<'PAGINATION_COMPILER_CODE'
+            <?php
+
+            if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
+                throw new \LogicException("You can only use the [x-data-table.pagination] component as a direct child of the [x-data-table] component");
+            }
+
+            $component->paginationCode = <<<'___DATATABLE__RENDERER___'
+            PAGINATION_COMPILER_CODE,
+            closingCode: <<<'FOOTER_COMPILER_CODE'
+            ___DATATABLE__RENDERER___;
+            ?>
+            FOOTER_COMPILER_CODE,
         );
     }
 

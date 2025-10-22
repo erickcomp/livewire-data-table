@@ -14,6 +14,17 @@ class Column
 
     use FillsComponentAttributeBags;
 
+    public const SEARCH_STRATEGY_CONTAINS = 'contains';
+    public const SEARCH_STRATEGY_STARTS_WITH = 'starts-with';
+    public const SEARCH_STRATEGY_ENDS_WITH = 'ends-with';
+    public const SEARCH_STRATEGY_FULLTEXT = 'fulltext';
+    public const SEARCH_STRATEGIES = [
+        self::SEARCH_STRATEGY_CONTAINS,
+        self::SEARCH_STRATEGY_STARTS_WITH,
+        self::SEARCH_STRATEGY_ENDS_WITH,
+        self::SEARCH_STRATEGY_FULLTEXT,
+    ];
+
     public const ATTRIBUTE_NAME = 'name';
     public const ATTRIBUTE_TITLE = 'title';
     public const ATTRIBUTE_DATA_FIELD = 'data-field';
@@ -26,30 +37,21 @@ class Column
     public string $name;
     public string $title;
     public bool $searchable = false;
+    public $searchableStrategy = 'contains';
     public bool $sortable = false;
 
     public function __construct(
         string $title,
         ?string $dataField = null,
-        //?string $name = null,
-        bool $searchable = false,
+        bool|string $searchable = false,
         bool $sortable = false,
     ) {
         if (empty(\trim($dataField ?? '')) && ($searchable || $sortable)) {
             throw new \BadMethodCallException('The data-field attribute is required for searchable or sortable columns.');
         }
 
-        // if (empty($name)) {
-        //     $name = $dataField;
-        // }
-
-        // if (empty($name)) {
-        //     throw new \BadMethodCallException('You must set at least one of the following attributes: "name" or "data-field".');
-        // }
-
         $this->title = $title;
         $this->dataField = $dataField;
-        //$this->name = $name;
         $this->searchable = $searchable;
         $this->sortable = $sortable;
     }
@@ -65,7 +67,7 @@ class Column
 
     public function isSearchable(): bool
     {
-        return $this->searchable;
+        return $this->searchable !== false;
     }
 
     public function isSortable(): bool
@@ -108,6 +110,32 @@ class Column
         }
 
         return $tdAttributes;
+    }
+
+    protected function setupSearchable(bool|string $attributeValue)
+    {
+        if (\is_string($attributeValue)) {
+            $filtered = \filter_var($attributeValue, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+
+            if (\is_bool($filtered)) {
+                $searchable = $filtered;
+            }
+        }
+
+        if (\is_bool($searchable)) {
+            $this->searchable = $searchable;
+
+            return;
+        }
+
+        if (!\in_array(\strtolower($searchable), static::SEARCH_STRATEGIES)) {
+            $this->searchable = false;
+
+            return;
+        }
+
+        $this->searchable = true;
+        $this->searchableStrategy = \strtolower($searchable);
     }
 
     protected function getAttributeBagsMappings(): array

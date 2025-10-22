@@ -293,7 +293,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             
                             <select @class($this->preset()->get('actions.bulk-actions-and-per-page.per-page.select.class', []))
                                 wire:model.live="perPage">
-                                @foreach($this->dataTable->perPageOptionsForSelect($rows->total()) as $perPageOptionVal => $perPageOptionLabel)
+                                @foreach($this->dataTable->perPageOptionsForSelect() as $perPageOptionVal => $perPageOptionLabel)
                                     <option value="{{ $perPageOptionVal }}">{{ $perPageOptionLabel }}</option>
                                 @endforeach
                             </select>
@@ -397,8 +397,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                         @else
                             @php throw new \InvalidArgumentException('Cannot render column of type ' . \get_debug_type($column)); @endphp
                         @endif
-
-                        
                     @endforeach
                 </tr>
             @empty
@@ -430,8 +428,16 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
         @endif
     </table>
 
+    @if($this->dataTable->paginationCode !== null)    
+        {!! $this->renderCustomPagination($rows) !!}
+    @else
+        <div @class($this->preset()->get('pagination.container.class', [])))>
+            {{ $this->renderPagination($rows) }}
+        </div>
+    @endif
+
+    {{-- 
     @if (\is_object($rows) && \method_exists($rows, 'links'))
-        {{-- @TODO: Create params to choose between pagination styles --}}
         @if($this->dataTable->paginationCode != null)
             $paginationVars = [
             '__dataTable' => $this->dataTable,
@@ -440,10 +446,12 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             {!! Blade::render($this->dataTable->paginationCode, $paginationVars) !!}
         @else
             <div @class(['lw-dt-pagination-container'])>
-                {{ $rows->links() }}
+                {{ $rows->render() }}
             </div>
         @endif
     @endif
+    --}}
+    
 
     @if(!empty($this->preset()->get('loader-overlay.html', null)))
         {!! $this->preset()->get('loader-overlay.html') !!}
@@ -468,7 +476,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 
 <script>
     @php
-        \xdebug_break();
         $reloadAlertConfig = $this->preset()->get('reload-alert', null);
 
         $reloadAlertConfig['alert-before-reload'] ??= true;

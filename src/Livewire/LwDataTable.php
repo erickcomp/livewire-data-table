@@ -2,28 +2,28 @@
 
 namespace ErickComp\LivewireDataTable\Livewire;
 
+use ErickComp\LivewireDataTable\Data\EloquentDataGetter;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
-use ErickComp\LivewireDataTable\DataTable\Data\SearchesDataTable;
-use ErickComp\LivewireDataTable\DataTable\Data\SearchesDataTableColumns;
-use ErickComp\LivewireDataTable\DataTable\Data\SortsDataTable;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\ServerExecutor;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
-use Illuminate\Support\Uri;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use Livewire\WithPagination;
-use Livewire\Attributes\Locked;
-use Illuminate\Support\Facades\Date;
+use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
+use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
+use Illuminate\Support\Facades\Blade;
 
 class LwDataTable extends LivewireComponent
 {
@@ -135,6 +135,27 @@ class LwDataTable extends LivewireComponent
         return isset($this->dataTable)
             ? $this->dataTable->paginationSimpleView()
             : '';
+    }
+
+    public function renderCustomPagination($rows)
+    {
+        $paginationVars = [
+            '__dataTable' => $this->dataTable,
+            '__rows' => $rows,
+        ];
+
+        return Blade::render($this->dataTable->paginationCode, $paginationVars);
+    }
+
+    public function renderPagination($rows)
+    {
+        \xdebug_break();
+        return match (true) {
+            \is_array($rows) || $rows instanceof Collection => '',
+            $rows instanceof LengthAwarePaginatorContract => $rows->render($this->paginationView()),
+            $rows instanceof PaginatorContract || $rows instanceof CursorPaginatorContract => $rows->render($this->paginationSimpleView()),
+            \method_exists($rows, 'links') => $rows->links($this->dataTable->paginationView)
+        };
     }
 
     public function xData(): string
@@ -260,6 +281,11 @@ class LwDataTable extends LivewireComponent
         }
 
         return !empty($this->filters);
+    }
+
+    public function isDataPaginated($rows): bool
+    {
+        return $rows instanceof \Illuminate\Contracts\Pagination\Paginator || $rows instanceof \Illuminate\Contracts\Pagination\CursorPaginator;
     }
 
     protected function mountDataTable(DataTable $dataTable)
@@ -407,6 +433,7 @@ class LwDataTable extends LivewireComponent
         $params = new LwDataRetrievalParams(
             page: Paginator::resolveCurrentPage($this->dataTable->pageName),
             perPage: $this->perPage,
+            pageName: $this->dataTable->pageName,
             search: $this->search,
             searchDataFields: $this->dataTable?->search->dataFields ?? [],
             columnsSearch: $this->columnsSearch,
@@ -451,18 +478,7 @@ class LwDataTable extends LivewireComponent
 
     protected function getDataUsingEloquenModel(LwDataRetrievalParams $params)
     {
-        $model = $this->dataTable->dataSrc;
-
-        /** @var EloquentBuilder $query */
-        $query = (new $model)->query();
-
-        $this->applyDataTableFiltersOnEloquentQuery($query, $params->filters);
-        $this->applyDataTableColumnsSearchOnEloquentQuery($query, $params->columnsSearch);
-        $this->applyDataTableSearchOnEloquentQuery($query, $params->search);
-        $this->applyDataTableColumnsSortingOnEloquentQuery($query, $params->sortBy);
-        $this->applyDataTableSortingDirectionOnEloquentQuery($query, $params->sortDir);
-
-        return $query->paginate();
+        return (new EloquentDataGetter($this->dataTable))->getData($params);
     }
 
     // protected function getDataUsingClassObject(LwDataRetrievalParams $params)
@@ -480,7 +496,7 @@ class LwDataTable extends LivewireComponent
         //
     }
 
-    
+
 
     protected function dataProviderProvidesDataTableData(): bool
     {

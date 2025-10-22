@@ -4,35 +4,37 @@ namespace ErickComp\LivewireDataTable;
 
 use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
+use ErickComp\LivewireDataTable\Data\EloquentDataGetter;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
+use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
+use ErickComp\LivewireDataTable\DataTable\Footer;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\LivewireDataTable\Livewire\Preset;
 use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
 use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\Component as BladeComponent;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\ImplicitlyBoundMethod;
 use Livewire\Wireable;
-use ErickComp\LivewireDataTable\DataTable\Column;
-use ErickComp\LivewireDataTable\DataTable\Footer;
-use Illuminate\Support\Facades\Log;
 //use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
 class DataTable extends BaseDataTableComponent //implements Wireable
 {
+
     use FillsComponentAttributeBags;
 
+    public string $eloquentPaginatorType = EloquentDataGetter::PAGINATION_DEFAULT;
+    public const PER_PAGE_MAX = 'max';
     public const PER_PAGE_ALL = 'all';
-    public const PER_PAGE_ALL_FORCE = 'all:force';
     public const PER_PAGE_ALL_OPTION_VALUE = '___all___';
 
     public ?string $paginationView = null;
@@ -44,17 +46,17 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public static string $defaultPaginationSimpleView = 'livewire::simple-bootstrap';
     public static ?bool $useDefaultPaginationStylingForDefaultPaginationViews = true;
 
-    protected array $defaultContainerAttributes = ['class' => 'lw-dt-container'];
-    protected array $defaultTableAttributes = [];
-    protected array $defaultTheadAttributes = [];
-    protected array $defaultTheadTrAttributes = [];
-    protected array $defaultTheadSearchTrAttributes = [];
-    protected array $defaultTheadSearchThAttributes = [];
-    protected array $defaultThAttributes = [];
-    protected array $defaultTbodyAttributes = [];
-    protected array $defaultTbodyTrAttributes = [];
+    //protected array $defaultContainerAttributes = ['class' => 'lw-dt-container'];
+    //protected array $defaultTableAttributes = [];
+    //protected array $defaultTheadAttributes = [];
+    //protected array $defaultTheadTrAttributes = [];
+    //protected array $defaultTheadSearchTrAttributes = [];
+    //protected array $defaultTheadSearchThAttributes = [];
+    //protected array $defaultThAttributes = [];
+    //protected array $defaultTbodyAttributes = [];
+    //protected array $defaultTbodyTrAttributes = [];
 
-    protected string $trAttributesModifierCode = '';
+    //protected string $trAttributesModifierCode = '';
 
     protected string $rowLevelClassCode;
     protected string $rowLevelStyleCode;
@@ -66,9 +68,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     protected string $searchRendererCode;
     protected ComponentAttributeBag $searchRendererCodeAttributes;
-    public bool $noStyles = false;
+    //public bool $noStyles = false;
     public string $dataIdentityColumn = 'id';
-    public string $sortingClassPrefix = 'lw-dt-sort';
+    //public string $sortingClassPrefix = 'lw-dt-sort';
 
     public int $columnsSearchDebounce;
     public ComponentAttributeBag $containerAttributes;
@@ -129,26 +131,32 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     public function __construct(
         public string $preset = 'empty',
+
+        // Data
         public ?string $dataSrc = null,
+        public ?string $dataSrcPagination = EloquentDataGetter::PAGINATION_DEFAULT,
+        string|array $perPage = [],
+        public string $pageName = 'page',
+        public int $maxPerPage = 1000,
+        ?string $paginationView = null,
+        public ?string $phpMaxMemory = null,
+
         //public ?string $dataProviderGetDataMethod = 'dataTable',
 
         //public bool $withoutSortingIndicators = false,
 
+        // Columns 
         /** @var Column[] */
         public array $columns = [],
         //public array $filters = [],
         //public string|false $search = false,
-        public array $columnsSearch = [],
-        public array $actions = [],
-        public string $pageName = 'page',
-        public bool $debugPayload = false,
-        public ?string $phpMaxMemory = null,
-        public int $maxPerPage = 1000,
-        ?string $paginationView = null,
-        string|array $perPage = [],
+        //public array $columnsSearch = [],
         ?int $columnsSearchDebounce = null,
-        //string|array|bool $searchable = false,
 
+
+        public array $actions = [],
+
+        // Rows
         ?string $rowLevelClassCode = null,
         ?string $rowLevelStyleCode = null,
         ?string $rowLevelAttributesCode = null,
@@ -193,8 +201,18 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         //     default => $searchable
         // };
 
-        $this->initComponentAttributeBags();
+        //$this->initComponentAttributeBags();
+        $this->attributes = new ComponentAttributeBag();
     }
+
+    public function data()
+    {
+        return [
+            'attributes' => $this->attributes,
+            '__dataTable' => $this,
+        ];
+    }
+
     public function __get(string $property): mixed
     {
         if ($property === 'name') {
@@ -311,10 +329,10 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         return false;
     }
 
-    public function getTrAttributesModifierCode(): string
-    {
-        return $this->trAttributesModifierCode;
-    }
+    // public function getTrAttributesModifierCode(): string
+    // {
+    //     return $this->trAttributesModifierCode;
+    // }
 
     public function hasRowLevelConfiguration(): bool
     {
@@ -364,10 +382,10 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         return include $filepath;
     }
 
-    public function setTrAttributesModifierCode(string $trAttributesModifierCode)
-    {
-        $this->trAttributesModifierCode = \trim($trAttributesModifierCode);
-    }
+    // public function setTrAttributesModifierCode(string $trAttributesModifierCode)
+    // {
+    //     $this->trAttributesModifierCode = \trim($trAttributesModifierCode);
+    // }
 
     public function hasCustomRenderedSearch(): bool
     {
@@ -462,14 +480,14 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         return count($this->perPageOptions) > 1;
     }
 
-    public function perPageOptionsForSelect(int $totalRows): array
+    public function perPageOptionsForSelect(): array
     {
         $options = \array_combine($this->perPageOptions, $this->perPageOptions);
         $toRemove = [];
 
         foreach ($options as $optionVal => $optionLabel) {
 
-            if ($optionVal === static::PER_PAGE_ALL) {
+            if ($optionVal === static::PER_PAGE_MAX) {
                 $toRemove[] = $optionVal;
 
                 $options[$this->maxPerPage] = $this->maxPerPage;
@@ -478,7 +496,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
             }
 
-            if ($optionVal === static::PER_PAGE_ALL_FORCE) {
+            if ($optionVal === static::PER_PAGE_ALL) {
                 $toRemove[] = $optionVal;
 
                 $options[static::PER_PAGE_ALL_OPTION_VALUE] = __('erickcomp_lw_data_table::messages.per_page_option_all_label');
@@ -522,20 +540,20 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public function paginationView(): string
     {
         return match ($this->paginationView) {
-            null => static::$defaultPaginationView,
+            null => $this->preset()->get('pagination.view', static::$defaultPaginationView),
             'bootstrap' => 'livewire::bootstrap',
             'tailwind' => 'livewire::tailwind',
-            default => $this->paginationView
+            default => null
         };
     }
 
     public function paginationSimpleView(): string
     {
         return match ($this->paginationView) {
-            null => static::$defaultPaginationSimpleView,
+            null => $this->preset()->get('pagination.simple-view', static::$defaultPaginationSimpleView),
             'bootstrap' => 'livewire::simple-bootstrap',
             'tailwind' => 'livewire::simple-tailwind',
-            default => $this->paginationView
+            default => null
         };
     }
 
@@ -714,19 +732,19 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     protected function initComponentAttributeBags()
     {
-        $this->containerAttributes = new ComponentAttributeBag($this->defaultContainerAttributes);
-        $this->tableAttributes = new ComponentAttributeBag($this->defaultTableAttributes);
-        $this->theadAttributes = new ComponentAttributeBag($this->defaultTheadAttributes);
-        $this->theadTrAttributes = new ComponentAttributeBag($this->defaultTheadTrAttributes);
-        $this->theadSearchTrAttributes = new ComponentAttributeBag($this->defaultTheadSearchTrAttributes);
-        $this->theadSearchThAttributes = new ComponentAttributeBag($this->defaultTheadSearchThAttributes);
-        $this->thAttributes = new ComponentAttributeBag($this->defaultThAttributes);
-        $this->tbodyAttributes = new ComponentAttributeBag($this->defaultTbodyAttributes);
-        $this->tbodyTrAttributes = new ComponentAttributeBag($this->defaultTbodyTrAttributes);
-        //$this->tbodyTdAttributes = new ComponentAttributeBag();
-        //$this->tfootAttributes = new ComponentAttributeBag();
-        //$this->tfootTrAttributes = new ComponentAttributeBag();
-        //$this->tfootTdAttributes = new ComponentAttributeBag();
+        $this->containerAttributes = new ComponentAttributeBag(/*$this->defaultContainerAttributes*/);
+        //$this->tableAttributes = new ComponentAttributeBag($this->defaultTableAttributes);
+        //$this->theadAttributes = new ComponentAttributeBag($this->defaultTheadAttributes);
+        //$this->theadTrAttributes = new ComponentAttributeBag($this->defaultTheadTrAttributes);
+        //$this->theadSearchTrAttributes = new ComponentAttributeBag($this->defaultTheadSearchTrAttributes);
+        //$this->theadSearchThAttributes = new ComponentAttributeBag($this->defaultTheadSearchThAttributes);
+        //$this->thAttributes = new ComponentAttributeBag($this->defaultThAttributes);
+        //$this->tbodyAttributes = new ComponentAttributeBag($this->defaultTbodyAttributes);
+        //$this->tbodyTrAttributes = new ComponentAttributeBag($this->defaultTbodyTrAttributes);
+        // //$this->tbodyTdAttributes = new ComponentAttributeBag();
+        // //$this->tfootAttributes = new ComponentAttributeBag();
+        // //$this->tfootTrAttributes = new ComponentAttributeBag();
+        // //$this->tfootTdAttributes = new ComponentAttributeBag();
     }
 
     protected function getAttributeBagsMappings(): array

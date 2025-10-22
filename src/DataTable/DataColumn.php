@@ -8,7 +8,7 @@ class DataColumn extends Column
         string $title,
         string $dataField,
         //?string $name = null,
-        bool $searchable = false,
+        bool|string $searchable = false,
         bool $sortable = false,
     ) {
         parent::__construct($title, $dataField, /*$name,*/ $searchable, $sortable);

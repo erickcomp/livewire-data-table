@@ -276,6 +276,9 @@ return [
             ],
 
             'pagination' => [
+                'container' => [
+                    'class' => 'lw-dt-pagination-container',
+                ],
                 'view' => 'livewire::bootstrap',
                 'simple-view' => 'livewire::simple-bootstrap',
                 //'default-style-for-pagination' => true,
@@ -751,6 +754,9 @@ return [
             ],
 
             'pagination' => [
+                'container' => [
+                    'class' => 'lw-dt-pagination-container',
+                ],
                 'view' => 'livewire::bootstrap',
                 'simple-view' => 'livewire::simple-bootstrap',
                 //'default-style-for-pagination' => true,

@@ -10,6 +10,7 @@ class LwDataRetrievalParams
     public function __construct(
         public ?int $page,
         public ?string $perPage,
+        public string $pageName,
         public ?string $search,
         public array|true $searchDataFields,
         public ?array $columnsSearch,
