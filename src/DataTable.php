@@ -4,7 +4,7 @@ namespace ErickComp\LivewireDataTable;
 
 use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
-use ErickComp\LivewireDataTable\Data\EloquentDataGetter;
+use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
@@ -17,7 +17,12 @@ use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\LivewireDataTable\Livewire\Preset;
 use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
 use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Pagination\CursorPaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -32,7 +37,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     use FillsComponentAttributeBags;
 
-    public string $eloquentPaginatorType = EloquentDataGetter::PAGINATION_DEFAULT;
+    public string $eloquentPaginatorType = EloquentDataSource::PAGINATION_DEFAULT;
     public const PER_PAGE_MAX = 'max';
     public const PER_PAGE_ALL = 'all';
     public const PER_PAGE_ALL_OPTION_VALUE = '___all___';
@@ -133,8 +138,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         public string $preset = 'empty',
 
         // Data
-        public ?string $dataSrc = null,
-        public ?string $dataSrcPagination = EloquentDataGetter::PAGINATION_DEFAULT,
+        public string|iterable|Collection|EloquentBuilder|QueryBuilder|Paginator|LengthAwarePaginator|CursorPaginator|null $dataSrc = null,
+        public ?string $dataSrcPagination = EloquentDataSource::PAGINATION_DEFAULT,
         string|array $perPage = [],
         public string $pageName = 'page',
         public int $maxPerPage = 1000,

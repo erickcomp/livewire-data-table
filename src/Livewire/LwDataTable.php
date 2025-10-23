@@ -2,18 +2,21 @@
 
 namespace ErickComp\LivewireDataTable\Livewire;
 
-use ErickComp\LivewireDataTable\Data\EloquentDataGetter;
+use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\ServerExecutor;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
+use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\CursorPaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
@@ -21,9 +24,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use Livewire\WithPagination;
-use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
-use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
-use Illuminate\Support\Facades\Blade;
 
 class LwDataTable extends LivewireComponent
 {
@@ -149,7 +149,6 @@ class LwDataTable extends LivewireComponent
 
     public function renderPagination($rows)
     {
-        \xdebug_break();
         return match (true) {
             \is_array($rows) || $rows instanceof Collection => '',
             $rows instanceof LengthAwarePaginatorContract => $rows->render($this->paginationView()),
@@ -160,7 +159,7 @@ class LwDataTable extends LivewireComponent
 
     public function xData(): string
     {
-        return "{
+        $xData = "{
             storeId: '{$this->getId()}',
 
             dtData() {
@@ -199,6 +198,12 @@ class LwDataTable extends LivewireComponent
                 this.dtData().toggleFiltersContainer(\$wire);
             }
         };";
+
+        $xData = \preg_replace('/\s+/', ' ', $xData);
+        $xData = \str_replace([' :', ': '], ':', $xData);
+        $xData = \str_replace([' ,', ', '], ',', $xData);
+
+        return \trim($xData);
     }
 
     public function updating(string $property, $value)
@@ -427,7 +432,7 @@ class LwDataTable extends LivewireComponent
     protected function getTableData()
     {
         if (!$this->dataTable->dataSrc) {
-            return new \Illuminate\Pagination\LengthAwarePaginator(collect(), 0, 15, 1);
+            return [];
         }
 
         $params = new LwDataRetrievalParams(
@@ -463,7 +468,7 @@ class LwDataTable extends LivewireComponent
     protected function getDataUsingDataProviderObject(LwDataRetrievalParams $params): LengthAwarePaginator
     {
         /** @var ProvidesDataTableData */
-        $dataProvider = App::make($this->dataTable->dataSrc);
+        $dataProvider = app()->make($this->dataTable->dataSrc);
 
         return $dataProvider->dataTableData($params);
     }
@@ -473,12 +478,23 @@ class LwDataTable extends LivewireComponent
         /** @var BuildsDataTableQuery */
         $queryProvider = App::make($this->dataTable->dataSrc);
 
-        return $queryProvider->buildLwDataTableQuery($params)->paginate();
+        $query = $queryProvider->buildLwDataTableQuery($params);
+
+        return $this->getDataFromQuery($query, $params->page, $params->perPage, $params->pageName);
+    }
+
+    protected function getDataFromQuery(QueryBuilder|EloquentBuilder $query, int $page, int $perPage, string $pageName): CursorPaginator|LengthAwarePaginator|Paginator
+    {
+        return match ($this->dataTable->dataSrcPagination) {
+            static::PAGINATION_LENGTH_AWARE => $query->paginate(perPage: $perPage, pageName: $pageName, page: $page),
+            static::PAGINATION_CURSOR => $query->cursorPaginate(perPage: $perPage, cursorName: $pageName),
+            static::PAGINATION_SIMPLE => $query->simplePaginate(perPage: $perPage, pageName: $pageName, page: $page),
+        };
     }
 
     protected function getDataUsingEloquenModel(LwDataRetrievalParams $params)
     {
-        return (new EloquentDataGetter($this->dataTable))->getData($params);
+        return (new EloquentDataSource($this->dataTable))->getData($params);
     }
 
     // protected function getDataUsingClassObject(LwDataRetrievalParams $params)
