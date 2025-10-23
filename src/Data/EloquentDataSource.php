@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableResults;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -11,13 +12,14 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableQuery;
 
 class EloquentDataSource extends QueryBuilderDataSource
 {
     private const ITERABLE_PSEUDOTYPE = 'iterable';
-    
+
     /** @var class-string<EloquentModel> */
-    protected string $modelClass;
+    //protected string $modelClass;
 
     // public function __construct(
     //     protected DataTable $dataTable,
@@ -32,19 +34,24 @@ class EloquentDataSource extends QueryBuilderDataSource
      * 
      * @return EloquentBuilder
      */
-    public function __construct(string $modelClass,) {
+    public function __construct(
+        protected string $modelClass,
+        string $paginationType,
+    ) {
         if (!\is_a($modelClass, EloquentModel::class, true)) {
             throw new \LogicException("The value [$modelClass] is not an Eloquent Model class");
         }
 
-        parent::__construct(\is_a($modelClass, )
+        $query = \is_a($modelClass, CustomizesDataTableQuery::class, true)
+            ? (app()->make($modelClass))->dataTableQuery()
+            : $this->newQuery();
 
-        );
+        parent::__construct($query, $paginationType);
     }
 
     public function getQuery(LwDataRetrievalParams $params): EloquentBuilder
     {
-        return $this->applyDataRetrievalParamsToQuery($this->newQuery(), $params);
+        return $this->applyDataRetrievalParamsOnQuery($this->newQuery(), $params);
     }
 
     /**
@@ -67,7 +74,10 @@ class EloquentDataSource extends QueryBuilderDataSource
         };
     }
 
-    protected function makeModel(): Model
+    /**
+     * @param class-string<EloquentModel>  $modelClass
+     */
+    protected function makeModel(string $modelClass): EloquentModel
     {
         return app()->make($this->dataTable->dataSrc);
     }
@@ -80,7 +90,7 @@ class EloquentDataSource extends QueryBuilderDataSource
     protected function modelProvidesDataTableData(): bool
     {
 
-        if (\is_a($this->dataTable->dataSrc, ProvidesDataTableData::class, true)) {
+        if (\is_a($this->dataTable->dataSrc, CustomizesDataTableResults::class, true)) {
             return true;
         }
 

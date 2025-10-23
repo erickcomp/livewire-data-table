@@ -5,6 +5,10 @@ namespace ErickComp\LivewireDataTable\Data;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Pagination\CursorPaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
 
 class QueryBuilderDataSource implements DataSource
 {
@@ -14,59 +18,56 @@ class QueryBuilderDataSource implements DataSource
     public const PAGINATION_DEFAULT = self::PAGINATION_LENGTH_AWARE;
     public function __construct(
         public QueryBuilder|EloquentBuilder $query,
+        protected string $paginationType,
     ) {}
-    public function getData(LwDataRetrievalParams|null $params = null): array
-    {
-        return [];
-    }
 
     /**
      * Returns paginated data using the provided query builder
-     * 
-     * @param class-string<Model> $class
-     * @param \ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams $params
-     * @return void
      */
     public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator
     {
         return match ($this->paginationType) {
-            static::PAGINATION_LENGTH_AWARE => $this->getQuery($params)->paginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
-            static::PAGINATION_CURSOR => $this->getQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
-            static::PAGINATION_SIMPLE => $this->getQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
+            static::PAGINATION_LENGTH_AWARE => $this->getDataQuery($params)->paginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
+            static::PAGINATION_CURSOR => $this->getDataQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
+            static::PAGINATION_SIMPLE => $this->getDataQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
         };
     }
 
-    /**
-     * @param class-string<Model> $modelClass
-     */
-    protected function applyDataRetrievalParamsToQuery(EloquentBuilder $query, LwDataRetrievalParams $params): EloquentBuilder
+    public function getDataQuery(LwDataRetrievalParams $params): QueryBuilder|EloquentBuilder
     {
-        $this->applyDataTableFiltersOnEloquentQuery($query, $params->filters);
-        $this->applyDataTableColumnsSearchOnEloquentQuery($query, $params->columnsSearch);
-        $this->applyDataTableSearchOnEloquentQuery($query, $params->search);
-        $this->applyDataTableColumnsSortingOnEloquentQuery($query, $params->sortBy);
-        $this->applyDataTableSortingDirectionOnEloquentQuery($query, $params->sortDir);
+        $query = clone $this->query;
+
+        return $this->applyDataRetrievalParamsOnQuery($query, $params);
+    }
+
+    protected function applyDataRetrievalParamsOnQuery(QueryBuilder|EloquentBuilder $query, LwDataRetrievalParams $params): QueryBuilder|EloquentBuilder
+    {
+        $this->applyDataTableFiltersOnQuery($query, $params->filters);
+        $this->applyDataTableColumnsSearchOnQuery($query, $params->columnsSearch);
+        $this->applyDataTableSearchOnQuery($query, $params->search);
+        $this->applyDataTableColumnsSortingOnQuery($query, $params->sortBy);
+        $this->applyDataTableSortingDirectionOnQuery($query, $params->sortDir);
 
         return $query;
     }
 
-    protected function applyDataTableFiltersOnEloquentQuery(EloquentBuilder $query, ?array $filters)
+    protected function applyDataTableFiltersOnQuery(QueryBuilder|EloquentBuilder $query, ?array $filters)
     {
         //
     }
 
-    protected function applyDataTableColumnsSearchOnEloquentQuery(EloquentBuilder $query, ?array $columnsSearch)
+    protected function applyDataTableColumnsSearchOnQuery(QueryBuilder|EloquentBuilder $query, ?array $columnsSearch)
     {
         if (empty($columnsSearch)) {
             return;
         }
 
-        if (\is_a($this->dataTable->dataSrc, SearchesDataTableColumns::class, true)) {
-            $model = $this->dataTable->dataSrc;
-            (new $model())->applyDataTableColumnsSearchToQuery($query, $columnsSearch);
+        // if (\is_a($this->dataTable->dataSrc, SearchesDataTableColumns::class, true)) {
+        //     $model = $this->dataTable->dataSrc;
+        //     (new $model())->applyDataTableColumnsSearchToQuery($query, $columnsSearch);
 
-            return;
-        }
+        //     return;
+        // }
 
         foreach ($columnsSearch as $dataField => $value) {
             $query->whereLike($dataField, "%$value%");
@@ -74,7 +75,7 @@ class QueryBuilderDataSource implements DataSource
 
     }
 
-    protected function applyDataTableSearchOnEloquentQuery(EloquentBuilder $query, ?string $search)
+    protected function applyDataTableSearchOnQuery(QueryBuilder|EloquentBuilder $query, ?string $search)
     {
         if (empty($search)) {
             return;
@@ -99,7 +100,7 @@ class QueryBuilderDataSource implements DataSource
         }
     }
 
-    protected function applyDataTableColumnsSortingOnEloquentQuery(EloquentBuilder $query, ?string $sortBy, string $sortDir = 'ASC')
+    protected function applyDataTableColumnsSortingOnQuery(QueryBuilder|EloquentBuilder $query, ?string $sortBy, string $sortDir = 'ASC')
     {
         if (empty(\trim($sortBy ?? ''))) {
             return;
@@ -117,7 +118,7 @@ class QueryBuilderDataSource implements DataSource
         }
     }
 
-    protected function applyDataTableSortingDirectionOnEloquentQuery(EloquentBuilder $query, ?string $sortDir)
+    protected function applyDataTableSortingDirectionOnQuery(QueryBuilder|EloquentBuilder $query, ?string $sortDir)
     {
         if (empty($search)) {
             return;
