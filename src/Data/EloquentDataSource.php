@@ -2,6 +2,8 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
+use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableQuery;
 use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableResults;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
@@ -12,12 +14,9 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
-use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableQuery;
 
 class EloquentDataSource extends QueryBuilderDataSource
 {
-    private const ITERABLE_PSEUDOTYPE = 'iterable';
-
     /** @var class-string<EloquentModel> */
     //protected string $modelClass;
 
@@ -36,7 +35,7 @@ class EloquentDataSource extends QueryBuilderDataSource
      */
     public function __construct(
         protected string $modelClass,
-        string $paginationType,
+        DataSourcePaginationType $paginationType,
     ) {
         if (!\is_a($modelClass, EloquentModel::class, true)) {
             throw new \LogicException("The value [$modelClass] is not an Eloquent Model class");
@@ -61,25 +60,26 @@ class EloquentDataSource extends QueryBuilderDataSource
      * @param \ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams $params
      * @return void
      */
-    public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator
+    public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection
     {
         if ($this->modelProvidesDataTableData()) {
             return $this->makeModel()->dataTableData($params);
         }
 
-        return match ($this->dataTable->dataSrcPagination) {
-            static::PAGINATION_LENGTH_AWARE => $this->getQuery($params)->paginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
-            static::PAGINATION_CURSOR => $this->getQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
-            static::PAGINATION_SIMPLE => $this->getQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
+        return match ($this->paginationType) {
+            DataSourcePaginationType::None => $this->getQuery($params)->get(),
+            DataSourcePaginationType::LengthAware => $this->getQuery($params)->paginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
+            DataSourcePaginationType::Cursor => $this->getQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
+            DataSourcePaginationType::Simple => $this->getQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
         };
     }
 
     /**
      * @param class-string<EloquentModel>  $modelClass
      */
-    protected function makeModel(string $modelClass): EloquentModel
+    protected function makeModel(): EloquentModel
     {
-        return app()->make($this->dataTable->dataSrc);
+        return app()->make($this->modelClass);
     }
 
     protected function newQuery(): EloquentBuilder
@@ -90,16 +90,16 @@ class EloquentDataSource extends QueryBuilderDataSource
     protected function modelProvidesDataTableData(): bool
     {
 
-        if (\is_a($this->dataTable->dataSrc, CustomizesDataTableResults::class, true)) {
+        if (\is_a($this->modelClass, CustomizesDataTableResults::class, true)) {
             return true;
         }
 
-        return $this->modelSatisfiesProvidesDataTableDataInterface();
+        return $this->modelSatisfiesCustomizesDataTableResultsInterface();
     }
 
-    protected function modelSatisfiesProvidesDataTableDataInterface(): bool
+    protected function modelSatisfiesCustomizesDataTableResultsInterface(): bool
     {
-        if (!\method_exists($this->dataTable->dataSrc, 'dataTableData')) {
+        if (!\method_exists($this->modelClass, 'dataTableData')) {
             return false;
         }
 

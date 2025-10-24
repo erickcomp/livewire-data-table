@@ -4,6 +4,7 @@ namespace ErickComp\LivewireDataTable;
 
 use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
+use ErickComp\LivewireDataTable\Data\DataSourceFactory;
 use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
 use ErickComp\LivewireDataTable\DataTable\Column;
@@ -30,14 +31,17 @@ use Illuminate\View\Component as BladeComponent;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\ImplicitlyBoundMethod;
 use Livewire\Wireable;
+use ErickComp\LivewireDataTable\Data\DataSource;
+use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 //use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
 class DataTable extends BaseDataTableComponent //implements Wireable
 {
-
     use FillsComponentAttributeBags;
 
-    public string $eloquentPaginatorType = EloquentDataSource::PAGINATION_DEFAULT;
+    public DataSource $dataSrc;
+
+    public DataSourcePaginationType $dataSrcPaginationType = DataSource::PAGINATION_DEFAULT;
     public const PER_PAGE_MAX = 'max';
     public const PER_PAGE_ALL = 'all';
     public const PER_PAGE_ALL_OPTION_VALUE = '___all___';
@@ -138,8 +142,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         public string $preset = 'empty',
 
         // Data
-        public string|iterable|Collection|EloquentBuilder|QueryBuilder|Paginator|LengthAwarePaginator|CursorPaginator|null $dataSrc = null,
-        public ?string $dataSrcPagination = EloquentDataSource::PAGINATION_DEFAULT,
+        string|iterable|Collection|EloquentBuilder|QueryBuilder|Paginator|LengthAwarePaginator|CursorPaginator|null $dataSrc = null,
+        public ?string $dataSrcPagination = DataSource::PAGINATION_DEFAULT,
         string|array $perPage = [],
         public string $pageName = 'page',
         public int $maxPerPage = 1000,
@@ -166,6 +170,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         ?string $rowLevelStyleCode = null,
         ?string $rowLevelAttributesCode = null,
     ) {
+        $this->dataSrc = DataSourceFactory::make($dataSrc);
         //$this->dataSrc = $dataSrc;
         //$this->dataProviderGetDataMethod = $dataProviderGetDataMethod;
         $this->paginationView = $paginationView;

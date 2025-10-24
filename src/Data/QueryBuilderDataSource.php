@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -12,24 +13,21 @@ use Illuminate\Support\Collection;
 
 class QueryBuilderDataSource implements DataSource
 {
-    public const PAGINATION_SIMPLE = 'simple';
-    public const PAGINATION_LENGTH_AWARE = 'length_aware';
-    public const PAGINATION_CURSOR = 'cursor';
-    public const PAGINATION_DEFAULT = self::PAGINATION_LENGTH_AWARE;
     public function __construct(
-        public QueryBuilder|EloquentBuilder $query,
-        protected string $paginationType,
+        protected QueryBuilder|EloquentBuilder $query,
+        protected DataSourcePaginationType $paginationType,
     ) {}
 
     /**
      * Returns paginated data using the provided query builder
      */
-    public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator
+    public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection
     {
         return match ($this->paginationType) {
-            static::PAGINATION_LENGTH_AWARE => $this->getDataQuery($params)->paginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
-            static::PAGINATION_CURSOR => $this->getDataQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
-            static::PAGINATION_SIMPLE => $this->getDataQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
+            DataSourcePaginationType::None => $this->getDataQuery($params)->get(),
+            DataSourcePaginationType::LengthAware => $this->getDataQuery($params)->paginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
+            DataSourcePaginationType::Cursor => $this->getDataQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
+            DataSourcePaginationType::Simple => $this->getDataQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
         };
     }
 

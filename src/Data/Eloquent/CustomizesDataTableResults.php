@@ -11,5 +11,5 @@ use Illuminate\Support\Collection;
 
 interface CustomizesDataTableResults
 {
-    public function dataTableData(EloquentBuilder $query, LwDataRetrievalParams $params): iterable|Collection|Paginator|LengthAwarePaginator|CursorPaginator;
+    public function dataTableData(EloquentBuilder $query, LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection;
 }
