@@ -392,7 +392,15 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             @continue
                         @elseif ($column instanceof DataColumn)
                             <td {{ $tdAttributes }}>
-                                {{ $row->{$column->dataField} }}
+                                @if(\is_object($row))
+                                    {{ $row->{$column->dataField} }}
+                                @elseif(\is_array($row) || $row instanceof \ArrayAccess)
+                                    {{ $row[$column->dataField] }}
+                                @else
+                                    @php
+                                        throw new \LogicException("Cannot get data for column [{$column->dataField}] on row #{$loop->iteration}");
+                                    @endphp
+                                @endif
                             </td>
                         @else
                             @php throw new \InvalidArgumentException('Cannot render column of type ' . \get_debug_type($column)); @endphp

@@ -6,6 +6,7 @@ use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 use ErickComp\LivewireDataTable\Data\DataSourceFactory;
 use ErickComp\LivewireDataTable\Data\EloquentDataSource;
+use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
@@ -143,7 +144,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         // Data
         string|iterable|Collection|EloquentBuilder|QueryBuilder|Paginator|LengthAwarePaginator|CursorPaginator|null $dataSrc = null,
-        public ?string $dataSrcPagination = DataSource::PAGINATION_DEFAULT,
+        public ?string $dataSrcPagination = DataSource::PAGINATION_DEFAULT->value,
         string|array $perPage = [],
         public string $pageName = 'page',
         public int $maxPerPage = 1000,
@@ -170,7 +171,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         ?string $rowLevelStyleCode = null,
         ?string $rowLevelAttributesCode = null,
     ) {
-        $this->dataSrc = DataSourceFactory::make($dataSrc);
+
+        $this->dataSrc = DataSourceFactory::new()->make($dataSrc, $this->dataSrcPaginationType, $this->componentName, $this->pageName);
         //$this->dataSrc = $dataSrc;
         //$this->dataProviderGetDataMethod = $dataProviderGetDataMethod;
         $this->paginationView = $paginationView;
@@ -213,6 +215,11 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         //$this->initComponentAttributeBags();
         $this->attributes = new ComponentAttributeBag();
+    }
+
+    public function hasStaticDataSource(): bool
+    {
+        return $this->dataSrc instanceof StaticDataDataSource;
     }
 
     public function data()
@@ -593,6 +600,13 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         $cacheBaseFilename = $dataTable->cacheBaseFilename();
         $cacheFilePath = \storage_path("framework/views/{$cacheBaseFilename}.php");
 
+        $isUsingStaticDataSource = $dataTable->hasStaticDataSource();
+        $dataSrc = $dataTable->dataSrc;
+
+        if ($isUsingStaticDataSource) {
+            unset($dataTable->dataSrc);
+        }
+
         static::createCodeCachesFiles($dataTable);
 
         if (!\file_exists($cacheFilePath)) {
@@ -602,10 +616,14 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             );
         }
 
+        if ($isUsingStaticDataSource) {
+            $dataTable->dataSrc = $dataSrc;
+        }
+
         return $cacheBaseFilename;
     }
 
-    public static function fromCache(string $cacheBaseFilename): null|static
+    public static function fromCache(string $cacheBaseFilename, ?StaticDataDataSource $staticDataDataSource = null): null|static
     {
         $filePath = \storage_path("framework/views/{$cacheBaseFilename}.php");
 
@@ -618,6 +636,10 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
             if (!$dataTable instanceof static) {
                 return null;
+            }
+
+            if ($staticDataDataSource !== null) {
+                $dataTable->dataSrc = $staticDataDataSource;
             }
 
             return $dataTable;

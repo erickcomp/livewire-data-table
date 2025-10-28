@@ -3,6 +3,7 @@
 namespace ErickComp\LivewireDataTable\Livewire;
 
 use ErickComp\LivewireDataTable\Data\EloquentDataSource;
+use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
@@ -38,6 +39,9 @@ class LwDataTable extends LivewireComponent
         self::SORT_DIR_ASC => self::SORT_DIR_DESC,
         self::SORT_DIR_DESC => self::SORT_DIR_NONE,
     ];
+
+    #[Locked]
+    public ?StaticDataDataSource $staticData = null;
 
     #[Url]
     public string $search = '';
@@ -231,6 +235,7 @@ class LwDataTable extends LivewireComponent
     {
         return $this->appliedFilters;
     }
+
     public function runAction(string $action, ...$params)
     {
         $this->dataTable->runAction($action, ...$params);
@@ -295,13 +300,18 @@ class LwDataTable extends LivewireComponent
 
     protected function mountDataTable(DataTable $dataTable)
     {
+        if ($dataTable->hasStaticDataSource()) {
+            $this->data = $dataTable->dataSrc;
+        }
+
         $this->dataTable = $dataTable;
+
         $this->dt = DataTable::toCache($dataTable);
     }
 
     protected function hydrateDataTable()
     {
-        $dataTable = DataTable::fromCache($this->dt);
+        $dataTable = DataTable::fromCache($this->dt, isset($this->dataTableData) ?? null);
 
         // Cache might have been busted for some reason (like a deployment or manually clearing the view cache)
         if (!$dataTable instanceof DataTable) {

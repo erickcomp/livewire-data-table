@@ -7,44 +7,45 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use Livewire\Wireable;
 
-class IterableDataSource implements DataSource
+class IterableDataSource implements StaticDataDataSource, Wireable
 {
-    protected string $sessionDataKey;
+    protected Collection $data;
+    protected DataSourcePaginationType $paginationType;
+
     public function __construct(
         iterable $data,
-        protected string $paginationType,
-        string $componentName,
-        string $htmlNameAttribute,
-        string $currentUrl,
+        DataSourcePaginationType $paginationType,
     ) {
         if (!$data instanceof Collection) {
-            if (!\is_array($data)) {
-                $data = \iterator_to_array($data);
-            }
-
             $data = collect($data);
         }
-        $this->sessionDataKey = "x-{$componentName}-{$htmlNameAttribute}@{$currentUrl}";
-        Session::put($this->sessionDataKey, $data);
+
+        $this->data = $data;
+        $this->paginationType = $paginationType;
     }
+
+    public static function fromLivewire($value): static
+    {
+        return decrypt($value);
+    }
+
+    public function toLivewire(): string
+    {
+        return encrypt($this);
+    }
+
     public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection
     {
-        $data = Session::get($this->sessionDataKey);
-
-        if ($data === null) {
-            // @TODO: Throw some sort of data expired so LwData Table triggers refresh of the component
-            Log::warning("erickcomp/livewire-data-table: Could not data source [{$this->sessionDataKey}] in session");
-            $data = collect();
-        }
-
-        $data = $this->applyDataRetrievalParamsOnCollection($data, $params);
+        $data = $this->applyDataRetrievalParamsOnCollection($this->data, $params);
 
         // Cursor pagination does not make sense for static data, but we simple pagination for it
         if ($this->paginationType === static::PAGINATION_CURSOR) {
-            Log::notice("erickcomp/livewire-data-table: Static data for data table [[{$this->sessionDataKey}]] is using \"cursor\" pagination type, which can't be done. Simple pagination will be used");
+            Log::notice("erickcomp/livewire-data-table: Static data for data table [[{$this->sessionKey}]] is using \"cursor\" pagination type, which can't be done. Simple pagination will be used");
         }
 
         return match ($this->paginationType) {
