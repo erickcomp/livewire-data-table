@@ -172,7 +172,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         ?string $rowLevelAttributesCode = null,
     ) {
 
-        $this->dataSrc = DataSourceFactory::new()->make($dataSrc, $this->dataSrcPaginationType, $this->componentName, $this->pageName);
+        $this->dataSrc = DataSourceFactory::new()->make($dataSrc, $this->dataSrcPaginationType);
         //$this->dataSrc = $dataSrc;
         //$this->dataProviderGetDataMethod = $dataProviderGetDataMethod;
         $this->paginationView = $paginationView;

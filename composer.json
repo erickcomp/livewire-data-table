@@ -63,5 +63,8 @@
             ],
             "dont-discover": []
         }
+    },
+    "suggest": {
+        "laravie/serialize-queries": "Allows Eloquent and Database query builders to be used as data sources for data tables."
     }
 }

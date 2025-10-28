@@ -15,10 +15,10 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
-class EloquentDataSource extends QueryBuilderDataSource
+class EloquentDataSource extends EloquentBuilderDataSource
 {
     /** @var class-string<EloquentModel> */
-    //protected string $modelClass;
+    protected string $modelClass;
 
     // public function __construct(
     //     protected DataTable $dataTable,
@@ -34,20 +34,37 @@ class EloquentDataSource extends QueryBuilderDataSource
      * @return EloquentBuilder
      */
     public function __construct(
-        protected string $modelClass,
+        string $modelClass,
         DataSourcePaginationType $paginationType,
     ) {
         if (!\is_a($modelClass, EloquentModel::class, true)) {
             throw new \LogicException("The value [$modelClass] is not an Eloquent Model class");
         }
 
+        $this->modelClass = $modelClass;
+
         $query = \is_a($modelClass, CustomizesDataTableQuery::class, true)
             ? (app()->make($modelClass))->dataTableQuery()
             : $this->newQuery();
 
+        
         parent::__construct($query, $paginationType);
     }
 
+    public function __serialize(): array
+    {
+        return [
+            ...parent::__serialize(),
+            ...['modelClass' => $this->modelClass],
+        ];
+    }
+
+
+    public function __unserialize(array $data)
+    {
+        parent::__unserialize($data);
+        $this->modelClass = $data['modelClass'];
+    }
     public function getQuery(LwDataRetrievalParams $params): EloquentBuilder
     {
         return $this->applyDataRetrievalParamsOnQuery($this->newQuery(), $params);

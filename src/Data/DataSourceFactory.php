@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use ErickComp\LivewireDataTable\Data\EloquentBuilderDataSource;
 
 class DataSourceFactory
 {
@@ -19,8 +20,6 @@ class DataSourceFactory
     public function make(
         string|iterable|Collection|QueryBuilder|EloquentBuilder|null $dataSource,
         DataSourcePaginationType $paginationType,
-        string $componentName,
-        string $componentInstanceIdentifier,
     ): DataSource {
         return match (true) {
             $dataSource === null => new EmptyDataSource(),
@@ -35,7 +34,7 @@ class DataSourceFactory
         };
     }
 
-    protected function isEloquentModel(string|EloquentModel $dataSource): bool
+    protected function isEloquentModel($dataSource): bool
     {
         if ($dataSource instanceof EloquentModel) {
             return true;
@@ -48,10 +47,14 @@ class DataSourceFactory
         return \is_a($dataSource, EloquentModel::class, true);
     }
 
-    protected function isCallable(string|callable $dataSource): bool
+    protected function isCallable($dataSource): bool
     {
         if (\is_callable($dataSource)) {
             return true;
+        }
+
+        if (!\is_string($dataSource)) {
+            return false;
         }
 
         // If the callback is using the format <class>::<method> but is not a callable,
@@ -86,14 +89,19 @@ class DataSourceFactory
         return new EloquentDataSource($dataSource, $paginationType);
     }
 
-    protected function makeCallableDataSource(string|callable $dataSource, DataSourcePaginationType $paginationType, $componentName)
+    protected function makeCallableDataSource(string|callable $dataSource, DataSourcePaginationType $paginationType)
     {
-        return new CallableDataSource($dataSource, $paginationType, $componentName);
+        return new CallableDataSource($dataSource, $paginationType);
     }
 
-    protected function makeQueryBuilderDataSource(QueryBuilder|EloquentBuilder $query, DataSourcePaginationType $paginationType): QueryBuilderDataSource
+    protected function makeQueryBuilderDataSource(QueryBuilder $query, DataSourcePaginationType $paginationType): QueryBuilderDataSource
     {
         return new QueryBuilderDataSource($query, $paginationType);
+    }
+
+    protected function makeEloquentBuilderDataSource(EloquentBuilder $query, DataSourcePaginationType $paginationType): EloquentBuilderDataSource
+    {
+        return new EloquentBuilderDataSource($query, $paginationType);
     }
 
     protected static function makeIterableDataSource(

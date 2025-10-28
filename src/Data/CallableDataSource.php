@@ -27,7 +27,6 @@ class CallableDataSource implements DataSource
     public function __construct(
         string|callable $dataSource,
         protected DataSourcePaginationType $paginationType,
-        string $componentName,
     ) {
         $callableType = $this->parseCallableType($dataSource);
 
@@ -38,6 +37,14 @@ class CallableDataSource implements DataSource
                 : \var_export($dataSource, true);
 
             $errmsg = "Cannot create a callable data source from the give value [$debugValue]";
+            throw new \ValueError($errmsg);
+        }
+
+        //@TODO: Check if there's a safe way to allow closures to be used without any caveats
+        if ($this->callableType === static::CALLABLE_TYPE_CLOSURE) {
+            //return new SerializableClosure($dataSource);
+            $errmsg = 'Cannot use a closure as the data source for the component';
+
             throw new \ValueError($errmsg);
         }
 
@@ -99,14 +106,6 @@ class CallableDataSource implements DataSource
 
     protected function normalizeDataSource(callable|string $dataSource): SerializableClosure|string|array
     {
-        //@TODO: Check if there's a safe way to allow closures to be used without 
-        if ($this->callableType === static::CALLABLE_TYPE_CLOSURE) {
-            //return new SerializableClosure($dataSource);
-            $errmsg = 'Cannot use a closure as the data source for the component';
-
-            throw new \ValueError($errmsg);
-        }
-
         if ($this->callableType === static::CALLABLE_TYPE_INVOKABLE) {
             return $dataSource;
         }

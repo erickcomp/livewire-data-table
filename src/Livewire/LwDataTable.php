@@ -41,7 +41,7 @@ class LwDataTable extends LivewireComponent
     ];
 
     #[Locked]
-    public ?StaticDataDataSource $staticData = null;
+    public ?StaticDataDataSource $dataTableStaticData = null;
 
     #[Url]
     public string $search = '';
@@ -121,7 +121,7 @@ class LwDataTable extends LivewireComponent
     public function preset(): Preset
     {
         if (!isset($this->loadedPreset)) {
-            $this->loadedPreset = $this->dataTable->preset();
+            $this->loadedPreset = $this->dataTable?->preset() ?? Preset::loadFromName('empty');
         }
 
         return $this->loadedPreset;
@@ -301,7 +301,7 @@ class LwDataTable extends LivewireComponent
     protected function mountDataTable(DataTable $dataTable)
     {
         if ($dataTable->hasStaticDataSource()) {
-            $this->data = $dataTable->dataSrc;
+            $this->dataTableStaticData = $dataTable->dataSrc;
         }
 
         $this->dataTable = $dataTable;
@@ -311,7 +311,7 @@ class LwDataTable extends LivewireComponent
 
     protected function hydrateDataTable()
     {
-        $dataTable = DataTable::fromCache($this->dt, isset($this->dataTableData) ?? null);
+        $dataTable = DataTable::fromCache($this->dt, $this->dataTableStaticData ?? null);
 
         // Cache might have been busted for some reason (like a deployment or manually clearing the view cache)
         if (!$dataTable instanceof DataTable) {
@@ -460,16 +460,17 @@ class LwDataTable extends LivewireComponent
         return $this->getDataFromDataProvider($params);
     }
 
-    protected function getDataFromDataProvider(LwDataRetrievalParams $params)
+    protected function getDataFromDataProvider(LwDataRetrievalParams $params): Collection|CursorPaginator|LengthAwarePaginator|Paginator
     {
-        return match (true) {
-            $this->dataProviderProvidesDataTableData() => $this->getDataUsingDataProviderObject($params),
-            $this->dataProviderBuildsDataTableQuery() => $this->getDataUsingDataTableQuery($params),
-            $this->dataProviderIsEloquentModel() => $this->getDataUsingEloquenModel($params),
-            //$this->dataProviderIsClass() => $this->getDataUsingClassObject($params),
-            $this->dataProviderIsCallable() => $this->getDataUsingCallable($params),
-            default => throw new \LogicException("Cannot get data from [{$this->dataTable->dataSrc}]")
-        };
+        return $this->dataTable->dataSrc->getData($params);
+        // return match (true) {
+        //     $this->dataProviderProvidesDataTableData() => $this->getDataUsingDataProviderObject($params),
+        //     $this->dataProviderBuildsDataTableQuery() => $this->getDataUsingDataTableQuery($params),
+        //     $this->dataProviderIsEloquentModel() => $this->getDataUsingEloquenModel($params),
+        //     //$this->dataProviderIsClass() => $this->getDataUsingClassObject($params),
+        //     $this->dataProviderIsCallable() => $this->getDataUsingCallable($params),
+        //     default => throw new \LogicException("Cannot get data from [{$this->dataTable->dataSrc}]")
+        // };
 
         // process query string $data and set it on the DataTable object
         //return $this->executeCallable($this->dataTable->dataSrc, ...$params);

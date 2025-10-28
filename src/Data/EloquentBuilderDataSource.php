@@ -5,43 +5,45 @@ namespace ErickComp\LivewireDataTable\Data;
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
-use Laravie\SerializesQuery\Query as QueryBuilderSerializer;
+use Laravie\SerializesQuery\Eloquent as EloquentBuilderSerializer;
+use Illuminate\Support\Facades\Schema;
 
-class QueryBuilderDataSource implements DataSource
+class EloquentBuilderDataSource implements DataSource
 {
     public function __construct(
-        protected QueryBuilder $query,
+        protected EloquentBuilder $query,
         protected DataSourcePaginationType $paginationType,
     ) {}
 
     public function __serialize(): array
     {
-        if (!\class_exists(QueryBuilderSerializer::class)) {
+        if (!\class_exists(EloquentBuilderSerializer::class)) {
             throw new \LogicException(
-                'To use a query builder instance as a data source, please install the package: laravie/serialize-queries',
+                'To use an Eloquent query builder as a data source, please install the package: laravie/serialize-queries',
             );
         }
 
         return [
-            'query' => QueryBuilderSerializer::serialize($this->query),
+            'query' => EloquentBuilderSerializer::serialize($this->query),
             'paginationType' => $this->paginationType,
         ];
     }
 
     public function __unserialize(array $data)
     {
-        if (!\class_exists(QueryBuilderSerializer::class)) {
+        if (!\class_exists(EloquentBuilderSerializer::class)) {
             throw new \LogicException(
-                'To use a query builder instance as a data source, please install the package: laravie/serialize-queries',
+                'To use an Eloquent query builder as a data source, please install the package: laravie/serialize-queries',
             );
         }
 
-        $this->query = QueryBuilderSerializer::unserialize($data['query']);
+        $this->query = EloquentBuilderSerializer::unserialize($data['query']);
         $this->paginationType = $data['paginationType'];
     }
 
@@ -106,14 +108,11 @@ class QueryBuilderDataSource implements DataSource
             return;
         }
 
-        // @TODO: Implement search by using columns from data table object
-        return;
-
-        $modelClass = $this->dataTable->dataSrc;
-        if (\is_a($this->dataTable->dataSrc, SearchesDataTable::class, true)) {
-            new $modelClass()->applyLwDataTableColumnsSearch($query, $search);
+        $modelClass = $this->modelClass();
+        if (\is_a($modelClass, SearchesDataTable::class, true)) {
+            app()->make($modelClass)->applyDataTableSearchToQuery($query, $search);
         } else {
-            $model = new $modelClass();
+            $model = app()->make($modelClass);
             $columnsToSearch = collect(Schema::getColumns($model->getTable()))
                 ->pluck('name')
                 ->diff($model->getHidden());
@@ -134,11 +133,16 @@ class QueryBuilderDataSource implements DataSource
             return;
         }
 
-        $sortDir = \in_array(\strtoupper($sortDir), ['ASC', 'DESC'])
-            ? \strtoupper($sortDir)
-            : 'ASC';
+        $modelClass = $this->modelClass();
+        if (\is_a($modelClass, SortsDataTable::class, true)) {
+            app()->make($modelClass)->applyLwDataTableSorting($query, $sortBy, $sortDir);
+        } else {
+            $sortDir = \in_array(\strtoupper($sortDir), ['ASC', 'DESC'])
+                ? \strtoupper($sortDir)
+                : 'ASC';
 
-        $query->orderBy($sortBy, $sortDir);
+            $query->orderBy($sortBy, $sortDir);
+        }
     }
 
     protected function applyDataTableSortingDirectionOnQuery(QueryBuilder|EloquentBuilder $query, ?string $sortDir)
@@ -147,14 +151,11 @@ class QueryBuilderDataSource implements DataSource
             return;
         }
 
-        // @TODO: Implement search by using columns from data table object
-        return;
-
-        $modelClass = $this->dataTable->dataSrc;
-        if (\is_a($this->dataTable->dataSrc, SearchesDataTable::class, true)) {
-            new $modelClass()->applyLwDataTableColumnsSearch($query, $search);
+        $modelClass = $this->modelClass();
+        if (\is_a($modelClass, SearchesDataTable::class, true)) {
+            app()->make($modelClass)->applyLwDataTableColumnsSearch($query, $search);
         } else {
-            $model = new $modelClass();
+            $model = app()->make($modelClass);
             $columnsToSearch = collect(Schema::getColumns($model->getTable()))
                 ->pluck('name')
                 ->diff($model->getHidden());
@@ -163,5 +164,13 @@ class QueryBuilderDataSource implements DataSource
                 $query->whereLike($col, "%$search%");
             }
         }
+    }
+
+    /**
+     * @return class-string<EloquentModel>
+     */
+    protected function modelClass(): string
+    {
+        return $this->query->getModel();
     }
 }
