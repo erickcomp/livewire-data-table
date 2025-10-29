@@ -25,6 +25,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use Livewire\WithPagination;
+use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
 
 class LwDataTable extends LivewireComponent
 {
@@ -41,7 +42,8 @@ class LwDataTable extends LivewireComponent
     ];
 
     #[Locked]
-    public ?StaticDataDataSource $dataTableStaticData = null;
+    /** @var ?StaticDataDataSource $s Static data passed to component, as arrays or collections*/
+    public ?StaticDataDataSource $sd;
 
     #[Url]
     public string $search = '';
@@ -82,35 +84,17 @@ class LwDataTable extends LivewireComponent
 
         $rows = $this->getTableData();
 
-        if ($rows instanceof LengthAwarePaginator && ($this->paginators['page'] ?? 1) > $rows->lastPage()) {
+        if ($rows instanceof LengthAwarePaginator && ($this->paginators[$rows->getPageName()] ?? 1) > $rows->lastPage()) {
 
             // Forces page reset to last page and re-evaluate the data
-            $this->paginators['page'] = $rows->lastPage();
+            $this->paginators[$rows->getPageName()] = $rows->lastPage();
 
             $rows = $this->getTableData();
-
-            // // Forces page reset on URI level
-            // //$newUri = Uri::of(url()->full())
-            // $fullUrl = $this->currentUrl;
-            // $newUri = Uri::of($fullUrl)
-            //     ->withQuery(['page' => $rows->lastPage(), ])
-            //     ->__tostring();
-            // 
-            // $this->redirect($newUri, true);
         }
-
-        //$inputSearchIdentifier = ($this->dataTable->name ?? $this->dataTable->id ?? $this->getId()) . '-search';
-        //$buttonApplySearchIdentifier = "$inputSearchIdentifier-apply";
 
         $viewData = [
             'rows' => $rows,
-            //'inputSearchIdentifier' => $inputSearchIdentifier,
-            //'buttonApplySearchIdentifier' => $buttonApplySearchIdentifier,
-            //'columnsSearchDebounceMs' => $columnsSearchDebounceMs,
-            //'shouldStylePagination' => $shouldStylePagination,
-            //'filterUrlParam' => $this->filterUrlParam,
             'initialFilters' => $this->computeInitialFilters(),
-            //'___lwDataTable' => $this,
         ];
 
         return view()
@@ -121,7 +105,14 @@ class LwDataTable extends LivewireComponent
     public function preset(): Preset
     {
         if (!isset($this->loadedPreset)) {
-            $this->loadedPreset = $this->dataTable?->preset() ?? Preset::loadFromName('empty');
+
+            $preset = $this->dataTable?->preset();
+
+            if ($preset === null) {
+                return Preset::loadFromName('empty');
+            }
+
+            $this->loadedPreset = $preset;
         }
 
         return $this->loadedPreset;
@@ -157,7 +148,7 @@ class LwDataTable extends LivewireComponent
             \is_array($rows) || $rows instanceof Collection => '',
             $rows instanceof LengthAwarePaginatorContract => $rows->render($this->paginationView()),
             $rows instanceof PaginatorContract || $rows instanceof CursorPaginatorContract => $rows->render($this->paginationSimpleView()),
-            \method_exists($rows, 'links') => $rows->links($this->dataTable->paginationView)
+            \is_object($rows) && \method_exists($rows, 'links') => $rows->links($this->dataTable->paginationView)
         };
     }
 
@@ -295,13 +286,15 @@ class LwDataTable extends LivewireComponent
 
     public function isDataPaginated($rows): bool
     {
-        return $rows instanceof \Illuminate\Contracts\Pagination\Paginator || $rows instanceof \Illuminate\Contracts\Pagination\CursorPaginator;
+        return $rows instanceof CursorPaginationContract || $rows instanceof CursorPaginatorContract;
     }
 
     protected function mountDataTable(DataTable $dataTable)
     {
         if ($dataTable->hasStaticDataSource()) {
-            $this->dataTableStaticData = $dataTable->dataSrc;
+            $this->sd = $dataTable->dataSrc;
+        } else {
+            unset($this->sd);
         }
 
         $this->dataTable = $dataTable;
@@ -311,7 +304,7 @@ class LwDataTable extends LivewireComponent
 
     protected function hydrateDataTable()
     {
-        $dataTable = DataTable::fromCache($this->dt, $this->dataTableStaticData ?? null);
+        $dataTable = DataTable::fromCache($this->dt, $this->sd ?? null);
 
         // Cache might have been busted for some reason (like a deployment or manually clearing the view cache)
         if (!$dataTable instanceof DataTable) {
@@ -357,18 +350,12 @@ class LwDataTable extends LivewireComponent
         return \config('erickcomp-livewire-data-table.query-string-param-cols-search', 'cols-search');
     }
 
-    protected function processColumnsSearch()
-    {
-        // process query string $data and set it on the DataTable object
-    }
-
     protected function setupMaxMemory()
     {
         if (\is_string($this->dataTable->phpMaxMemory)) {
             \ini_set('memory_limit', $this->dataTable->phpMaxMemory);
         }
     }
-
     protected function processFilters()
     {
         $datetimeTypes = [
@@ -457,73 +444,8 @@ class LwDataTable extends LivewireComponent
             sortDir: $this->sortDir,
         );
 
-        return $this->getDataFromDataProvider($params);
-    }
-
-    protected function getDataFromDataProvider(LwDataRetrievalParams $params): Collection|CursorPaginator|LengthAwarePaginator|Paginator
-    {
         return $this->dataTable->dataSrc->getData($params);
-        // return match (true) {
-        //     $this->dataProviderProvidesDataTableData() => $this->getDataUsingDataProviderObject($params),
-        //     $this->dataProviderBuildsDataTableQuery() => $this->getDataUsingDataTableQuery($params),
-        //     $this->dataProviderIsEloquentModel() => $this->getDataUsingEloquenModel($params),
-        //     //$this->dataProviderIsClass() => $this->getDataUsingClassObject($params),
-        //     $this->dataProviderIsCallable() => $this->getDataUsingCallable($params),
-        //     default => throw new \LogicException("Cannot get data from [{$this->dataTable->dataSrc}]")
-        // };
-
-        // process query string $data and set it on the DataTable object
-        //return $this->executeCallable($this->dataTable->dataSrc, ...$params);
     }
-
-    protected function getDataUsingDataProviderObject(LwDataRetrievalParams $params): LengthAwarePaginator
-    {
-        /** @var ProvidesDataTableData */
-        $dataProvider = app()->make($this->dataTable->dataSrc);
-
-        return $dataProvider->dataTableData($params);
-    }
-
-    protected function getDataUsingDataTableQuery(LwDataRetrievalParams $params): LengthAwarePaginator
-    {
-        /** @var BuildsDataTableQuery */
-        $queryProvider = App::make($this->dataTable->dataSrc);
-
-        $query = $queryProvider->buildLwDataTableQuery($params);
-
-        return $this->getDataFromQuery($query, $params->page, $params->perPage, $params->pageName);
-    }
-
-    protected function getDataFromQuery(QueryBuilder|EloquentBuilder $query, int $page, int $perPage, string $pageName): CursorPaginator|LengthAwarePaginator|Paginator
-    {
-        return match ($this->dataTable->dataSrcPagination) {
-            static::PAGINATION_LENGTH_AWARE => $query->paginate(perPage: $perPage, pageName: $pageName, page: $page),
-            static::PAGINATION_CURSOR => $query->cursorPaginate(perPage: $perPage, cursorName: $pageName),
-            static::PAGINATION_SIMPLE => $query->simplePaginate(perPage: $perPage, pageName: $pageName, page: $page),
-        };
-    }
-
-    protected function getDataUsingEloquenModel(LwDataRetrievalParams $params)
-    {
-        return (new EloquentDataSource($this->dataTable))->getData($params);
-    }
-
-    // protected function getDataUsingClassObject(LwDataRetrievalParams $params)
-    // {
-    //     //
-    //     $dataProvideObject = App::make($this->dataTable->dataSrc);
-    //     $dataProviderMethod = $this->dataTable->dataSrcGetDataMethod;
-
-    //     return App::call([$dataProvideObject, $dataProviderMethod], ['params' => $params]);
-
-    // }
-
-    protected function getDataUsingCallable(LwDataRetrievalParams $params)
-    {
-        //
-    }
-
-
 
     protected function dataProviderProvidesDataTableData(): bool
     {

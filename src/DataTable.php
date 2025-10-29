@@ -143,7 +143,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         public string $preset = 'empty',
 
         // Data
-        string|iterable|Collection|EloquentBuilder|QueryBuilder|Paginator|LengthAwarePaginator|CursorPaginator|null $dataSrc = null,
+        string|iterable|Collection|EloquentBuilder|QueryBuilder|Paginator|LengthAwarePaginator|CursorPaginator|callable|null $dataSrc = null,
         public ?string $dataSrcPagination = DataSource::PAGINATION_DEFAULT->value,
         string|array $perPage = [],
         public string $pageName = 'page',

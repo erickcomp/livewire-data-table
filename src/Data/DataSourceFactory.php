@@ -18,17 +18,21 @@ class DataSourceFactory
     }
 
     public function make(
-        string|iterable|Collection|QueryBuilder|EloquentBuilder|null $dataSource,
+        string|iterable|Collection|QueryBuilder|EloquentBuilder|callable|null $dataSource,
         DataSourcePaginationType $paginationType,
     ): DataSource {
+        if (\is_string($dataSource)) {
+            $dataSource = \trim($dataSource);
+        }
+
         return match (true) {
-            $dataSource === null => new EmptyDataSource(),
+            empty($dataSource) => new EmptyDataSource(),
             $this->isEloquentModel($dataSource) => $this->makeEloquentDataSource($dataSource, $paginationType),
-            $this->isCallable($dataSource) => $this->makeCallableDataSource($dataSource, $paginationType, $componentName),
+            $this->isCallable($dataSource) => $this->makeCallableDataSource($dataSource, $paginationType),
             $dataSource instanceof QueryBuilder => $this->makeQueryBuilderDataSource($dataSource, $paginationType),
-            $dataSource instanceof EloquentBuilder => $this->makeQueryBuilderDataSource($dataSource, $paginationType),
-            $dataSource instanceof Collection => $this->makeIterableDataSource($dataSource, $paginationType, $componentName, $componentInstanceIdentifier),
-            \is_iterable($dataSource) => $this->makeIterableDataSource($dataSource, $paginationType, $componentName, $componentInstanceIdentifier),
+            $dataSource instanceof EloquentBuilder => $this->makeEloquentBuilderDataSource($dataSource, $paginationType),
+            $dataSource instanceof Collection => $this->makeIterableDataSource($dataSource, $paginationType),
+            \is_iterable($dataSource) => $this->makeIterableDataSource($dataSource, $paginationType),
 
             default => throw new \LogicException('Cannot create a data source from [' . (\is_string($dataSource) ? $dataSource : \var_export($dataSource, true)) . ']')
         };
@@ -104,15 +108,8 @@ class DataSourceFactory
         return new EloquentBuilderDataSource($query, $paginationType);
     }
 
-    protected static function makeIterableDataSource(
-        iterable $dataSource,
-        DataSourcePaginationType $paginationType,
-        string $componentName,
-        string $componentInstanceIdentifier,
-    ) {
-        $requestPath = Request::path();
-        $sanitizedRequestPath = Str::slug($requestPath, '||');
-
-        return new IterableDataSource($dataSource, $paginationType, $componentName, $componentInstanceIdentifier, $sanitizedRequestPath);
+    protected static function makeIterableDataSource(iterable $iterable, DataSourcePaginationType $paginationType)
+    {
+        return new IterableDataSource($iterable, $paginationType);
     }
 }

@@ -5,7 +5,7 @@ namespace ErickComp\LivewireDataTable\Data;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Support\Collection;
 
-class EmptyDataSource extends IterableDataSource
+class EmptyDataSource implements DataSource
 {
     public function __construct() {}
 
