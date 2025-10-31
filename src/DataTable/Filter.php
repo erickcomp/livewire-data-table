@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\DataTable;
 
+use ErickComp\LivewireDataTable\Concerns\WorksWithTextSearchingAndFiltering;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
@@ -18,6 +19,7 @@ use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 class Filter
 {
     use FillsComponentAttributeBags;
+    use WorksWithTextSearchingAndFiltering;
 
     public const TYPE_TEXT = 'text';
     public const TYPE_NUMBER = 'number';
@@ -40,10 +42,25 @@ class Filter
         self::TYPE_SELECT_MULTIPLE,
     ];
 
-    public const MODE_CONTAINS = 'contains'; // like
+    public const MODE_EXACT = self::TEXT_MODE_EXACT; // = <value>
+    public const MODE_CONTAINS = self::TEXT_MODE_CONTAINS; // like %<value>%
+    public const MODE_STARTS_WITH = self::TEXT_MODE_STARTS_WITH; // like <value>%
+    public const MODE_ENDS_WITH = self::TEXT_MODE_ENDS_WITH; // like %<value>
+    public const MODE_FULLTEXT = self::TEXT_MODE_FULLTEXT; // like %<value>
+
     public const MODE_RANGE = 'range'; // between
-    public const MODE_EQUALS = 'equals'; // =
+    //public const MODE_EQUALS = 'equals'; // =
     public const MODE_IN = 'IN'; // IN
+
+    public const MODES = [
+        self::MODE_EXACT,
+        self::MODE_CONTAINS,
+        self::MODE_STARTS_WITH,
+        self::MODE_ENDS_WITH,
+        self::MODE_FULLTEXT,
+        self::MODE_RANGE,
+        self::MODE_IN,
+    ];
 
     public ComponentAttributeBag $attributes;
     public ComponentAttributeBag $rangeFromAttributes;
@@ -74,8 +91,8 @@ class Filter
     //         return match ($this->inputType) {
     //             static::TYPE_TEXT => static::MODE_CONTAINS,
     //             static::TYPE_DATE, static::TYPE_DATE_PICKER, static::TYPE_DATETIME, static::TYPE_DATETIME_PICKER => static::MODE_RANGE,
-    //             static::TYPE_NUMBER => static::MODE_EQUALS,
-    //             static::TYPE_SELECT => static::MODE_EQUALS,
+    //             static::TYPE_NUMBER => static::MODE_EXACT,
+    //             static::TYPE_SELECT => static::MODE_EXACT,
     //             static::TYPE_SELECT_MULTIPLE => static::MODE_IN
     //         };
     //     }
@@ -87,8 +104,7 @@ class Filter
     {
         $this->validateAttributes($attributes);
 
-        // HTML names defaults to data-fields's name
-        $attributes = $attributes->merge(['name' => $attributes['data-field']]);
+
 
         $this->fillComponentAttributeBags($attributes);
 
@@ -237,8 +253,8 @@ class Filter
             return match ($this->inputType) {
                 static::TYPE_TEXT => static::MODE_CONTAINS,
                 static::TYPE_DATE, static::TYPE_DATE_PICKER, static::TYPE_DATETIME, static::TYPE_DATETIME_PICKER => static::MODE_RANGE,
-                static::TYPE_NUMBER => static::MODE_EQUALS,
-                static::TYPE_SELECT => static::MODE_EQUALS,
+                static::TYPE_NUMBER => static::MODE_EXACT,
+                static::TYPE_SELECT => static::MODE_EXACT,
                 static::TYPE_SELECT_MULTIPLE => static::MODE_IN,
                 default => throw new \RuntimeException('Unknown inputType: ' . \var_export($this->inputType, true))
             };
@@ -260,11 +276,39 @@ class Filter
             throw new \LogicException('Data table filters must specify a [data-field] attribute');
         }
 
+        $dataField = $attributes->get('data-field');
+
+        if (\str_contains($dataField, ':')) {
+            [$dataField, $mode] = \explode(':', $dataField, 2) + [1 => ''];
+
+            if (!empty(\trim($mode))) {
+                if ($attributes->has('mode')) {
+                    $errmsg = 'You may define the filtering mode by using a suffix into the data-field attribute or by using the mode attribute, but not both at the same time';
+                    throw new \LogicException($errmsg);
+                }
+
+                $attributes['data-field'] = $dataField;
+                $attributes['mode'] = \trim($mode);
+            }
+        }
+
         if ($attributes->has('input-type') && !\in_array($attributes['input-type'], static::INPUT_TYPES)) {
             $inputTypesAsStr = \implode(', ', static::INPUT_TYPES);
 
             throw new \InvalidArgumentException("The attribute [input-type] must be one of the following: [$inputTypesAsStr], \"{$this->attributes['input-type']}\" given");
         }
+
+        // HTML names defaults to data-fields's name
+        if (!$attributes->has('name')) {
+            $attributes['name'] = $this->normalizeNameAttribute($attributes['data-field']);
+        }
+    }
+
+    protected function normalizeNameAttribute(string $name): string
+    {
+        $name = \preg_replace('/\s/u', '_', $name);
+
+        return $name;
     }
 
     protected function insertAttributeValueIntoHTML(string $html, string $selector, string $attribute, string $value, bool $force, ?string $notationForMultiple = null): string
@@ -274,7 +318,10 @@ class Filter
         }
 
         //$dom = \Dom\HTMLDocument::createFromString($html, \LIBXML_HTML_NOIMPLIED | \LIBXML_ERR_NONE);
-        $dom = new \Gt\Dom\HTMLDocument($html);
+        //$dom = new \Gt\Dom\HTMLDocument($html);
+
+        $dom = new \Gt\Dom\HTMLDocument();
+        $dom->loadHTML($html, \LIBXML_HTML_NOIMPLIED | \LIBXML_HTML_NODEFDTD | \LIBXML_ERR_NONE);
 
         $nodes = $dom->querySelectorAll($selector);
 

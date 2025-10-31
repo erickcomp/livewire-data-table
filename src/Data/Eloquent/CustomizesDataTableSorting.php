@@ -5,7 +5,7 @@ namespace ErickComp\LivewireDataTable\Data\Eloquent;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
-interface CustomizesDataTableOrdering
+interface CustomizesDataTableSorting
 {
-    public function applyDataTableOrdering(EloquentBuilder $query, LwDataRetrievalParams $params);
+    public function applyDataTableSorting(EloquentBuilder $query, LwDataRetrievalParams $params);
 }

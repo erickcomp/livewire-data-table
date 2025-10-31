@@ -194,11 +194,13 @@ class LwDataTable extends LivewireComponent
             }
         };";
 
-        $xData = \preg_replace('/\s+/', ' ', $xData);
-        $xData = \str_replace([' :', ': '], ':', $xData);
-        $xData = \str_replace([' ,', ', '], ',', $xData);
+        return $xData;
 
-        return \trim($xData);
+        // $xData = \preg_replace('/\s+/', ' ', $xData);
+        // $xData = \str_replace([' :', ': '], ':', $xData);
+        // $xData = \str_replace([' ,', ', '], ',', $xData);
+
+        // return \trim($xData);
     }
 
     public function updating(string $property, $value)
@@ -273,15 +275,26 @@ class LwDataTable extends LivewireComponent
 
     public function shouldShowFiltersContainer(): bool
     {
-        if (!$this->dataTable->filters?->isCollapsible() ?? false) {
-            return true;
+        $isCollapsible = $this->dataTable->filters?->isCollapsible() ?? false;
+        if (!$isCollapsible) {
+            return false;
         }
 
         if (\is_bool($this->filtersContainerIsOpen)) {
             return $this->filtersContainerIsOpen;
         }
 
-        return !empty($this->filters);
+        return false;
+
+        // if (!$this->dataTable->filters?->isCollapsible() ?? false) {
+        //     return true;
+        // }
+
+        // if (\is_bool($this->filtersContainerIsOpen)) {
+        //     return $this->filtersContainerIsOpen;
+        // }
+
+        // return !empty($this->filters);
     }
 
     public function isDataPaginated($rows): bool
@@ -402,6 +415,7 @@ class LwDataTable extends LivewireComponent
 
                     $this->appliedFilters[] = [
                         'wire-name' => $filterDefinition->buildWireModelAttribute($this->filtersUrlParam()),
+                        'removal-key' => $filterDefinition->buildInputNameAttribute($this->filtersUrlParam()),
                         'name' => $filterDefinition->name,
                         'label' => str($filterDefinition->label . ': ')
                             ->when($isRangeMode, function (Stringable $string) use ($filterVal) {
@@ -437,11 +451,12 @@ class LwDataTable extends LivewireComponent
             perPage: $this->perPage,
             pageName: $this->dataTable->pageName,
             search: $this->search,
-            searchDataFields: $this->dataTable?->search->dataFields ?? [],
+            //searchDataFields: $this->dataTable?->search->dataFields ?? [],
             columnsSearch: $this->columnsSearch,
             filters: $this->processedFilters,
             sortBy: $this->sortBy,
             sortDir: $this->sortDir,
+            dataTable: $this->dataTable,
         );
 
         return $this->dataTable->dataSrc->getData($params);

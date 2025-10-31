@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Concerns\AppliesDataRetrievalParamsOnEloquentBuilder;
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableQuery;
 use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableResults;
@@ -15,18 +16,12 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
-class EloquentDataSource extends EloquentBuilderDataSource
+class EloquentDataSource implements DataSource
 {
+    use AppliesDataRetrievalParamsOnEloquentBuilder;
+
     /** @var class-string<EloquentModel> */
     protected string $modelClass;
-
-    // public function __construct(
-    //     protected DataTable $dataTable,
-    // ) {
-    //     if (!\is_a($dataTable->dataSrc, Model::class, true)) {
-    //         throw new \LogicException("The value [{$dataTable->dataSrc}] is not an Eloquent Model class");
-    //     }
-    // }
 
     /**
      * @param class-string<EloquentModel> $modelClass
@@ -35,7 +30,7 @@ class EloquentDataSource extends EloquentBuilderDataSource
      */
     public function __construct(
         string $modelClass,
-        DataSourcePaginationType $paginationType,
+        protected DataSourcePaginationType $paginationType,
     ) {
         if (!\is_a($modelClass, EloquentModel::class, true)) {
             throw new \LogicException("The value [$modelClass] is not an Eloquent Model class");
@@ -43,28 +38,8 @@ class EloquentDataSource extends EloquentBuilderDataSource
 
         $this->modelClass = $modelClass;
 
-        $query = \is_a($modelClass, CustomizesDataTableQuery::class, true)
-            ? (app()->make($modelClass))->dataTableQuery()
-            : $this->newQuery();
-
-        
-        parent::__construct($query, $paginationType);
     }
 
-    public function __serialize(): array
-    {
-        return [
-            ...parent::__serialize(),
-            ...['modelClass' => $this->modelClass],
-        ];
-    }
-
-
-    public function __unserialize(array $data)
-    {
-        parent::__unserialize($data);
-        $this->modelClass = $data['modelClass'];
-    }
     public function getQuery(LwDataRetrievalParams $params): EloquentBuilder
     {
         return $this->applyDataRetrievalParamsOnQuery($this->newQuery(), $params);
@@ -73,14 +48,13 @@ class EloquentDataSource extends EloquentBuilderDataSource
     /**
      * Returns paginated data using the provided eloquent model class
      * 
-     * @param class-string<Model> $class
      * @param \ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams $params
      * @return void
      */
     public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection
     {
-        if ($this->modelProvidesDataTableData()) {
-            return $this->makeModel()->dataTableData($params);
+        if ($this->modelProvidesCustomDataTableData()) {
+            return $this->modelInstance()->dataTableData($params);
         }
 
         return match ($this->paginationType) {
@@ -92,21 +66,24 @@ class EloquentDataSource extends EloquentBuilderDataSource
     }
 
     /**
-     * @param class-string<EloquentModel>  $modelClass
+     * Returns the Eloquent Model class that's related to this data source
+     * 
+     * @return class-string<EloquentModel>
      */
-    protected function makeModel(): EloquentModel
+    protected function modelClass(): string
     {
-        return app()->make($this->modelClass);
+        return $this->modelClass;
     }
 
     protected function newQuery(): EloquentBuilder
     {
-        return $this->makeModel()->newQuery();
+        return \is_a($this->modelClass, CustomizesDataTableQuery::class, true)
+            ? $this->modelInstance()->dataTableQuery()
+            : $this->modelInstance()->newQuery();
     }
 
-    protected function modelProvidesDataTableData(): bool
+    protected function modelProvidesCustomDataTableData(): bool
     {
-
         if (\is_a($this->modelClass, CustomizesDataTableResults::class, true)) {
             return true;
         }
@@ -120,7 +97,7 @@ class EloquentDataSource extends EloquentBuilderDataSource
             return false;
         }
 
-        $method = new \ReflectionMethod("{$this->dataTable->dataSrc}::dataTableData");
+        $method = new \ReflectionMethod("{$this->modelClass}::dataTableData");
 
         $parameters = $method->getParameters();
 

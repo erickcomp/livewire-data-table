@@ -3,12 +3,15 @@
 namespace ErickComp\LivewireDataTable\DataTable;
 
 use ErickComp\LivewireDataTable\Livewire\Preset;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\ComponentAttributeBag;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 
 class Filters
 {
     use FillsComponentAttributeBags;
+
+    protected bool $presetCollapsible;
 
     protected array $defaultContainerAttributes = [
         //'row-length' => 4,
@@ -58,8 +61,9 @@ class Filters
     /** @var Filter[] */
     public array $filtersItems = [];
 
-    public function __construct(ComponentAttributeBag $componentAttributes)
+    public function __construct(ComponentAttributeBag $componentAttributes, Preset $preset)
     {
+        $this->presetCollapsible = $preset->get('filters.collapsible', true);
         $this->fillComponentAttributeBags($componentAttributes);
 
         $this->containerAttributes = $this->containerAttributes->merge($this->defaultContainerAttributes);
@@ -74,14 +78,12 @@ class Filters
     public function containerAttributes(Preset $preset): ComponentAttributeBag
     {
         $alpineTransition = \array_fill_keys($preset->get('filters.toggle-button.alpine-transition', []), '');
-        $collapsible = ['collapsible' => $preset->get('filters.collapsible', true)];
+        //$collapsible = ['collapsible' => $this->isCollapsible()];
 
-        return $this->containerAttributes->except([
-            'collapsible',
-            'filters-toggle-no-icon',
-        ])
+        return $this->containerAttributes->except(['collapsible', 'filters-toggle-no-icon',])
             ->merge($alpineTransition)
-            ->merge($collapsible)
+            //->merge($collapsible)
+            ->merge(['x-cloak' => $this->isCollapsible()])
             ->class($preset->get('filters.container.class', []));
     }
 
@@ -91,8 +93,21 @@ class Filters
     }
     public function isCollapsible(): bool
     {
+        if ($this->containerAttributes->has('collapsible')) {
+            $attributeValue = \filter_var($this->containerAttributes->get('collapsible'), \FILTER_VALIDATE_BOOL, \FILTER_NULL_ON_FAILURE);
 
-        return \filter_var($this->containerAttributes['collapsible'], \FILTER_VALIDATE_BOOL);
+            if (\is_bool($attributeValue)) {
+                return $attributeValue;
+            }
+
+            $errmsg = \sprintf(
+                'erickcomp/livewire-data-table: Filter attribute "collapsible" has an invalid boolean value (%s). The value must be parseable by filter_var() using FILTER_VALIDATE_BOOL. Using the value from the preset.',
+                \var_export($attributeValue, true),
+            );
+            Log::notice($errmsg);
+        }
+
+        return $this->presetCollapsible;
     }
 
     public function shouldShowIconOnToggleButton(): bool

@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Concerns\AppliesDataRetrievalParamsOnEloquentBuilder;
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -11,11 +12,12 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
-use Laravie\SerializesQuery\Eloquent as EloquentBuilderSerializer;
 use Illuminate\Support\Facades\Schema;
+use Laravie\SerializesQuery\Eloquent as EloquentBuilderSerializer;
 
 class EloquentBuilderDataSource implements DataSource
 {
+    use AppliesDataRetrievalParamsOnEloquentBuilder;
     public function __construct(
         protected EloquentBuilder $query,
         protected DataSourcePaginationType $paginationType,
@@ -60,110 +62,11 @@ class EloquentBuilderDataSource implements DataSource
         };
     }
 
-    public function getDataQuery(LwDataRetrievalParams $params): QueryBuilder|EloquentBuilder
+    public function getDataQuery(LwDataRetrievalParams $params): EloquentBuilder
     {
         $query = clone $this->query;
 
         return $this->applyDataRetrievalParamsOnQuery($query, $params);
-    }
-
-    protected function applyDataRetrievalParamsOnQuery(QueryBuilder|EloquentBuilder $query, LwDataRetrievalParams $params): QueryBuilder|EloquentBuilder
-    {
-        $this->applyDataTableFiltersOnQuery($query, $params->filters);
-        $this->applyDataTableColumnsSearchOnQuery($query, $params->columnsSearch);
-        $this->applyDataTableSearchOnQuery($query, $params->search);
-        $this->applyDataTableColumnsSortingOnQuery($query, $params->sortBy);
-        $this->applyDataTableSortingDirectionOnQuery($query, $params->sortDir);
-
-        return $query;
-    }
-
-    protected function applyDataTableFiltersOnQuery(QueryBuilder|EloquentBuilder $query, ?array $filters)
-    {
-        //
-    }
-
-    protected function applyDataTableColumnsSearchOnQuery(QueryBuilder|EloquentBuilder $query, ?array $columnsSearch)
-    {
-        if (empty($columnsSearch)) {
-            return;
-        }
-
-        // if (\is_a($this->dataTable->dataSrc, SearchesDataTableColumns::class, true)) {
-        //     $model = $this->dataTable->dataSrc;
-        //     (new $model())->applyDataTableColumnsSearchToQuery($query, $columnsSearch);
-
-        //     return;
-        // }
-
-        foreach ($columnsSearch as $dataField => $value) {
-            $query->whereLike($dataField, "%$value%");
-        }
-
-    }
-
-    protected function applyDataTableSearchOnQuery(QueryBuilder|EloquentBuilder $query, ?string $search)
-    {
-        if (empty($search)) {
-            return;
-        }
-
-        $modelClass = $this->modelClass();
-        if (\is_a($modelClass, SearchesDataTable::class, true)) {
-            app()->make($modelClass)->applyDataTableSearchToQuery($query, $search);
-        } else {
-            $model = app()->make($modelClass);
-            $columnsToSearch = collect(Schema::getColumns($model->getTable()))
-                ->pluck('name')
-                ->diff($model->getHidden());
-
-            if ($columnsToSearch->isNotEmpty()) {
-                $query->where(function ($orQuery) use ($columnsToSearch, $search) {
-                    foreach ($columnsToSearch as $dataField) {
-                        $orQuery->orWhereLike($dataField, "%$search%");
-                    }
-                });
-            }
-        }
-    }
-
-    protected function applyDataTableColumnsSortingOnQuery(QueryBuilder|EloquentBuilder $query, ?string $sortBy, string $sortDir = 'ASC')
-    {
-        if (empty(\trim($sortBy ?? ''))) {
-            return;
-        }
-
-        $modelClass = $this->modelClass();
-        if (\is_a($modelClass, SortsDataTable::class, true)) {
-            app()->make($modelClass)->applyLwDataTableSorting($query, $sortBy, $sortDir);
-        } else {
-            $sortDir = \in_array(\strtoupper($sortDir), ['ASC', 'DESC'])
-                ? \strtoupper($sortDir)
-                : 'ASC';
-
-            $query->orderBy($sortBy, $sortDir);
-        }
-    }
-
-    protected function applyDataTableSortingDirectionOnQuery(QueryBuilder|EloquentBuilder $query, ?string $sortDir)
-    {
-        if (empty($search)) {
-            return;
-        }
-
-        $modelClass = $this->modelClass();
-        if (\is_a($modelClass, SearchesDataTable::class, true)) {
-            app()->make($modelClass)->applyLwDataTableColumnsSearch($query, $search);
-        } else {
-            $model = app()->make($modelClass);
-            $columnsToSearch = collect(Schema::getColumns($model->getTable()))
-                ->pluck('name')
-                ->diff($model->getHidden());
-
-            foreach ($columnsToSearch as $col) {
-                $query->whereLike($col, "%$search%");
-            }
-        }
     }
 
     /**

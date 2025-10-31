@@ -139,6 +139,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     //public array|true $searchable;
     protected Preset $loadedPreset;
 
+    /** @var Collection<Column> */
+    public Collection $columns;
+
     public function __construct(
         public string $preset = 'empty',
 
@@ -157,7 +160,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         // Columns 
         /** @var Column[] */
-        public array $columns = [],
+        iterable $columns = [],
         //public array $filters = [],
         //public string|false $search = false,
         //public array $columnsSearch = [],
@@ -196,6 +199,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         if ($rowLevelAttributesCode !== null) {
             $this->rowLevelAttributesCode = \html_entity_decode($rowLevelAttributesCode);
         }
+
+        $this->columns = collect($columns);
 
         $this->columnsSearchDebounce = $columnsSearchDebounce
             ?? Preset::loadFromName(
@@ -422,13 +427,13 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     public function addDataColumn(ComponentAttributeBag $columnAttributes)
     {
-        $this->columns[] = DataColumn::fromComponentAttributeBag($columnAttributes);
+        $this->columns->push(DataColumn::fromComponentAttributeBag($columnAttributes));
     }
 
     public function addCustomRenderedColumn(ComponentAttributeBag $columnAttributes, ?string $customRendererCode)
     {
         //$this->columns[] = Builders\ColumnFactory::make($this, $columnAttributes);
-        $this->columns[] = CustomRenderedColumn::fromComponentAttributeBag($columnAttributes, customRendererCode: $customRendererCode);
+        $this->columns->push(CustomRenderedColumn::fromComponentAttributeBag($columnAttributes, customRendererCode: $customRendererCode));
     }
 
     public function hasFooter(): bool
@@ -445,7 +450,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     public function initFilters(ComponentAttributeBag $filterContainerAttributes)
     {
-        $this->filters = new Filters(componentAttributes: $filterContainerAttributes);
+        $this->filters = new Filters(componentAttributes: $filterContainerAttributes, preset: $this->preset());
 
         // dd(
         //     $this->filters->rowLength,

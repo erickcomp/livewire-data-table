@@ -1,8 +1,7 @@
 <?php
-namespace ErickComp\LivewireDataTable\Data;
+namespace ErickComp\LivewireDataTable\Concerns;
 
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;

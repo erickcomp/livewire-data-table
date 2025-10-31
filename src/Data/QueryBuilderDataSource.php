@@ -58,30 +58,29 @@ class QueryBuilderDataSource implements DataSource
         };
     }
 
-    public function getDataQuery(LwDataRetrievalParams $params): QueryBuilder|EloquentBuilder
+    public function getDataQuery(LwDataRetrievalParams $params): QueryBuilder
     {
         $query = clone $this->query;
 
         return $this->applyDataRetrievalParamsOnQuery($query, $params);
     }
 
-    protected function applyDataRetrievalParamsOnQuery(QueryBuilder|EloquentBuilder $query, LwDataRetrievalParams $params): QueryBuilder|EloquentBuilder
+    protected function applyDataRetrievalParamsOnQuery(QueryBuilder $query, LwDataRetrievalParams $params): QueryBuilder
     {
-        $this->applyDataTableFiltersOnQuery($query, $params->filters);
-        $this->applyDataTableColumnsSearchOnQuery($query, $params->columnsSearch);
-        $this->applyDataTableSearchOnQuery($query, $params->search);
-        $this->applyDataTableColumnsSortingOnQuery($query, $params->sortBy);
-        $this->applyDataTableSortingDirectionOnQuery($query, $params->sortDir);
+        $this->applyDataTableFiltersOnQuery($query, $params);
+        $this->applyDataTableColumnsSearchOnQuery($query, $params);
+        $this->applyDataTableSearchOnQuery($query, $params);
+        $this->applyDataTableColumnsSortingOnQuery($query, $params);
 
         return $query;
     }
 
-    protected function applyDataTableFiltersOnQuery(QueryBuilder|EloquentBuilder $query, ?array $filters)
+    protected function applyDataTableFiltersOnQuery(QueryBuilder $query, LwDataRetrievalParams $params)
     {
         //
     }
 
-    protected function applyDataTableColumnsSearchOnQuery(QueryBuilder|EloquentBuilder $query, ?array $columnsSearch)
+    protected function applyDataTableColumnsSearchOnQuery(QueryBuilder $query, LwDataRetrievalParams $params)
     {
         if (empty($columnsSearch)) {
             return;
@@ -100,7 +99,7 @@ class QueryBuilderDataSource implements DataSource
 
     }
 
-    protected function applyDataTableSearchOnQuery(QueryBuilder|EloquentBuilder $query, ?string $search)
+    protected function applyDataTableSearchOnQuery(QueryBuilder $query, LwDataRetrievalParams $params)
     {
         if (empty($search)) {
             return;
@@ -128,7 +127,7 @@ class QueryBuilderDataSource implements DataSource
         }
     }
 
-    protected function applyDataTableColumnsSortingOnQuery(QueryBuilder|EloquentBuilder $query, ?string $sortBy, string $sortDir = 'ASC')
+    protected function applyDataTableColumnsSortingOnQuery(QueryBuilder $query, LwDataRetrievalParams $params)
     {
         if (empty(\trim($sortBy ?? ''))) {
             return;
@@ -139,29 +138,5 @@ class QueryBuilderDataSource implements DataSource
             : 'ASC';
 
         $query->orderBy($sortBy, $sortDir);
-    }
-
-    protected function applyDataTableSortingDirectionOnQuery(QueryBuilder|EloquentBuilder $query, ?string $sortDir)
-    {
-        if (empty($search)) {
-            return;
-        }
-
-        // @TODO: Implement search by using columns from data table object
-        return;
-
-        $modelClass = $this->dataTable->dataSrc;
-        if (\is_a($this->dataTable->dataSrc, SearchesDataTable::class, true)) {
-            new $modelClass()->applyLwDataTableColumnsSearch($query, $search);
-        } else {
-            $model = new $modelClass();
-            $columnsToSearch = collect(Schema::getColumns($model->getTable()))
-                ->pluck('name')
-                ->diff($model->getHidden());
-
-            foreach ($columnsToSearch as $col) {
-                $query->whereLike($col, "%$search%");
-            }
-        }
     }
 }

@@ -104,6 +104,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                     ...$this->preset()->get('filters.item.content.class', []) ,
                                     ...($filterItem->mode === Filter::MODE_RANGE ? $this->preset()->get('filters.item.content.range.class', []) : [])
                                     ])>
+                                    @debugger
                                     @if(!empty($filterItem->customRendererCode))
                                         {!! $filterItem->getCustomRendererCodeWithXModel('inputFilters', ['___lwDataTable' => $this]) !!}
                                     @else
@@ -257,7 +258,10 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                 @endif
                                 
                                 <button
+                                    {{-- 
                                     x-on:click="removeFilter('{{ Str::chopStart($appliedFilterData['wire-name'], "{$this->filtersUrlParam()}.") }}')"
+                                    --}}
+                                    x-on:click="removeFilter('{{ Str::chopStart($appliedFilterData['removal-key'], "{$this->filtersUrlParam()}") }}')"
                                     @class($this->preset()->get('applied-filters.button-remove-applied-filter-item.class', []))>
                                     {!! $this->preset()->get('applied-filters.button-remove-applied-filter-item.content') !!}
                                 </button>
@@ -470,6 +474,12 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 
 @assets
 
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+
 @foreach ($this->preset()->get('loader-overlay.assets', []) as $asset)
     {!! $asset !!}
 @endforeach
@@ -539,8 +549,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             },
 
             applySearch(wireHandler) {
-                // No changes, no server roundtrip
-                if (!this.changedSearchTerms(wireHandler)) {
+                if (!this.changedSearchTerms(wireHandler)) { {{-- No changes, no server roundtrip --}}
                     return;
                 }
 
@@ -548,8 +557,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             },
 
             applyFilters(wireHandler) {
-                // No changes in filters, no server roundtrip needed
-                if (!this.changedFilters(wireHandler)) {
+                if (!this.changedFilters(wireHandler)) { {{-- No changes in filters, no server roundtrip needed --}}
                     return;
                 }
 
@@ -557,8 +565,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             },
 
             clearSearch(wireHandler) {
-                // Already empty, no server roundtrip needed
-                if (this.inputSearch === '')  {
+                if (this.inputSearch === '')  { {{-- Already empty, no server roundtrip needed --}}
                     return;
                 }
 
@@ -571,9 +578,15 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                     return;
                 }
 
+                {{--
+                // Old approach (dot notation)
                 const keys = filter.split('.');
+                --}}
+
+                const keys = [...filter.matchAll(/\[([^\]]+)\]/g)].map(m => m[1]);
                 const lastKey = keys.pop();
                 const parent = keys.reduce((acc, key) => acc?.[key], this.inputFilters);
+
                 const parentItem = parent[lastKey];
                 const parentItemIsObject = typeof parent[lastKey] === 'object';
 

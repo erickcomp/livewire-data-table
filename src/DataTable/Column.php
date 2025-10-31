@@ -2,9 +2,11 @@
 
 namespace ErickComp\LivewireDataTable\DataTable;
 
-use Illuminate\View\ComponentAttributeBag;
-use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
 use ErickComp\LivewireDataTable\Concerns\CreatesFromComponentAttributeBag;
+use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
+use ErickComp\LivewireDataTable\Concerns\WorksWithTextSearchingAndFiltering;
+use Illuminate\View\ComponentAttributeBag;
+use Illuminate\Support\Arr;
 
 class Column
 {
@@ -13,16 +15,21 @@ class Column
     }
 
     use FillsComponentAttributeBags;
+    use WorksWithTextSearchingAndFiltering;
 
-    public const SEARCH_STRATEGY_CONTAINS = 'contains';
-    public const SEARCH_STRATEGY_STARTS_WITH = 'starts-with';
-    public const SEARCH_STRATEGY_ENDS_WITH = 'ends-with';
-    public const SEARCH_STRATEGY_FULLTEXT = 'fulltext';
-    public const SEARCH_STRATEGIES = [
-        self::SEARCH_STRATEGY_CONTAINS,
-        self::SEARCH_STRATEGY_STARTS_WITH,
-        self::SEARCH_STRATEGY_ENDS_WITH,
-        self::SEARCH_STRATEGY_FULLTEXT,
+    public const SEARCH_MODE_CONTAINS = self::TEXT_MODE_CONTAINS;
+    public const SEARCH_MODE_STARTS_WITH = self::TEXT_MODE_STARTS_WITH;
+    public const SEARCH_MODE_ENDS_WITH = self::TEXT_MODE_ENDS_WITH;
+    public const SEARCH_MODE_EXACT = self::TEXT_MODE_EXACT;
+    public const SEARCH_MODE_FULLTEXT = self::TEXT_MODE_FULLTEXT;
+    public const SEARCH_MODE_DEFAULT = self::SEARCH_MODE_CONTAINS;
+
+    public const SEARCH_MODES = [
+        self::SEARCH_MODE_EXACT,
+        self::SEARCH_MODE_CONTAINS,
+        self::SEARCH_MODE_STARTS_WITH,
+        self::SEARCH_MODE_ENDS_WITH,
+        self::SEARCH_MODE_FULLTEXT,
     ];
 
     public const ATTRIBUTE_NAME = 'name';
@@ -37,7 +44,7 @@ class Column
     public string $name;
     public string $title;
     public bool $searchable = false;
-    public $searchableStrategy = 'contains';
+    public $searchMode = 'contains';
     public bool $sortable = false;
 
     public function __construct(
@@ -49,11 +56,10 @@ class Column
         if (empty(\trim($dataField ?? '')) && ($searchable || $sortable)) {
             throw new \BadMethodCallException('The data-field attribute is required for searchable or sortable columns.');
         }
-
-        $this->title = $title;
         $this->dataField = $dataField;
-        $this->searchable = $searchable;
+        $this->title = $title;
         $this->sortable = $sortable;
+        $this->setupSearchable($searchable);
     }
 
     public static function fromComponentAttributeBag(ComponentAttributeBag $attributes, ...$extraArgs): static
@@ -112,10 +118,10 @@ class Column
         return $tdAttributes;
     }
 
-    protected function setupSearchable(bool|string $attributeValue)
+    protected function setupSearchable(bool|string $searchable)
     {
-        if (\is_string($attributeValue)) {
-            $filtered = \filter_var($attributeValue, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+        if (\is_string($searchable)) {
+            $filtered = \filter_var($searchable, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
 
             if (\is_bool($filtered)) {
                 $searchable = $filtered;
@@ -124,18 +130,17 @@ class Column
 
         if (\is_bool($searchable)) {
             $this->searchable = $searchable;
+            $this->searchMode = static::SEARCH_MODE_DEFAULT;
 
             return;
         }
 
-        if (!\in_array(\strtolower($searchable), static::SEARCH_STRATEGIES)) {
-            $this->searchable = false;
-
-            return;
+        if (!\in_array(\strtolower($searchable), static::SEARCH_MODES)) {
+            throw new \ValueError('Invalid search mode for column [' . $this->dataField . ']: "' . $searchable . '". Valid modes are: ' . Arr::join(static::SEARCH_MODES, ', ', ' and '));
         }
 
         $this->searchable = true;
-        $this->searchableStrategy = \strtolower($searchable);
+        $this->searchMode = \strtolower($searchable);
     }
 
     protected function getAttributeBagsMappings(): array

@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Concerns\PaginatesCollections;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;

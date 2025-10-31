@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Concerns\PaginatesCollections;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
