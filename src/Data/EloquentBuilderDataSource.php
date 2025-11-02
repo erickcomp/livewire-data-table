@@ -7,12 +7,10 @@ use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 use Laravie\SerializesQuery\Eloquent as EloquentBuilderSerializer;
 
 class EloquentBuilderDataSource implements DataSource
@@ -49,6 +47,11 @@ class EloquentBuilderDataSource implements DataSource
         $this->paginationType = $data['paginationType'];
     }
 
+    public function modelPerPage(): int
+    {
+        return $this->modelInstance()->getPerPage();
+    }
+
     /**
      * Returns paginated data using the provided query builder
      */
@@ -66,7 +69,7 @@ class EloquentBuilderDataSource implements DataSource
     {
         $query = clone $this->query;
 
-        return $this->applyDataRetrievalParamsOnQuery($query, $params);
+        return $this->applyDataRetrievalParamsOnEloquentBuilder($query, $params);
     }
 
     /**

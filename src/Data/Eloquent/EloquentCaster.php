@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Support\Facades\Date;
 
-class EloquentCaster extends EloquentModel
+class EloquentCaster extends ParamValuesCaster
 {
-    public static function castValueFromFilter(EloquentBuilder|EloquentModel $model, array $filter, ?string $range = null)
+    public static function castValueFromFilter(array $filter, ?string $range = null)
     {
         if ($range !== null && !\in_array(\strtolower($range), ['from', 'to'])) {
             throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
@@ -28,21 +28,5 @@ class EloquentCaster extends EloquentModel
 
         return static::tryToCastFromDateFilterTypes($filter, $value);
 
-    }
-
-    protected static function tryToCastFromDateFilterTypes(array $filter, mixed $value)
-    {
-        $datetimeTypes = [
-            Filter::TYPE_DATE,
-            Filter::TYPE_DATE_PICKER,
-            Filter::TYPE_DATETIME,
-            Filter::TYPE_DATETIME_PICKER,
-        ];
-
-        if (\in_array($filter['type'], $datetimeTypes)) {
-            return Date::parse($value);
-        }
-
-        return $value;
     }
 }

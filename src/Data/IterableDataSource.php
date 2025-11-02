@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Concerns\AppliesDataRetrievalParamsOnCollections;
 use ErickComp\LivewireDataTable\Concerns\PaginatesCollections;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Pagination\CursorPaginator;
@@ -9,12 +10,16 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Traits\EnumeratesValues;
 use Livewire\Wireable;
+use ErickComp\LivewireDataTable\DataTable\Filter;
 
 class IterableDataSource implements StaticDataDataSource, Wireable
 {
+    use AppliesDataRetrievalParamsOnCollections;
     use PaginatesCollections;
 
+    protected string $originalType;
     protected Collection $data;
     protected DataSourcePaginationType $paginationType;
 
@@ -22,6 +27,8 @@ class IterableDataSource implements StaticDataDataSource, Wireable
         iterable $data,
         DataSourcePaginationType $paginationType,
     ) {
+        $this->originalType = \get_debug_type($data);
+
         if (!$data instanceof Collection) {
             $data = collect($data);
         }
@@ -61,9 +68,5 @@ class IterableDataSource implements StaticDataDataSource, Wireable
         };
     }
 
-    protected function applyDataRetrievalParamsOnCollection(Collection $data, LwDataRetrievalParams $params): Collection
-    {
-        // @TODO: Create filters, search and whatnot on Collection
-        return $data;
-    }
+    
 }

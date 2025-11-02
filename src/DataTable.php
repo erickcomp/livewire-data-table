@@ -149,7 +149,10 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         string|iterable|Collection|EloquentBuilder|QueryBuilder|Paginator|LengthAwarePaginator|CursorPaginator|callable|null $dataSrc = null,
         public ?string $dataSrcPagination = DataSource::PAGINATION_DEFAULT->value,
         string|array $perPage = [],
-        public string $pageName = 'page',
+        public ?string $pageName = null,
+        public ?string $searchName = null,
+        public ?string $filtersName = null,
+        public ?string $columnsSearchName = null,
         public int $maxPerPage = 1000,
         ?string $paginationView = null,
         public ?string $phpMaxMemory = null,
@@ -202,13 +205,17 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         $this->columns = collect($columns);
 
-        $this->columnsSearchDebounce = $columnsSearchDebounce
-            ?? Preset::loadFromName(
-                $this->preset,
-            )->get(
-                    'columns-search-debounce-ms',
-                    \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
-                );
+        //$this->columnsSearchDebounce = $columnsSearchDebounce
+        //    ?? Preset::loadFromName(
+        //        $this->preset,
+        //    )->get(
+        //            'columns-search-debounce-ms',
+        //            \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
+        //        );
+        $this->columnsSearchDebounce = $columnsSearchDebounce ?? $this->preset()->get(
+            'columns-search-debounce-ms',
+            \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
+        );
 
         $this->perPageOptions = $perPage;
 
@@ -451,15 +458,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public function initFilters(ComponentAttributeBag $filterContainerAttributes)
     {
         $this->filters = new Filters(componentAttributes: $filterContainerAttributes, preset: $this->preset());
-
-        // dd(
-        //     $this->filters->rowLength,
-        //     $this->filters->title,
-        //     $this->filters->collapsible,
-        //     $this->filters->containerAttributes,
-        //     $this->filters->filterRowAttributes,
-        //     $this->filters->filterItemsAttributes,
-        // );
     }
 
     public function initalizedFilters()
@@ -488,12 +486,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     public function render(): \Closure
     {
-        // $toLw = $this->toLivewire();
-        // $fromLw = static::fromLivewire($toLw);
-
-        // dd($this, $toLw, $fromLw);
-
-        //return view()->file(Str::replaceEnd('.php', '.blade.php', __FILE__));
         return $this->doRender(...);
     }
 
@@ -800,12 +792,15 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     }
     protected function getDefaultPerPageOptions(): array
     {
-        if (\is_a($this->dataSrc, EloquentModel::class, true)) {
-            $model = new $this->dataSrc;
-        } else {
-            $model = new class () extends EloquentModel {};
-        }
+        // if (\is_a($this->dataSrc, EloquentModel::class, true)) {
+        //     $model = new $this->dataSrc;
+        // } else {
+        //     $model = new class () extends EloquentModel {};
+        // }
 
-        return [$model->getPerPage()];
+        // return [$model->getPerPage()];
+        return $this->dataSrc instanceof EloquentDataSource || $this->dataSrc instanceof EloquentBuilderDataSource
+            ? [$this->dataSrc->modelPerPage()]
+            : $this->preset()->get('pagination.default-per-page-for-non-eloquent-data-sources', [static::PER_PAGE_ALL]);
     }
 }

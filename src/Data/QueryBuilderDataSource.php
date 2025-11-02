@@ -2,9 +2,9 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
+use ErickComp\LivewireDataTable\Concerns\AppliesDataRetrievalParamsOnQueryBuilder;
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -14,6 +14,8 @@ use Laravie\SerializesQuery\Query as QueryBuilderSerializer;
 
 class QueryBuilderDataSource implements DataSource
 {
+    use AppliesDataRetrievalParamsOnQueryBuilder;
+
     public function __construct(
         protected QueryBuilder $query,
         protected DataSourcePaginationType $paginationType,
@@ -62,81 +64,6 @@ class QueryBuilderDataSource implements DataSource
     {
         $query = clone $this->query;
 
-        return $this->applyDataRetrievalParamsOnQuery($query, $params);
-    }
-
-    protected function applyDataRetrievalParamsOnQuery(QueryBuilder $query, LwDataRetrievalParams $params): QueryBuilder
-    {
-        $this->applyDataTableFiltersOnQuery($query, $params);
-        $this->applyDataTableColumnsSearchOnQuery($query, $params);
-        $this->applyDataTableSearchOnQuery($query, $params);
-        $this->applyDataTableColumnsSortingOnQuery($query, $params);
-
-        return $query;
-    }
-
-    protected function applyDataTableFiltersOnQuery(QueryBuilder $query, LwDataRetrievalParams $params)
-    {
-        //
-    }
-
-    protected function applyDataTableColumnsSearchOnQuery(QueryBuilder $query, LwDataRetrievalParams $params)
-    {
-        if (empty($columnsSearch)) {
-            return;
-        }
-
-        // if (\is_a($this->dataTable->dataSrc, SearchesDataTableColumns::class, true)) {
-        //     $model = $this->dataTable->dataSrc;
-        //     (new $model())->applyDataTableColumnsSearchToQuery($query, $columnsSearch);
-
-        //     return;
-        // }
-
-        foreach ($columnsSearch as $dataField => $value) {
-            $query->whereLike($dataField, "%$value%");
-        }
-
-    }
-
-    protected function applyDataTableSearchOnQuery(QueryBuilder $query, LwDataRetrievalParams $params)
-    {
-        if (empty($search)) {
-            return;
-        }
-
-        // @TODO: Implement search by using columns from data table object
-        return;
-
-        $modelClass = $this->dataTable->dataSrc;
-        if (\is_a($this->dataTable->dataSrc, SearchesDataTable::class, true)) {
-            new $modelClass()->applyLwDataTableColumnsSearch($query, $search);
-        } else {
-            $model = new $modelClass();
-            $columnsToSearch = collect(Schema::getColumns($model->getTable()))
-                ->pluck('name')
-                ->diff($model->getHidden());
-
-            if ($columnsToSearch->isNotEmpty()) {
-                $query->where(function ($orQuery) use ($columnsToSearch, $search) {
-                    foreach ($columnsToSearch as $dataField) {
-                        $orQuery->orWhereLike($dataField, "%$search%");
-                    }
-                });
-            }
-        }
-    }
-
-    protected function applyDataTableColumnsSortingOnQuery(QueryBuilder $query, LwDataRetrievalParams $params)
-    {
-        if (empty(\trim($sortBy ?? ''))) {
-            return;
-        }
-
-        $sortDir = \in_array(\strtoupper($sortDir), ['ASC', 'DESC'])
-            ? \strtoupper($sortDir)
-            : 'ASC';
-
-        $query->orderBy($sortBy, $sortDir);
+        return $this->applyDataRetrievalParamsOnQueryBuilder($query, $params);
     }
 }

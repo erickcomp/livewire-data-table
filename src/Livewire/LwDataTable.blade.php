@@ -104,7 +104,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                     ...$this->preset()->get('filters.item.content.class', []) ,
                                     ...($filterItem->mode === Filter::MODE_RANGE ? $this->preset()->get('filters.item.content.range.class', []) : [])
                                     ])>
-                                    @debugger
                                     @if(!empty($filterItem->customRendererCode))
                                         {!! $filterItem->getCustomRendererCodeWithXModel('inputFilters', ['___lwDataTable' => $this]) !!}
                                     @else

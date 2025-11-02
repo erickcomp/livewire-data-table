@@ -348,19 +348,32 @@ class LwDataTable extends LivewireComponent
         return null;
     }
 
+    protected function pageNameUrlParam(): string
+    {
+        return $this->pageNameUrlParam
+            ?? $this->preset()->get('query-string-page-name')
+            ?? \config('erickcomp-livewire-data-table.query-string-page-name', 'page');
+    }
+
     protected function filtersUrlParam(): string
     {
-        return \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
+        return $this->dataTable->filtersName
+            ?? $this->preset()->get('query-string-filters')
+            ?? \config('erickcomp-livewire-data-table.query-string-filters', 'filters');
     }
 
     protected function searchUrlParam(): string
     {
-        return \config('erickcomp-livewire-data-table.query-string-search', 'search');
+        return $this->dataTable->searchName
+            ?? $this->preset()->get('query-string-search')
+            ?? \config('erickcomp-livewire-data-table.query-string-search', 'search');
     }
 
     protected function columnsSearchUrlParam(): string
     {
-        return \config('erickcomp-livewire-data-table.query-string-param-cols-search', 'cols-search');
+        return $this->dataTable->columnsSearchName
+            ?? $this->preset()->get('query-string-cols-search')
+            ?? \config('erickcomp-livewire-data-table.query-string-param-cols-search', 'cols-search');
     }
 
     protected function setupMaxMemory()
@@ -447,9 +460,9 @@ class LwDataTable extends LivewireComponent
         }
 
         $params = new LwDataRetrievalParams(
-            page: Paginator::resolveCurrentPage($this->dataTable->pageName),
+            page: Paginator::resolveCurrentPage($this->pageNameUrlParam()),
             perPage: $this->perPage,
-            pageName: $this->dataTable->pageName,
+            pageName: $this->pageNameUrlParam(),
             search: $this->search,
             //searchDataFields: $this->dataTable?->search->dataFields ?? [],
             columnsSearch: $this->columnsSearch,
@@ -491,7 +504,7 @@ class LwDataTable extends LivewireComponent
         $callable = Str::parseCallback($this->dataTable->dataSrc);
 
         return \is_callable([$callable[0], $callable[1]])
-            || \is_callable([App::make($callable[0]), $callable[1]]);
+            || \is_callable([app()->make($callable[0]), $callable[1]]);
     }
 
     protected function executeCallable($callable, ...$params)
@@ -502,6 +515,9 @@ class LwDataTable extends LivewireComponent
     protected function queryString()
     {
         return [
+            // 'page' => [
+            //     'as' => $this->pageNameUrlParam(),
+            // ],
             'search' => [
                 'as' => $this->searchUrlParam(),
             ],

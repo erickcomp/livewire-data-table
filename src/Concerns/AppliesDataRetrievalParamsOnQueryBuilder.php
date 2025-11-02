@@ -2,47 +2,25 @@
 
 namespace ErickComp\LivewireDataTable\Concerns;
 
-use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableColumnsSearch;
-use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableSorting;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use ErickComp\LivewireDataTable\DataTable\Filter;
-use ErickComp\LivewireDataTable\Data\Eloquent\EloquentCaster;
 
-trait AppliesDataRetrievalParamsOnEloquentBuilder
+trait AppliesDataRetrievalParamsOnQueryBuilder
 {
-    /**
-     * Returns the Eloquent Model class that's related to this data source
-     * 
-     * @return class-string<EloquentModel>
-     */
-    abstract protected function modelClass(): string;
-
-    protected function modelInstance(): EloquentModel
+    protected function applyDataRetrievalParamsOnQueryBuilder(QueryBuilder $query, LwDataRetrievalParams $params): QueryBuilder
     {
-        static $model = null;
-
-        if ($model === null) {
-            $model = app()->make($this->modelClass());
-        }
-
-        return $model;
-    }
-
-    protected function applyDataRetrievalParamsOnEloquentBuilder(EloquentBuilder $query, LwDataRetrievalParams $params): EloquentBuilder
-    {
-        $this->applyDataTableFiltersOnEloquentBuilder($query, $params);
-        $this->applyDataTableColumnsSearchOnEloquentBuilder($query, $params);
-        $this->applyDataTableSearchOnEloquentBuilder($query, $params);
-        $this->applyDataTableColumnsSortingOnEloquentBuilder($query, $params);
+        $this->applyDataTableFiltersOnQueryBuilder($query, $params);
+        $this->applyDataTableColumnsSearchOnQueryBuilder($query, $params);
+        $this->applyDataTableSearchOnQueryBuilder($query, $params);
+        $this->applyDataTableColumnsSortingOnQueryBuilder($query, $params);
 
         return $query;
     }
-    protected function applyDataTableFiltersOnEloquentBuilder(EloquentBuilder $query, LwDataRetrievalParams $params)
+
+    protected function applyDataTableFiltersOnQueryBuilder(QueryBuilder $query, LwDataRetrievalParams $params)
     {
         if (empty($params->filters)) {
             return;
@@ -53,52 +31,52 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
 
                 switch ($filter['mode']) {
                     case Filter::MODE_EXACT:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = $filter['value'];
                         $query->where($filter['column'], $value);
 
                         break;
 
                     case Filter::MODE_CONTAINS:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = $filter['value'];
                         $query->whereLike($filter['column'], "%$value%");
 
                         break;
 
                     case Filter::MODE_STARTS_WITH:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = $filter['value'];
                         $query->whereLike($filter['column'], "$value%");
 
                         break;
 
                     case Filter::MODE_ENDS_WITH:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = $filter['value'];
                         $query->whereLike($filter['column'], "%$value");
 
                         break;
 
                     case Filter::MODE_FULLTEXT:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = $filter['value'];
                         $query->whereFullText($filter['column'], $value);
 
                         break;
 
                     case Filter::MODE_IN:
-                        $castedValues = [];
+                        $vals = [];
                         foreach ($filter['value'] as $v) {
-                            $castedValues[] = EloquentCaster::castValueFromFilter($query, $filter);
+                            $vals[] = $v;
                         }
-                        $query->whereIn($filter['column'], $castedValues);
+                        $query->whereIn($filter['column'], $vals);
 
                         break;
 
                     case Filter::MODE_RANGE:
                         $query
                             ->when($filter['value']['from'] ?? false, function ($query) use ($filter) {
-                                $value = EloquentCaster::castValueFromFilter($query, $filter, 'from');
+                                $value = $filter['value']['from'];
                                 $query->where($filter['column'], '>=', $value);
                             })
                             ->when($filter['value']['to'] ?? false, function ($query) use ($filter) {
-                                $value = EloquentCaster::castValueFromFilter($query, $filter, 'to');
+                                $value = $filter['value']['to'];
                                 $query->where($filter['column'], '<=', $value);
                             });
                         break;
@@ -107,15 +85,9 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
         }
     }
 
-    protected function applyDataTableColumnsSearchOnEloquentBuilder(EloquentBuilder $query, LwDataRetrievalParams $params)
+    protected function applyDataTableColumnsSearchOnQueryBuilder(QueryBuilder $query, LwDataRetrievalParams $params)
     {
         if (empty($params->columnsSearch)) {
-            return;
-        }
-
-        if (\is_a($this->modelClass(), CustomizesDataTableColumnsSearch::class, true)) {
-            $this->modelInstance()->applyDataTableColumnsSearch($query, $params);
-
             return;
         }
 
@@ -144,35 +116,26 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
         }
     }
 
-    protected function applyDataTableSearchOnEloquentBuilder(EloquentBuilder $query, LwDataRetrievalParams $params)
+    protected function applyDataTableSearchOnQueryBuilder(QueryBuilder $query, LwDataRetrievalParams $params)
     {
         if (empty($params->search)) {
-            return;
-        }
-
-        if (\is_a($this->modelClass(), CustomizesDataTableColumnsSearch::class, true)) {
-            $this->modelInstance()->applyDataTableSearchToQuery($query, $params);
-
             return;
         }
 
         $columnsToSearch = $params->dataTableSearchDataFields();
 
         if ($columnsToSearch === true) {
-            $columnsToSearchDataFields = collect(Schema::getColumns($this->modelInstance()->getTable()))
-                ->pluck('name')
-                ->diff($this->modelInstance()->getHidden());
+            $errmsg = 'When using the x-data-table.search component with an x-data-table backed by [' . static::class . '] data source, you must provide the data-fields that the search should run on';
 
-            $columnsToSearch = \array_fill_keys($columnsToSearchDataFields->all(), Search::SEARCH_MODE_DEFAULT);
+            throw new \LogicException($errmsg);
         }
 
         if (!empty($columnsToSearch)) {
-            $query->where(function (EloquentBuilder $orQuery) use ($columnsToSearch, $params) {
+            $query->where(function (QueryBuilder $orQuery) use ($columnsToSearch, $params) {
                 $search = \trim($params->search);
                 $fullTextDataFields = [];
 
                 foreach ($columnsToSearch as $dataField => $mode) {
-                    //$orQuery->orWhereLike($dataField, "%$search%");
                     switch ($mode) {
                         case Search::SEARCH_MODE_CONTAINS:
                             $orQuery->orWhereLike($dataField, "%$search%");
@@ -191,7 +154,6 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
                             break;
 
                         case Search::SEARCH_MODE_FULLTEXT:
-                            //$orQuery->whereFullText($dataField, $search);
                             $fullTextDataFields[] = $dataField;
                             break;
                     }
@@ -204,16 +166,9 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
         }
     }
 
-    protected function applyDataTableColumnsSortingOnEloquentBuilder(EloquentBuilder $query, LwDataRetrievalParams $params)
+    protected function applyDataTableColumnsSortingOnQueryBuilder(QueryBuilder $query, LwDataRetrievalParams $params)
     {
         if (empty(\trim($params->sortBy ?? ''))) {
-            return;
-        }
-
-        $modelClass = $this->modelClass();
-        if (\is_a($modelClass, CustomizesDataTableSorting::class, true)) {
-            $this->modelInstance()->applyDataTableSorting($query, $params);
-
             return;
         }
 

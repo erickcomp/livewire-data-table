@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\View;
 
 return [
     'columns-search-debounce-ms' => 250,
+    'query-string-page-name' => 'page',
     'query-string-search' => 'search',
     'query-string-filters' => 'filters',
     'query-string-param-cols-search' => 'cols-search',
@@ -11,6 +12,7 @@ return [
         'empty' => [
             'extends' => null,
             'columns-search-debounce-ms' => 250,
+            'query-string-page-name' => 'page',
             'query-string-search' => 'search',
             'query-string-filters' => 'filters',
             'query-string-param-cols-search' => 'cols-search',
@@ -276,6 +278,7 @@ return [
             ],
 
             'pagination' => [
+                'default-per-page-for-non-eloquent-data-sources' => [15],
                 'container' => [
                     'class' => 'lw-dt-pagination-container',
                 ],
@@ -754,6 +757,7 @@ return [
             ],
 
             'pagination' => [
+                'default-per-page-for-non-eloquent-data-sources' => [15],
                 'container' => [
                     'class' => 'lw-dt-pagination-container',
                 ],
