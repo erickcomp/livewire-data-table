@@ -8,7 +8,7 @@ use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
 
-class ParamValuesCaster
+class ValuesCaster
 {
     public const AS_STRING = 0;
     public const AS_NUMBER = 1;

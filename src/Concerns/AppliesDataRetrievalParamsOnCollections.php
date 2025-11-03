@@ -154,6 +154,7 @@ trait AppliesDataRetrievalParamsOnCollections
         if (!empty($columnsToSearch)) {
             $clauses = [];
 
+            // @TODO: Implement casting/parsing of data_get values and params values
             foreach ($columnsToSearch as $dataField => $mode) {
                 switch ($mode) {
                     case Search::SEARCH_MODE_EXACT:
@@ -197,12 +198,5 @@ trait AppliesDataRetrievalParamsOnCollections
             $params->collectionsSortingFlags,
             $params->sortDir === 'DESC'
         );
-    }
-
-    protected function dataGetCastingAsFilterType($item, string $field, string $type)
-    {
-        $rawValue = \data_get($item, $field);
-        
-        return ParamValuesCaster::castValueToFilterType($rawValue, $filterType);
     }
 }

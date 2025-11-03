@@ -2,13 +2,13 @@
 
 namespace ErickComp\LivewireDataTable\Data\Eloquent;
 
-use ErickComp\LivewireDataTable\Data\ParamValuesCaster;
+use ErickComp\LivewireDataTable\Data\ValuesCaster;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Facades\Date;
 
-class EloquentCaster extends ParamValuesCaster
+class EloquentCaster extends ValuesCaster
 {
     public static function castValueFromFilterUsingModel(EloquentModel|EloquentBuilder $model, array $filter, ?string $range = null)
     {
