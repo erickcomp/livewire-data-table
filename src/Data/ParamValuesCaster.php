@@ -1,35 +1,36 @@
 <?php
 
-namespace ErickComp\LivewireDataTable\Data\Eloquent;
+namespace ErickComp\LivewireDataTable\Data;
 
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Log;
 
-class ParamValuesCaster extends EloquentModel
+class ParamValuesCaster
 {
     public static function castValueFromFilter(array $filter, ?string $range = null)
     {
-        if ($range !== null && !\in_array(\strtolower($range), ['from', 'to'])) {
-            throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
-        }
+        // if ($range !== null && !\in_array(\strtolower($range), ['from', 'to'])) {
+        //     throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
+        // }
 
         $value = $range !== null ? $filter['value'][$range] : $filter['value'];
 
-        $casted = match($filter['type']) {
-            Filter::TYPE
-        }
+        // $casted = match($filter['type']) {
+        //     Filter::TYPE_NUMBER
+        // }
 
         return static::tryToCastFromDateFilterTypes($filter, $value);
 
     }
 
-    protected static castByFilterType($filter, $value)
+    protected static function castByFilterType($filter, $value)
     {
-        match($filter['type']) {
-            Filter::TYPE
-        }
+        // match($filter['type']) {
+        //     Filter::TYPE
+        // }
     }
 
     protected static function tryToCastFromDateFilterTypes(array $filter, mixed $value)
@@ -44,12 +45,11 @@ class ParamValuesCaster extends EloquentModel
         if (\in_array($filter['type'], $datetimeTypes)) {
 
             try {
-                $parsed =  Date::parse($value);
+                $parsed = Date::parse($value);
             } catch (\Throwable $t) {
-                Log::warning("erickcomp/livewire-data-table: Could not convert value [$value] to a Date instance")
+                Log::warning("erickcomp/livewire-data-table: Could not convert value [$value] to a Date instance");
                 $parsed = $value;
             }
-            
         }
 
         return $parsed;

@@ -34,6 +34,7 @@ class LwDataRetrievalParams
         public ?array $filters,
         public ?string $sortBy,
         public ?string $sortDir,
+        public int $collectionsSortingFlags,
         protected DataTable $dataTable,
     ) {}
 
@@ -78,7 +79,7 @@ class LwDataRetrievalParams
 
         if ($data instanceof QueryBuilder) {
             $dataRetriever = new class () {
-                use AppliesDataRetrievalParamsOnCollections {
+                use AppliesDataRetrievalParamsOnQueryBuilder {
                     applyDataRetrievalParamsOnQueryBuilder as public;
                 }
             };
@@ -129,5 +130,23 @@ class LwDataRetrievalParams
     public function cursorPaginate(QueryBuilder|EloquentBuilder $data): CursorPaginator
     {
         return $data->cursorPaginate(perPage: $this->perPage, cursorName: $this->pageName);
+    }
+
+    public function applyAndPaginate(QueryBuilder|EloquentBuilder|Collection|iterable $data): LengthAwarePaginator
+    {
+        $data = $this->apply($data);
+        return $this->paginate($data);
+    }
+
+    public function applyAndSimplePaginate(QueryBuilder|EloquentBuilder|Collection|iterable $data): Paginator
+    {
+        $data = $this->apply($data);
+        return $this->simplePaginate($data);
+    }
+
+    public function applyAndCursorPaginate(QueryBuilder|EloquentBuilder $data): CursorPaginator
+    {
+        $data = $this->apply($data);
+        return $this->cursorPaginate($data);
     }
 }

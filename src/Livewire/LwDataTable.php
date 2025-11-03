@@ -9,6 +9,7 @@ use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\ServerExecutor;
+use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
@@ -145,10 +146,10 @@ class LwDataTable extends LivewireComponent
     public function renderPagination($rows)
     {
         return match (true) {
-            \is_array($rows) || $rows instanceof Collection => '',
+            $rows instanceof Collection => '',
             $rows instanceof LengthAwarePaginatorContract => $rows->render($this->paginationView()),
             $rows instanceof PaginatorContract || $rows instanceof CursorPaginatorContract => $rows->render($this->paginationSimpleView()),
-            \is_object($rows) && \method_exists($rows, 'links') => $rows->links($this->dataTable->paginationView)
+            \is_object($rows) && \method_exists($rows, 'links') => $rows->links($this->paginationView())
         };
     }
 
@@ -350,7 +351,7 @@ class LwDataTable extends LivewireComponent
 
     protected function pageNameUrlParam(): string
     {
-        return $this->pageNameUrlParam
+        return $this->dataTable->pageName
             ?? $this->preset()->get('query-string-page-name')
             ?? \config('erickcomp-livewire-data-table.query-string-page-name', 'page');
     }
@@ -469,6 +470,7 @@ class LwDataTable extends LivewireComponent
             filters: $this->processedFilters,
             sortBy: $this->sortBy,
             sortDir: $this->sortDir,
+            collectionsSortingFlags: $this->dataTable->collectionSortingFlags,
             dataTable: $this->dataTable,
         );
 

@@ -5,6 +5,7 @@ use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+
 trait PaginatesCollections
 {
     protected function paginate(Collection $data, LwDataRetrievalParams $params): LengthAwarePaginator
@@ -25,8 +26,9 @@ trait PaginatesCollections
 
     protected function simplePaginate(Collection $data, LwDataRetrievalParams $params): Paginator
     {
-        return new Paginator(
-            $data->forPage($params->perPage, $params->page),
+        $paginator = new Paginator(
+            $data->forPage($params->page, $params->perPage),
+
             $params->perPage,
             $params->page,
             [
@@ -34,5 +36,7 @@ trait PaginatesCollections
                 'pageName' => $params->pageName,
             ],
         );
+
+        return $paginator->hasMorePagesWhen($data->count() > ($params->perPage * $params->page));
     }
 }

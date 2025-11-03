@@ -2,14 +2,15 @@
 
 namespace ErickComp\LivewireDataTable\Data\Eloquent;
 
-use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use ErickComp\LivewireDataTable\Data\ParamValuesCaster;
 use ErickComp\LivewireDataTable\DataTable\Filter;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Facades\Date;
 
 class EloquentCaster extends ParamValuesCaster
 {
-    public static function castValueFromFilter(array $filter, ?string $range = null)
+    public static function castValueFromFilter(array $filter, ?string $range = null, EloquentModel $model = null)
     {
         if ($range !== null && !\in_array(\strtolower($range), ['from', 'to'])) {
             throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");

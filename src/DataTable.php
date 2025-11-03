@@ -101,6 +101,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public ?Filters $filters = null;
     public ?Footer $footer = null;
 
+    public int $collectionSortingFlags;
+
     // public ?string $name {
     //     get {
     //         if ($this->tableAttributes->has('name')) {
@@ -166,8 +168,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         iterable $columns = [],
         //public array $filters = [],
         //public string|false $search = false,
-        //public array $columnsSearch = [],
+        //public array $columnsSearch = [],fflags
         ?int $columnsSearchDebounce = null,
+        int|string $collectionSortingFlags = SORT_NATURAL | SORT_FLAG_CASE,
 
 
         public array $actions = [],
@@ -216,6 +219,27 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             'columns-search-debounce-ms',
             \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
         );
+
+        if (\is_string($collectionSortingFlags)) {
+            $intFlags = 0;
+            foreach (\explode('|', $collectionSortingFlags) as $flagName) {
+                $flagName = \trim($flagName);
+
+                if ($flagName === '') {
+                    continue;
+                }
+                if (\defined($flagName)) {
+                    $intFlags |= \constant($flagName);
+                } else {
+                    throw new \InvalidArgumentException("Undefined sorting flag: {$flagName}");
+                }
+            }
+
+            $collectionSortingFlags = $intFlags;
+        }
+
+        $this->collectionSortingFlags = $collectionSortingFlags;
+
 
         $this->perPageOptions = $perPage;
 

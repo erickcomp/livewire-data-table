@@ -20,6 +20,8 @@ trait AppliesDataRetrievalParamsOnCollections
     {
         $data = $this->applyDataTableFiltersOnCollection($data, $params);
         $data = $this->applyDataTableColumnsSearchOnCollection($data, $params);
+        $data = $this->applyDataTableSearchOnCollection($data, $params);
+        $data = $this->applyDataTableColumnsSortingOnCollection($data, $params);
 
         return $data;
     }
@@ -95,17 +97,104 @@ trait AppliesDataRetrievalParamsOnCollections
 
     protected function applyDataTableColumnsSearchOnCollection(Collection $collection, LwDataRetrievalParams $params): Collection
     {
-        return $collection;
+        if (empty($params->columnsSearch)) {
+            return clone $collection;
+        }
+
+        foreach ($params->columnsSearch as $dataField => $value) {
+            switch ($params->columnSearchMode($dataField)) {
+                case Column::SEARCH_MODE_EXACT:
+                    $clauses[] = fn($item) => \data_get($item, $dataField) == $value; // not using strict because all filter values are strings
+                    break;
+
+                case Column::SEARCH_MODE_CONTAINS:
+                    $clauses[] = fn($item) => \str_contains(\data_get($item, $dataField), $value);
+                    break;
+
+                case Column::SEARCH_MODE_STARTS_WITH:
+                    $clauses[] = fn($item) => \str_starts_with(\data_get($item, $dataField), $value);
+                    break;
+
+                case Column::SEARCH_MODE_ENDS_WITH:
+                    $clauses[] = fn($item) => \str_ends_with(\data_get($item, $dataField), $value);
+                    break;
+
+                case Column::SEARCH_MODE_FULLTEXT:
+                    throw new \ValueError("Iterable ({$this->originalType}) data sources do not support full text search");
+            }
+        }
+
+        return $collection->filter(function ($item) use ($clauses) {
+            foreach ($clauses as $clause) {
+                if (!$clause($item)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
     }
 
     protected function applyDataTableSearchOnCollection(Collection $collection, LwDataRetrievalParams $params): Collection
     {
-        return $collection;
-    }
+        if (empty($params->search)) {
+            return clone $collection;
+        }
 
+        $columnsToSearch = $params->dataTableSearchDataFields();
+
+        if ($columnsToSearch === true) {
+
+            $errmsg = 'When using the x-data-table.search component with an x-data-table backed by [' . static::class . '] data source, you must provide the data-fields that the search should run on';
+
+            throw new \LogicException($errmsg);
+        }
+
+        if (!empty($columnsToSearch)) {
+            $clauses = [];
+
+            foreach ($columnsToSearch as $dataField => $mode) {
+                switch ($mode) {
+                    case Search::SEARCH_MODE_EXACT:
+                        $clauses[] = fn($item) => \data_get($item, $dataField) == $params->search; // not using strict because all filter values are strings
+
+                        break;
+
+                    case Search::SEARCH_MODE_CONTAINS:
+                        $clauses[] = fn($item) => \str_contains(\data_get($item, $dataField), $params->search);
+                        break;
+
+                    case Search::SEARCH_MODE_STARTS_WITH:
+                        $clauses[] = fn($item) => \str_starts_with(\data_get($item, $dataField), $params->search);
+                        break;
+
+                    case Search::SEARCH_MODE_ENDS_WITH:
+                        $clauses[] = fn($item) => \str_ends_with(\data_get($item, $dataField), $params->search);
+                        break;
+
+                    case Search::SEARCH_MODE_FULLTEXT:
+                        throw new \ValueError("Iterable ({$this->originalType}) data sources do not support full text search");
+                }
+            }
+        }
+
+        return $collection->filter(function ($item) use ($clauses) {
+            foreach ($clauses as $clause) {
+                if ($clause($item)) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+    }
 
     protected function applyDataTableColumnsSortingOnCollection(Collection $collection, LwDataRetrievalParams $params): Collection
     {
-        return $collection;
+        return $collection->sortBy(
+            $params->sortBy,
+            $params->collectionsSortingFlags,
+            $params->sortDir === 'DESC'
+        );
     }
 }
