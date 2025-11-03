@@ -10,11 +10,19 @@ trait PaginatesCollections
 {
     protected function paginate(Collection $data, LwDataRetrievalParams $params): LengthAwarePaginator
     {
+        if ($params->chosenPaginationIsAll()) {
+            $perPage = $data->count();
+            $page = 1;
+        } else {
+            $perPage = $params->perPage;
+            $page = $params->page;
+        }
+
         $paginator = new LengthAwarePaginator(
-            $data->forPage($params->page, $params->perPage),
+            $data->forPage($page, $perPage),
             $data->count(),
-            $params->perPage,
-            $params->page,
+            $perPage,
+            $page,
             [
                 'path' => Paginator::resolveCurrentPath(),
                 'pageName' => $params->pageName,
@@ -26,17 +34,25 @@ trait PaginatesCollections
 
     protected function simplePaginate(Collection $data, LwDataRetrievalParams $params): Paginator
     {
-        $paginator = new Paginator(
-            $data->forPage($params->page, $params->perPage),
+        if ($params->chosenPaginationIsAll()) {
+            $perPage = $data->count();
+            $page = 1;
+        } else {
+            $perPage = $params->perPage;
+            $page = $params->page;
+        }
 
-            $params->perPage,
-            $params->page,
+        $paginator = new Paginator(
+            $data->forPage($page, $perPage),
+
+            $perPage,
+            $page,
             [
                 'path' => Paginator::resolveCurrentPath(),
                 'pageName' => $params->pageName,
             ],
         );
 
-        return $paginator->hasMorePagesWhen($data->count() > ($params->perPage * $params->page));
+        return $paginator->hasMorePagesWhen($data->count() > ($perPage * $page));
     }
 }

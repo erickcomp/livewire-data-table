@@ -38,6 +38,10 @@ class LwDataRetrievalParams
         protected DataTable $dataTable,
     ) {}
 
+    public function chosenPaginationIsAll(): bool
+    {
+        return $this->perPage === $this->dataTable::PER_PAGE_ALL_OPTION_VALUE;
+    }
     public function columnSearchMode(string $column): string
     {
         return Column::SEARCH_MODE_DEFAULT;
