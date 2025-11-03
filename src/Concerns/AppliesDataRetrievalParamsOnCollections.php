@@ -4,6 +4,7 @@ namespace ErickComp\LivewireDataTable\Concerns;
 
 use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableColumnsSearch;
 use ErickComp\LivewireDataTable\Data\Eloquent\CustomizesDataTableSorting;
+use ErickComp\LivewireDataTable\Data\ParamValuesCaster;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
@@ -196,5 +197,12 @@ trait AppliesDataRetrievalParamsOnCollections
             $params->collectionsSortingFlags,
             $params->sortDir === 'DESC'
         );
+    }
+
+    protected function dataGetCastingAsFilterType($item, string $field, string $type)
+    {
+        $rawValue = \data_get($item, $field);
+        
+        return ParamValuesCaster::castValueToFilterType($rawValue, $filterType);
     }
 }

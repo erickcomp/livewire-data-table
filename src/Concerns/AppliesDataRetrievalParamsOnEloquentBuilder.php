@@ -53,31 +53,31 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
 
                 switch ($filter['mode']) {
                     case Filter::MODE_EXACT:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
                         $query->where($filter['column'], $value);
 
                         break;
 
                     case Filter::MODE_CONTAINS:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
                         $query->whereLike($filter['column'], "%$value%");
 
                         break;
 
                     case Filter::MODE_STARTS_WITH:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
                         $query->whereLike($filter['column'], "$value%");
 
                         break;
 
                     case Filter::MODE_ENDS_WITH:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
                         $query->whereLike($filter['column'], "%$value");
 
                         break;
 
                     case Filter::MODE_FULLTEXT:
-                        $value = EloquentCaster::castValueFromFilter($query, $filter);
+                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
                         $query->whereFullText($filter['column'], $value);
 
                         break;
@@ -85,7 +85,7 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
                     case Filter::MODE_IN:
                         $castedValues = [];
                         foreach ($filter['value'] as $v) {
-                            $castedValues[] = EloquentCaster::castValueFromFilter($query, $filter);
+                            $castedValues[] = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
                         }
                         $query->whereIn($filter['column'], $castedValues);
 
@@ -94,11 +94,11 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
                     case Filter::MODE_RANGE:
                         $query
                             ->when($filter['value']['from'] ?? false, function ($query) use ($filter) {
-                                $value = EloquentCaster::castValueFromFilter($query, $filter, 'from');
+                                $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter, 'from');
                                 $query->where($filter['column'], '>=', $value);
                             })
                             ->when($filter['value']['to'] ?? false, function ($query) use ($filter) {
-                                $value = EloquentCaster::castValueFromFilter($query, $filter, 'to');
+                                $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter, 'to');
                                 $query->where($filter['column'], '<=', $value);
                             });
                         break;

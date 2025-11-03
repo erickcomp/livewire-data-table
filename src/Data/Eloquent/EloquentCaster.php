@@ -10,24 +10,35 @@ use Illuminate\Support\Facades\Date;
 
 class EloquentCaster extends ParamValuesCaster
 {
-    public static function castValueFromFilter(array $filter, ?string $range = null, EloquentModel $model = null)
+    public static function castValueFromFilterUsingModel(EloquentModel|EloquentBuilder $model, array $filter, ?string $range = null)
     {
-        if ($range !== null && !\in_array(\strtolower($range), ['from', 'to'])) {
-            throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
-        }
-
         if ($model instanceof EloquentBuilder) {
             $model = $model->getModel();
         }
 
-        $value = $range !== null ? $filter['value'][$range] : $filter['value'];
+        $value = static::getRawValueFromFilter($filter, $range);
 
         if ($model->hasCast($filter['column'])) {
-            // in PHP, sibling classes have access to protected stuff (which were defined on parent) of sibling classes
-            return $model->castAttribute($filter['column'], $value);
+            return static::callEloquentCastAttribute($model, $filter['column'], $value);
         }
 
-        return static::tryToCastFromDateFilterTypes($filter, $value);
+        return static::castValueFromFilter($filter, $range);
+    }
 
+    protected static function callEloquentCastAttribute(EloquentModel $modelInstance, $attribute, mixed $value): mixed
+    {
+        static $caster = null;
+
+        if ($caster === null) {
+            $caster = new class extends EloquentModel {
+                public function __invoke(EloquentModel $model, string $attribute, mixed $value): mixed
+                {
+                    // in PHP, sibling classes have access to protected stuff (which were defined on parent) of sibling classes
+                    return $model->castAttribute($attribute, $value);
+                }
+            };
+        }
+
+        return $caster($modelInstance, $attribute, $value);
     }
 }
