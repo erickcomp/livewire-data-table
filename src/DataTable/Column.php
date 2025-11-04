@@ -81,7 +81,7 @@ class Column
         return $this->sortable;
     }
 
-    public function buildThAttributes($presetClass, int $rowsCount): ComponentAttributeBag
+    public function buildThAttributes($presetClass, bool $shoulAllowSorting): ComponentAttributeBag
     {
         $thAttributes = $this->attributes->except(['class', 'style'])->merge($this->thAttributes->except(['class', 'style'])->all())
             ->class($this->thAttributes['class'] ?? [])
@@ -94,7 +94,7 @@ class Column
             unset($thAttributes['style']);
         }
 
-        if ($this->isSortable() && $rowsCount > 1) {
+        if ($this->isSortable() && $shoulAllowSorting) {
             $thAttributes['wire:click'] = "setSortBy('{$this->dataField}')";
             $thAttributes['role'] = 'button';
         }

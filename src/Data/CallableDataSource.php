@@ -12,9 +12,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
-use Laravel\SerializableClosure\SerializableClosure;
+use Illuminate\Support\LazyCollection;
 
 class CallableDataSource implements DataSource
 {
@@ -162,17 +160,19 @@ class CallableDataSource implements DataSource
         throw new \ValueError($errmsg);
     }
 
-    public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection
+    public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection|LazyCollection
     {
         $data = $this->getDataFromCallable($params);
 
-        return $this->paginate($data, $params);
+        return $data instanceof LazyCollection
+            ? $data
+            : $this->paginate($data, $params);
     }
 
     protected function paginate(
         Paginator|LengthAwarePaginator|CursorPaginator|QueryBuilder|EloquentBuilder|Collection $data,
         LwDataRetrievalParams $params,
-    ): Paginator|LengthAwarePaginator|CursorPaginator|Collection {
+    ): Paginator|LengthAwarePaginator|CursorPaginator|Collection|LazyCollection {
         if ($data instanceof Collection) {
             if ($this->paginationType === DataSourcePaginationType::Cursor) {
                 Log::notice("erickcomp/livewire-data-table: Static data for data table is using \"cursor\" pagination type, which can't be done. Simple pagination will be used");
@@ -197,7 +197,7 @@ class CallableDataSource implements DataSource
         return $data;
     }
 
-    protected function getDataFromCallable(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection|QueryBuilder|EloquentBuilder
+    protected function getDataFromCallable(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection|LazyCollection|QueryBuilder|EloquentBuilder
     {
 
         $data = match ($this->callableType) {
@@ -215,6 +215,7 @@ class CallableDataSource implements DataSource
             || $data instanceof LengthAwarePaginator
             || $data instanceof CursorPaginator
             || $data instanceof Collection
+            || $data instanceof LazyCollection
             || $data instanceof QueryBuilder
             || $data instanceof EloquentBuilder
         ) {

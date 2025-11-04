@@ -9,6 +9,7 @@ use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\ServerExecutor;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -20,6 +21,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
 use Livewire\Attributes\Locked;
@@ -146,7 +148,7 @@ class LwDataTable extends LivewireComponent
     public function renderPagination($rows)
     {
         return match (true) {
-            $rows instanceof Collection => '',
+            $rows instanceof Collection || $rows instanceof LazyCollection => '',
             $rows instanceof LengthAwarePaginatorContract => $rows->render($this->paginationView()),
             $rows instanceof PaginatorContract || $rows instanceof CursorPaginatorContract => $rows->render($this->paginationSimpleView()),
             \is_object($rows) && \method_exists($rows, 'links') => $rows->links($this->paginationView())
@@ -301,6 +303,26 @@ class LwDataTable extends LivewireComponent
     public function isDataPaginated($rows): bool
     {
         return $rows instanceof CursorPaginationContract || $rows instanceof CursorPaginatorContract;
+    }
+
+    public function shouldAllowColumnsSearch($rows): bool
+    {
+        return $this->hasMoreThanOneRow($rows);
+    }
+
+    public function shouldAllowSorting($rows): bool
+    {
+        return $this->hasMoreThanOneRow($rows);
+    }
+
+    protected function hasRows($rows): bool
+    {
+        return ($rows instanceof LazyCollection ? $rows->take(1)->count() : $rows->count()) === 1;
+    }
+
+    protected function hasMoreThanOneRow($rows): bool
+    {
+        return ($rows instanceof LazyCollection ? $rows->take(2)->count() : $rows->count()) === 2;
     }
 
     protected function mountDataTable(DataTable $dataTable)

@@ -3,15 +3,19 @@
 use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 
 /** @var \ErickComp\LivewireDataTable\DataTable $this->dataTable */
 /** @var \ErickComp\LivewireDataTable\Livewire\LwDataTable $this */
 /** @var \ErickComp\LivewireDataTable\DataTable\Filter $filterItem */
-/** @var LengthAwarePaginator $rows */
+/** @var LengthAwarePaginator|Paginator|CursorPaginator|Collection|LazyCollection $rows */
 
 $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAttributeBag {
     return $columnThAttributes->merge($tableThAttributes->all());
@@ -39,7 +43,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             <input {{ $this->dataTable->search->inputAttributes->class($this->preset()->get('search.input.class', [])) }} />
 
                             <button {{ $this->dataTable->search->buttonAttributes->class($this->preset()->get('search.button.class', [])) }}
-                                {{--  x-bind:disabled="!changedSearchTerms" --}} x-on:click="applySearch()" > {{-- @TODO: applySearch: It's buggy sometimes when toggling the state of the filters tab --}}
+                                x-on:click="applySearch()" >
                                 @php
                                 $shouldUseIconInSearchButton = $this->dataTable->search->shouldShowIconOnApplyButton();
                                 $iconSearchButtonPosition = $this->preset()->get('search.button.icon-position','none');
@@ -331,14 +335,18 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
     @endforeach
     --}}
 
+    @php
+        $shouldAllowColumnsSearch = $this->shouldAllowColumnsSearch($rows);
+        $shouldAllowSorting = $this->shouldAllowSorting($rows);
+    @endphp
     <table {{ $this->dataTable->tableAttributes->class($this->preset()->get('table.class')) }}>
         <thead {{ $this->dataTable->theadAttributes->class($this->preset()->get('table.thead.class')) }}>
             <tr {{ $this->dataTable->theadTrAttributes->class($this->preset()->get('table.thead.tr.class')) }}>
                 @foreach ($this->dataTable->columns as $column)
-                    <th {{ $column->buildThAttributes($this->preset()->get('table.thead.tr.th.class'), count($rows)) }}>
+                    <th {{ $column->buildThAttributes($this->preset()->get('table.thead.tr.th.class'), $shouldAllowSorting) }}>
                         {{ $column->title }}
 
-                        @if ($column->isSortable() && count($rows) > 1 && $this->preset()->get('table.thead.tr.th.sorting.show-indicators'))
+                        @if ($shouldAllowSorting && $column->isSortable() && $this->preset()->get('table.thead.tr.th.sorting.show-indicators'))
                             @php
                                 $lowercaseSortDir = $column->dataField === $sortBy
                                     ? \strtolower(empty($sortDir) ? 'none' : $sortDir)
@@ -353,7 +361,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 @endforeach
             </tr>
             
-            @if($this->dataTable->hasSearchableColumns() && (count($rows) > 0 || !empty(\array_filter($columnsSearch))))
+            @if($this->dataTable->hasSearchableColumns() && $this->hasRows($rows) || !empty(\array_filter($columnsSearch))))
                 <tr {{ $this->dataTable->theadSearchTrAttributes->class($this->preset()->get('table.thead.tr.search.class')) }}>
                     @foreach ($this->dataTable->columns as $column)
                         <th {{ $this->dataTable->theadSearchThAttributes->class($this->preset()->get('table.thead.tr.search.th.class')) }}>
@@ -371,8 +379,12 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             @endif
         </thead>
         <tbody {{$this->dataTable->tbodyAttributes->class($this->preset()->get('table.tbody.class')) }}>
+            @php
+                $noData = new \stdClass();
+            @endphp
+            @debugger
             @forelse ($rows as $row)
-                <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ $row->{$this->dataTable->dataIdentityColumn} }}">
+                <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}">
                     @foreach ($this->dataTable->columns as $column)
                         @php
                             $tdAttributes = $column->buildTdAttributes($this->preset()->get('table.tbody.tr.td.class'));
@@ -395,21 +407,27 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             @continue
                         @elseif ($column instanceof DataColumn)
                             <td {{ $tdAttributes }}>
-                                @if(\is_object($row))
-                                    {{ $row->{$column->dataField} }}
-                                @elseif(\is_array($row) || $row instanceof \ArrayAccess)
-                                    {{ $row[$column->dataField] }}
-                                @else
-                                    @php
-                                        throw new \LogicException("Cannot get data for column [{$column->dataField}] on row #{$loop->iteration}");
-                                    @endphp
-                                @endif
+                                @php
+                                $cellContent = \data_get($row, $column->dataField, $noData);
+                                
+                                if($cellContent === $noData) {
+                                    throw new \LogicException("Cannot get data for column [{$column->dataField}] on row #{$loop->iteration}");
+                                }
+                                @endphp
+                                
+                                {{ $cellContent }}
                             </td>
                         @else
                             @php throw new \InvalidArgumentException('Cannot render column of type ' . \get_debug_type($column)); @endphp
                         @endif
                     @endforeach
                 </tr>
+                @php
+                    if ($rows instanceof LazyCollection) {
+                        \file_put_contents(\storage_path('logs/data-table-lazy.log'), ($loop->iteration . PHP_EOL), FILE_APPEND);
+                        unset($row);
+                    }
+                @endphp
             @empty
                 <tr {{ $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.nodatafound.class')) }}>
                     <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns), 1]) }}">

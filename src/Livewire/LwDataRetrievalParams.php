@@ -4,19 +4,19 @@ namespace ErickComp\LivewireDataTable\Livewire;
 
 use ErickComp\LivewireDataTable\Concerns\AppliesDataRetrievalParamsOnCollections;
 use ErickComp\LivewireDataTable\Concerns\AppliesDataRetrievalParamsOnEloquentBuilder;
+use ErickComp\LivewireDataTable\Concerns\AppliesDataRetrievalParamsOnQueryBuilder;
 use ErickComp\LivewireDataTable\Concerns\PaginatesCollections;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Search;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Database\Query\Builder as QueryBuilder;
-use ErickComp\LivewireDataTable\Concerns\AppliesDataRetrievalParamsOnQueryBuilder;
+use Illuminate\Support\LazyCollection;
 
 class LwDataRetrievalParams
 {
@@ -91,7 +91,7 @@ class LwDataRetrievalParams
             return $dataRetriever->applyDataRetrievalParamsOnQueryBuilder($data, $this);
         }
 
-        if (!$data instanceof Collection) {
+        if (!$data instanceof Collection && !$data instanceof LazyCollection) {
             $data = collect($data);
         }
 
@@ -103,7 +103,7 @@ class LwDataRetrievalParams
         return $dataRetriever->applyDataRetrievalParamsOnCollection($data, $this);
     }
 
-    public function paginate(Collection|QueryBuilder|EloquentBuilder $data): LengthAwarePaginator
+    public function paginate(Collection|EloquentBuilder $data): LengthAwarePaginator
     {
         if ($data instanceof EloquentBuilder || $data instanceof QueryBuilder) {
             return $data->paginate(perPage: $this->perPage, pageName: $this->pageName, page: $this->page);
