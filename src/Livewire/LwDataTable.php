@@ -317,12 +317,12 @@ class LwDataTable extends LivewireComponent
 
     protected function hasRows($rows): bool
     {
-        return ($rows instanceof LazyCollection ? $rows->take(1)->count() : $rows->count()) === 1;
+        return ($rows instanceof LazyCollection ? $rows->take(1)->count() === 1 : $rows->count() > 0);
     }
 
     protected function hasMoreThanOneRow($rows): bool
     {
-        return ($rows instanceof LazyCollection ? $rows->take(2)->count() : $rows->count()) === 2;
+        return ($rows instanceof LazyCollection ? $rows->take(2)->count() === 2 : $rows->count() > 1);
     }
 
     protected function mountDataTable(DataTable $dataTable)

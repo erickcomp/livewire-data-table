@@ -361,7 +361,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 @endforeach
             </tr>
             
-            @if($this->dataTable->hasSearchableColumns() && $this->hasRows($rows) || !empty(\array_filter($columnsSearch))))
+            @if($this->dataTable->hasSearchableColumns() && $this->hasRows($rows) || !empty(\array_filter($columnsSearch)))
                 <tr {{ $this->dataTable->theadSearchTrAttributes->class($this->preset()->get('table.thead.tr.search.class')) }}>
                     @foreach ($this->dataTable->columns as $column)
                         <th {{ $this->dataTable->theadSearchThAttributes->class($this->preset()->get('table.thead.tr.search.th.class')) }}>
