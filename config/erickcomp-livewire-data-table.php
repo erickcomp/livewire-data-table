@@ -883,5 +883,418 @@ return [
                 CSS,
             ],
         ],
+        'tailwind3v1' => [
+            'extends' => 'empty',
+
+            'main-container' => [
+                'class' => ['relative', 'w-full', 'max-w-full', 'mx-auto'],
+            ],
+
+            'actions' => [
+                'container' => [
+                    'class' => ['lw-dt-actions-container', 'mb-4'],
+                ],
+                'row' => [
+                    'class' => ['lw-dt-actions-row', 'flex', 'flex-wrap', 'gap-3', 'items-end'],
+                ],
+                'bulk-actions-and-per-page' => [
+                    'container' => [
+                        'class' => ['flex', 'justify-between', 'w-full'],
+                    ],
+                    'bulk-actions-select' => [
+                        'class' => ['form-select', 'w-1/4', 'min-w-[10rem]'],
+                    ],
+                    'per-page' => [
+                        'container' => [
+                            'class' => ['flex', 'gap-2', 'ml-auto', 'items-center'],
+                        ],
+                        'label' => [
+                            'class' => ['font-semibold', 'text-gray-500', 'whitespace-nowrap'],
+                            'position' => 'after',
+                        ],
+                        'select' => [
+                            'class' => ['form-select'],
+                        ],
+                    ],
+                ],
+            ],
+
+            'search' => [
+                'container' => [
+                    'class' => ['flex', 'flex-wrap', 'gap-3'],
+                ],
+                'input' => [
+                    'class' => ['form-input', 'w-auto', 'lw-dt-search-input'],
+                ],
+                'button' => [
+                    'class' => ['btn', 'btn-secondary', 'btn-sm', 'lw-dt-search-button', 'max-w-max', 'inline-flex', 'items-center', 'gap-1', 'px-2', 'py-1'],
+                    'icon-position' => 'left',
+                    'icon' => <<<HTML
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 512 512"
+                    width="20" height="15"
+                    fill="currentColor"
+                    class="inline-block align-middle">
+                    <path d="M495 466.1l-110.1-110.1c31.1-37.7 48-84.6 48-134 0-56.4-21.9-109.3-61.8-149.2-39.8-39.9-92.8-61.8-149.1-61.8-56.3 0-109.3 21.9-149.2 61.8C33.1 112.7 11.2 165.7 11.2 222c0 56.3 21.9 109.3 61.8 149.2 39.8 39.8 92.8 61.8 149.2 61.8 49.5 0 96.4-16.9 134-48l110.1 110c8 8 20.9 8 28.9 0 8-8 8-20.9 0-28.9zM101.7 342.2c-32.2-32.1-49.9-74.8-49.9-120.2 0-45.4 17.7-88.2 49.8-120.3 32.1-32.1 74.8-49.8 120.3-49.8 45.4 0 88.2 17.7 120.3 49.8 32.1 32.1 49.8 74.8 49.8 120.3 0 45.4-17.7 88.2-49.8 120.3-32.1 32.1-74.9 49.8-120.3 49.8-45.4 0-88.1-17.7-120.2-49.9z" />
+                </svg>
+            HTML,
+                ],
+            ],
+
+            'filters' => [
+                'collapsible' => false,
+                'container' => [
+                    'class' => ['flex', 'flex-wrap', 'p-2', 'my-2', 'gap-3', 'border', 'border-gray-300', 'rounded', 'bg-white', 'lw-dt-filters-container'],
+                ],
+                'title' => [
+                    'class' => ['w-full', 'font-bold', 'flex', 'items-center', 'gap-2', 'text-gray-700'],
+                ],
+                'toggle-button' => [
+                    'class' => ['btn', 'btn-secondary', 'btn-sm', 'lw-dt-filters-toggle-button'],
+                    'icon-position' => 'left',
+                ],
+                'apply-button' => [
+                    'container' => [
+                        'class' => ['w-full', 'block', 'mt-2'],
+                    ],
+                    'class' => ['btn', 'btn-primary', 'filters-apply-button'],
+                ],
+                'item' => [
+                    'class' => ['block', 'bg-white', 'rounded', 'shadow', 'p-3', 'border', 'border-gray-200'],
+                    'content' => [
+                        'legend' => [
+                            'class' => ['font-semibold', 'text-gray-700', 'text-lg'],
+                        ],
+                        'range' => [
+                            'class' => ['space-y-2'],
+                            'input' => [
+                                'from' => ['class' => ['form-input']],
+                                'to' => ['class' => ['form-input']],
+                            ],
+                        ],
+                        'input-text' => ['class' => ['form-input']],
+                        'input-date' => ['class' => ['form-input']],
+                        'input-datetime-local' => ['class' => ['form-input']],
+                        'input-number' => ['class' => ['form-input']],
+                        'select' => ['class' => ['form-select']],
+                    ],
+                ],
+            ],
+
+            'applied-filters' => [
+                'container' => [
+                    'class' => ['my-3', 'flex', 'flex-wrap', 'items-center', 'gap-2'],
+                ],
+                'label' => [
+                    'class' => ['font-semibold', 'text-gray-500', 'mr-2'],
+                ],
+                'applied-filter-item' => [
+                    'class' => ['flex', 'items-center'],
+                    'label-class' => ['bg-sky-500', 'text-white', 'font-semibold', 'px-2', 'rounded-l-md', 'flex', 'items-center'],
+                ],
+                'button-remove-applied-filter-item' => [
+                    'class' => ['btn', 'btn-sm', 'bg-sky-500', 'hover:bg-sky-600', 'text-white', 'p-1', 'rounded-l-none'],
+                    'position' => 'right',
+                    'content' => '&times;',
+                ],
+            ],
+
+            'table' => [
+                'class' => ['min-w-full', 'table-auto', 'border', 'border-gray-200'],
+                'thead' => [
+                    'class' => ['bg-gray-100'],
+                    'tr' => [
+                        'class' => ['text-left', 'font-semibold', 'text-gray-700'],
+                        'th' => [
+                            'class' => ['px-3', 'py-2', 'cursor-pointer', 'select-none'],
+                        ],
+                    ],
+                ],
+                'tbody' => [
+                    'class' => ['divide-y', 'divide-gray-200'],
+                    'tr' => [
+                        'td' => ['class' => ['px-3', 'py-2']],
+                        'nodatafound' => ['class' => ['text-center', 'font-semibold', 'text-gray-500', 'py-4']],
+                    ],
+                ],
+                'tfoot' => [
+                    'class' => ['bg-gray-50', 'text-sm', 'text-gray-600'],
+                ],
+            ],
+
+            'loader-overlay' => [
+                'html' => <<<HTML
+            <div wire:loading.delay.long>
+                <div wire:loading.flex class="lw-dt-loader-overlay absolute inset-0 bg-white/90 flex items-center justify-center z-[9999]">
+                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-primary-500 border-t-transparent"></div>
+                </div>
+            </div>
+        HTML,
+            ],
+
+            'pagination' => [
+                'default-per-page-for-non-eloquent-data-sources' => [15],
+                'container' => [
+                    'class' => ['lw-dt-pagination-container', 'mt-4', 'flex', 'justify-center'],
+                ],
+                'view' => 'livewire::tailwind',
+                'simple-view' => 'livewire::simple-tailwind',
+            ],
+
+            'reload-alert' => [
+                'alert-before-reload' => true,
+                'function-name' => 'reloadRequiredAlert',
+                'function-code' => <<<JS
+            async function reloadRequiredAlert(message, callback) {
+                const result = await Swal.fire({
+                    text: message.replace("\\n", '<br>'),
+                    icon: 'info',
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: false
+                });
+                if (result.isConfirmed) callback();
+            }
+        JS,
+            ],
+
+            'assets' => [<<<'CSS'
+        <style>
+            .lw-dt-loader-overlay .spinner-border {
+                @apply border-4 border-primary-500 border-t-transparent rounded-full w-10 h-10 animate-spin;
+            }
+        </style>
+        CSS,
+            ],
+        ],
+
+        'tailwind3-old-1' => [
+            'extends' => 'empty',
+
+            'main-container' => [
+                'class' => ['container', 'mx-auto', 'relative'],
+            ],
+
+            'actions' => [
+                'container' => [
+                    'class' => ['flex', 'justify-between', 'mb-4'],
+                ],
+                'row' => [
+                    'class' => ['flex', 'gap-3', 'flex-wrap'],
+                ],
+                'bulk-actions-and-per-page' => [
+                    'container' => [
+                        'class' => ['flex', 'gap-2'],
+                    ],
+                    'bulk-actions-select' => [
+                        'class' => ['form-select', 'w-1/3'],
+                    ],
+                    'per-page' => [
+                        'container' => [
+                            'class' => ['flex', 'gap-2'],
+                        ],
+                        'select' => [
+                            'class' => ['form-select'],
+                        ],
+                    ],
+                ],
+            ],
+
+            'search' => [
+                'container' => [
+                    'class' => ['flex', 'gap-3'],
+                ],
+                'input' => [
+                    'class' => ['form-input', 'w-auto'],
+                ],
+                'button' => [
+                    'class' => ['btn', 'btn-primary'],
+                ],
+            ],
+
+            'filters' => [
+                'collapsible' => true,
+                'container' => [
+                    'class' => ['p-4', 'border', 'border-gray-300', 'rounded'],
+                ],
+                'title' => [
+                    'class' => ['font-bold', 'text-lg'],
+                ],
+                'apply-button' => [
+                    'class' => ['btn', 'btn-success'],
+                ],
+                'item' => [
+                    'class' => ['mb-2'],
+                    'input-text' => [
+                        'class' => ['form-input'],
+                    ],
+                    'select' => [
+                        'class' => ['form-select'],
+                    ],
+                ],
+            ],
+
+            'table' => [
+                'class' => ['table-auto', 'w-full'],
+                'thead' => [
+                    'class' => ['bg-gray-200'],
+                ],
+                'tbody' => [
+                    'class' => ['bg-white'],
+                ],
+                'tfoot' => [
+                    'class' => ['bg-gray-200'],
+                ],
+            ],
+
+            'pagination' => [
+                'container' => [
+                    'class' => ['flex', 'justify-center', 'my-4'],
+                ],
+            ],
+
+            'loader-overlay' => [
+                'html' => <<<HTML
+            <div wire:loading.delay.long>
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+                    <div class="loader"></div>
+                </div>
+            </div>
+            HTML,
+            ],
+
+            'assets' => [<<<'CSS'
+            <style>
+                .loader {
+                    border: 4px solid #ccc;
+                    border-top-color: #3498db;
+                    border-radius: 50%;
+                    width: 32px;
+                    height: 32px;
+                    animation: spin 1s linear infinite;
+                }
+
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+            CSS,
+            ],
+        ],
+
+        'tailwind4' => [
+            'extends' => 'empty',
+
+            'main-container' => [
+                'class' => ['container', 'mx-auto', 'relative'],
+            ],
+
+            'actions' => [
+                'container' => [
+                    'class' => ['flex', 'justify-between', 'mb-4'],
+                ],
+                'row' => [
+                    'class' => ['flex', 'gap-3', 'flex-wrap'],
+                ],
+                'bulk-actions-and-per-page' => [
+                    'container' => [
+                        'class' => ['flex', 'gap-2'],
+                    ],
+                    'bulk-actions-select' => [
+                        'class' => ['form-select', 'w-1/3'],
+                    ],
+                    'per-page' => [
+                        'container' => [
+                            'class' => ['flex', 'gap-2'],
+                        ],
+                        'select' => [
+                            'class' => ['form-select'],
+                        ],
+                    ],
+                ],
+            ],
+
+            'search' => [
+                'container' => [
+                    'class' => ['flex', 'gap-3'],
+                ],
+                'input' => [
+                    'class' => ['form-input', 'w-auto'],
+                ],
+                'button' => [
+                    'class' => ['btn', 'btn-primary'],
+                ],
+            ],
+
+            'filters' => [
+                'collapsible' => true,
+                'container' => [
+                    'class' => ['p-4', 'border', 'border-gray-300', 'rounded'],
+                ],
+                'title' => [
+                    'class' => ['font-bold', 'text-lg'],
+                ],
+                'apply-button' => [
+                    'class' => ['btn', 'btn-success'],
+                ],
+                'item' => [
+                    'class' => ['mb-2'],
+                    'input-text' => [
+                        'class' => ['form-input'],
+                    ],
+                    'select' => [
+                        'class' => ['form-select'],
+                    ],
+                ],
+            ],
+
+            'table' => [
+                'class' => ['table-auto', 'w-full'],
+                'thead' => [
+                    'class' => ['bg-gray-200'],
+                ],
+                'tbody' => [
+                    'class' => ['bg-white'],
+                ],
+                'tfoot' => [
+                    'class' => ['bg-gray-200'],
+                ],
+            ],
+
+            'pagination' => [
+                'container' => [
+                    'class' => ['flex', 'justify-center', 'my-4'],
+                ],
+            ],
+
+            'loader-overlay' => [
+                'html' => <<<HTML
+            <div wire:loading.delay.long>
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+                    <div class="loader"></div>
+                </div>
+            </div>
+            HTML,
+            ],
+
+            'assets' => [<<<'CSS'
+            <style>
+                .loader {
+                    border: 4px solid #ccc;
+                    border-top-color: #3498db;
+                    border-radius: 50%;
+                    width: 32px;
+                    height: 32px;
+                    animation: spin 1s linear infinite;
+                }
+
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+            CSS,
+            ],
+        ],
     ],
 ];
