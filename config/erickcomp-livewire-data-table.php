@@ -16,6 +16,18 @@ return [
             'query-string-search' => 'search',
             'query-string-filters' => 'filters',
             'query-string-param-cols-search' => 'cols-search',
+            'table' => [
+                'wrapper' => [
+                    'class' => [],
+                ],
+                'thead' => [
+                    'tr' => [
+                        'search' => [
+                            'columns-search-debounce-ms' => 250,
+                        ],
+                    ],
+                ],
+            ],
         ],
         'vanilla' => [
             'extends' => 'empty', // ?string
@@ -165,6 +177,9 @@ return [
             ],
 
             'table' => [
+                'wrapper' => [
+                    'class' => ['lw-dt-table-wrapper'],
+                ],
                 'class' => ['lw-dt-table'],
                 'thead' => [
                     'class' => ['lw-dt-thead'],
@@ -665,6 +680,9 @@ return [
             ],
 
             'table' => [
+                /* 'wrapper' => [
+                    'class' => [],
+                ], */
                 'class' => ['table'],
                 'thead' => [
                     'class' => ['lw-dt-thead'],
@@ -706,7 +724,7 @@ return [
                             ],
                         ],
                         'search' => [
-                            'debounce-ms' => 250,
+                            //'columns-search-debounce-ms' => 250,
                             'class' => [],
                             'th' => [
                                 'class' => [],
@@ -891,51 +909,80 @@ return [
             ],
 
             'actions' => [
-                'container' => [
-                    'class' => ['lw-dt-actions-container', 'mb-4'],
-                ],
-                'row' => [
-                    'class' => ['lw-dt-actions-row', 'flex', 'flex-wrap', 'gap-3', 'items-end'],
-                ],
+                'container' => ['class' => ['mb-4']],
+                'row' => ['class' => ['flex', 'flex-wrap', 'gap-3', 'items-end']],
                 'bulk-actions-and-per-page' => [
-                    'container' => [
-                        'class' => ['flex', 'justify-between', 'w-full'],
-                    ],
+                    'container' => ['class' => ['flex', 'justify-between', 'w-full']],
                     'bulk-actions-select' => [
-                        'class' => ['form-select', 'w-1/4', 'min-w-[10rem]'],
+                        'class' => [
+                            'w-1/4',
+                            'text-gray-800',
+                            'min-w-[10rem]',
+                            'rounded-md',
+                            'border-gray-300',
+                            'shadow-sm',
+                            'focus:border-indigo-500',
+                            'focus:ring-indigo-500',
+                        ],
                     ],
                     'per-page' => [
-                        'container' => [
-                            'class' => ['flex', 'gap-2', 'ml-auto', 'items-center'],
-                        ],
-                        'label' => [
-                            'class' => ['font-semibold', 'text-gray-500', 'whitespace-nowrap'],
-                            'position' => 'after',
-                        ],
+                        'container' => ['class' => ['flex', 'gap-2', 'ml-auto', 'items-center']],
+                        'label' => ['class' => ['font-semibold', 'text-gray-500', 'whitespace-nowrap']],
                         'select' => [
-                            'class' => ['form-select'],
+                            'class' => [
+                                'p-1',
+                                'text-gray-800',
+                                'rounded-md',
+                                'border-gray-100',
+                                'shadow-sm',
+                                'focus:border-indigo-500',
+                                'focus:ring-indigo-500',
+                            ],
                         ],
                     ],
                 ],
             ],
 
             'search' => [
-                'container' => [
-                    'class' => ['flex', 'flex-wrap', 'gap-3'],
-                ],
+                'container' => ['class' => ['flex', 'flex-wrap', 'gap-3']],
                 'input' => [
-                    'class' => ['form-input', 'w-auto', 'lw-dt-search-input'],
+                    'class' => [
+                        'w-auto',
+                        'rounded-md',
+                        'border',
+                        'border-gray-300',
+                        'shadow-sm',
+                        'focus:border-indigo-500',
+                        'focus:ring-indigo-500',
+                        'px-3',
+                        'py-2',
+                    ],
                 ],
                 'button' => [
-                    'class' => ['btn', 'btn-secondary', 'btn-sm', 'lw-dt-search-button', 'max-w-max', 'inline-flex', 'items-center', 'gap-1', 'px-2', 'py-1'],
+                    'class' => [
+                        'inline-flex',
+                        'items-center',
+                        'gap-1',
+                        'px-2',
+                        'py-1',
+                        'text-sm',
+                        'font-medium',
+                        'text-white',
+                        'bg-indigo-600',
+                        'rounded-md',
+                        'hover:bg-indigo-700',
+                        'focus:outline-none',
+                        'focus:ring-2',
+                        'focus:ring-indigo-500',
+                        'focus:ring-offset-2',
+                    ],
                     'icon-position' => 'left',
                     'icon' => <<<HTML
                 <svg xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 512 512"
-                    width="20" height="15"
-                    fill="currentColor"
-                    class="inline-block align-middle">
-                    <path d="M495 466.1l-110.1-110.1c31.1-37.7 48-84.6 48-134 0-56.4-21.9-109.3-61.8-149.2-39.8-39.9-92.8-61.8-149.1-61.8-56.3 0-109.3 21.9-149.2 61.8C33.1 112.7 11.2 165.7 11.2 222c0 56.3 21.9 109.3 61.8 149.2 39.8 39.8 92.8 61.8 149.2 61.8 49.5 0 96.4-16.9 134-48l110.1 110c8 8 20.9 8 28.9 0 8-8 8-20.9 0-28.9zM101.7 342.2c-32.2-32.1-49.9-74.8-49.9-120.2 0-45.4 17.7-88.2 49.8-120.3 32.1-32.1 74.8-49.8 120.3-49.8 45.4 0 88.2 17.7 120.3 49.8 32.1 32.1 49.8 74.8 49.8 120.3 0 45.4-17.7 88.2-49.8 120.3-32.1 32.1-74.9 49.8-120.3 49.8-45.4 0-88.1-17.7-120.2-49.9z" />
+                    width="18" height="18"
+                    fill="currentColor">
+                    <path d="M505 442.7L405.3 343c28.4-34.9 45.7-79.4 45.7-127C451 103.5 347.5 0 225.5 0S0 103.5 0 225.5 103.5 451 225.5 451c48.2 0 92.8-17.3 127.7-45.7l99.7 99.7c4.5 4.5 10.6 7 17 7s12.5-2.5 17-7c9.4-9.4 9.4-24.6 0-34zM225.5 401c-96.8 0-176-79.2-176-176s79.2-176 176-176 176 79.2 176 176-79.2 176-176 176z"/>
                 </svg>
             HTML,
                 ],
@@ -944,69 +991,119 @@ return [
             'filters' => [
                 'collapsible' => false,
                 'container' => [
-                    'class' => ['flex', 'flex-wrap', 'p-2', 'my-2', 'gap-3', 'border', 'border-gray-300', 'rounded', 'bg-white', 'lw-dt-filters-container'],
+                    'class' => [
+                        'flex',
+                        'flex-wrap',
+                        'p-3',
+                        'my-2',
+                        'gap-3',
+                        'border',
+                        'border-gray-300',
+                        'rounded-lg',
+                        'bg-gray-50',
+                    ],
                 ],
                 'title' => [
-                    'class' => ['w-full', 'font-bold', 'flex', 'items-center', 'gap-2', 'text-gray-700'],
-                ],
-                'toggle-button' => [
-                    'class' => ['btn', 'btn-secondary', 'btn-sm', 'lw-dt-filters-toggle-button'],
-                    'icon-position' => 'left',
+                    'class' => ['w-full', 'font-bold', 'text-gray-700', 'flex', 'items-center', 'gap-2'],
                 ],
                 'apply-button' => [
-                    'container' => [
-                        'class' => ['w-full', 'block', 'mt-2'],
+                    'container' => ['class' => ['w-full', 'block', 'mt-2']],
+                    'class' => [
+                        'w-full',
+                        'px-3',
+                        'py-2',
+                        'text-sm',
+                        'font-semibold',
+                        'text-white',
+                        'bg-indigo-600',
+                        'hover:bg-indigo-700',
+                        'rounded-md',
+                        'focus:ring-2',
+                        'focus:ring-indigo-500',
                     ],
-                    'class' => ['btn', 'btn-primary', 'filters-apply-button'],
                 ],
                 'item' => [
-                    'class' => ['block', 'bg-white', 'rounded', 'shadow', 'p-3', 'border', 'border-gray-200'],
+                    'class' => ['block', 'bg-white', 'rounded-md', 'p-3', 'border', 'border-gray-200'],
                     'content' => [
-                        'legend' => [
-                            'class' => ['font-semibold', 'text-gray-700', 'text-lg'],
-                        ],
-                        'range' => [
-                            'class' => ['space-y-2'],
-                            'input' => [
-                                'from' => ['class' => ['form-input']],
-                                'to' => ['class' => ['form-input']],
-                            ],
-                        ],
-                        'input-text' => ['class' => ['form-input']],
-                        'input-date' => ['class' => ['form-input']],
-                        'input-datetime-local' => ['class' => ['form-input']],
-                        'input-number' => ['class' => ['form-input']],
-                        'select' => ['class' => ['form-select']],
+                        'legend' => ['class' => ['font-semibold', 'text-gray-700', 'mb-1']],
+                        'input-text' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
+                        'input-date' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
+                        'input-number' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
+                        'select' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
                     ],
                 ],
             ],
 
             'applied-filters' => [
                 'container' => [
-                    'class' => ['my-3', 'flex', 'flex-wrap', 'items-center', 'gap-2'],
+                    'class' => ['my-3', 'd-flex', 'flex-wrap', 'align-items-center', 'flex-gap-2'],
                 ],
                 'label' => [
-                    'class' => ['font-semibold', 'text-gray-500', 'mr-2'],
+                    'class' => ['font-weight-bold', 'text-muted', 'mr-2'],
                 ],
                 'applied-filter-item' => [
-                    'class' => ['flex', 'items-center'],
-                    'label-class' => ['bg-sky-500', 'text-white', 'font-semibold', 'px-2', 'rounded-l-md', 'flex', 'items-center'],
+                    'class' => ['d-flex'],
+                    'label-class' => ['bg-gray-400', 'text-white', 'text-sm', 'font-bold', 'px-2', 'py-1', 'rounded-s', 'inline-flex', 'align-items-center', 'justify-content-start'],
                 ],
                 'button-remove-applied-filter-item' => [
-                    'class' => ['btn', 'btn-sm', 'bg-sky-500', 'hover:bg-sky-600', 'text-white', 'p-1', 'rounded-l-none'],
+                    'class' => ['bg-gray-400', 'text-white', 'text-sm', 'm-0', 'p-1', 'rounded-e', 'applied-filter-remove-button'],
                     'position' => 'right',
                     'content' => '&times;',
                 ],
             ],
 
             'table' => [
-                'class' => ['min-w-full', 'table-auto', 'border', 'border-gray-200'],
+                'wrapper' => [
+                    'class' => ['rounded-lg', 'overflow-hidden', 'shadow'],
+                ],
+                'class' => ['min-w-full', 'table-auto', 'text-sm'],
                 'thead' => [
-                    'class' => ['bg-gray-100'],
+                    'class' => ['bg-gray-100', 'dark:bg-gray-900'],
                     'tr' => [
-                        'class' => ['text-left', 'font-semibold', 'text-gray-700'],
+                        'class' => ['text-left', 'font-semibold', 'text-gray-700', 'dark:text-gray-100'],
                         'th' => [
                             'class' => ['px-3', 'py-2', 'cursor-pointer', 'select-none'],
+                            'sorting' => [
+                                'show-indicators' => true,
+                                //'indicator-class' => ['lw-dt-sort'],
+                                //'indicator-asc-class' => ['lw-dt-sort', 'lw-dt-sort-asc'],
+                                //'indicator-desc-class' => ['lw-dt-sort', 'lw-dt-sort-desc'],
+                                //'indicator-none-class' => ['lw-dt-sort', 'lw-dt-sort-none'],
+
+                                //'indicator-none' => '<span class="lw-dt-sort lw-dt-sort-none"></span>',
+                                'indicator-none' => <<<HTML
+                                    <span class="ml-2 inline-block align-middle">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" class="p-icon p-datatable-sort-icon" aria-hidden="true" sortOrder="0" data-pc-section="sorticon">
+                                            <path d="M5.64515 3.61291C5.47353 3.61291 5.30192 3.54968 5.16644 3.4142L3.38708 1.63484L1.60773 3.4142C1.34579 3.67613 0.912244 3.67613 0.650309 3.4142C0.388374 3.15226 0.388374 2.71871 0.650309 2.45678L2.90837 0.198712C3.17031 -0.0632236 3.60386 -0.0632236 3.86579 0.198712L6.12386 2.45678C6.38579 2.71871 6.38579 3.15226 6.12386 3.4142C5.98837 3.54968 5.81676 3.61291 5.64515 3.61291Z" fill="currentColor"/><path d="M3.38714 14C3.01681 14 2.70972 13.6929 2.70972 13.3226V0.677419C2.70972 0.307097 3.01681 0 3.38714 0C3.75746 0 4.06456 0.307097 4.06456 0.677419V13.3226C4.06456 13.6929 3.75746 14 3.38714 14Z" fill="currentColor"/><path d="M10.6129 14C10.4413 14 10.2697 13.9368 10.1342 13.8013L7.87611 11.5432C7.61418 11.2813 7.61418 10.8477 7.87611 10.5858C8.13805 10.3239 8.5716 10.3239 8.83353 10.5858L10.6129 12.3652L12.3922 10.5858C12.6542 10.3239 13.0877 10.3239 13.3497 10.5858C13.6116 10.8477 13.6116 11.2813 13.3497 11.5432L11.0916 13.8013C10.9561 13.9368 10.7845 14 10.6129 14Z" fill="currentColor"/><path d="M10.6129 14C10.2426 14 9.93552 13.6929 9.93552 13.3226V0.677419C9.93552 0.307097 10.2426 0 10.6129 0C10.9833 0 11.2904 0.307097 11.2904 0.677419V13.3226C11.2904 13.6929 10.9832 14 10.6129 14Z" fill="currentColor"/>
+                                        </svg>
+                                    </span>
+                                HTML,
+                                //'indicator-asc' => '<span class="lw-dt-sort lw-dt-sort-asc"></span>',
+                                'indicator-asc' => <<<HTML
+                                    <span class="ml-2 inline-block align-middle">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" class="p-icon p-datatable-sort-icon" aria-hidden="true" sorted="true" sortOrder="1" data-pc-section="sorticon">
+                                            <path d="M3.63435 0.19871C3.57113 0.135484 3.49887 0.0903226 3.41758 0.0541935C3.255 -0.0180645 3.06532 -0.0180645 2.90274 0.0541935C2.82145 0.0903226 2.74919 0.135484 2.68597 0.19871L0.427901 2.45677C0.165965 2.71871 0.165965 3.15226 0.427901 3.41419C0.689836 3.67613 1.12338 3.67613 1.38532 3.41419L2.48726 2.31226V13.3226C2.48726 13.6929 2.79435 14 3.16467 14C3.535 14 3.84209 13.6929 3.84209 13.3226V2.31226L4.94403 3.41419C5.07951 3.54968 5.25113 3.6129 5.42274 3.6129C5.59435 3.6129 5.76597 3.54968 5.90145 3.41419C6.16338 3.15226 6.16338 2.71871 5.90145 2.45677L3.64338 0.19871H3.63435ZM13.7685 13.3226C13.7685 12.9523 13.4615 12.6452 13.0911 12.6452H7.22016C6.84984 12.6452 6.54274 12.9523 6.54274 13.3226C6.54274 13.6929 6.84984 14 7.22016 14H13.0911C13.4615 14 13.7685 13.6929 13.7685 13.3226ZM7.22016 8.58064C6.84984 8.58064 6.54274 8.27355 6.54274 7.90323C6.54274 7.5329 6.84984 7.22581 7.22016 7.22581H9.47823C9.84855 7.22581 10.1556 7.5329 10.1556 7.90323C10.1556 8.27355 9.84855 8.58064 9.47823 8.58064H7.22016ZM7.22016 5.87097H7.67177C8.0421 5.87097 8.34919 5.56387 8.34919 5.19355C8.34919 4.82323 8.0421 4.51613 7.67177 4.51613H7.22016C6.84984 4.51613 6.54274 4.82323 6.54274 5.19355C6.54274 5.56387 6.84984 5.87097 7.22016 5.87097ZM11.2847 11.2903H7.22016C6.84984 11.2903 6.54274 10.9832 6.54274 10.6129C6.54274 10.2426 6.84984 9.93548 7.22016 9.93548H11.2847C11.655 9.93548 11.9621 10.2426 11.9621 10.6129C11.9621 10.9832 11.655 11.2903 11.2847 11.2903Z" fill="currentColor"/>
+                                        </svg>
+                                    </span>
+                                HTML,
+                                //'indicator-desc' => '<span class="lw-dt-sort lw-dt-sort-desc"></span>',
+                                'indicator-desc' => <<<HTML
+                                    <span class="ml-2 inline-block align-middle">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" class="p-icon p-datatable-sort-icon" aria-hidden="true" sorted="true" sortOrder="-1" data-pc-section="sorticon">
+                                            <path d="M4.93953 10.5858L3.83759 11.6877V0.677419C3.83759 0.307097 3.53049 0 3.16017 0C2.78985 0 2.48275 0.307097 2.48275 0.677419V11.6877L1.38082 10.5858C1.11888 10.3239 0.685331 10.3239 0.423396 10.5858C0.16146 10.8477 0.16146 11.2813 0.423396 11.5432L2.68146 13.8013C2.74469 13.8645 2.81694 13.9097 2.89823 13.9458C2.97952 13.9819 3.06985 14 3.16017 14C3.25049 14 3.33178 13.9819 3.42211 13.9458C3.5034 13.9097 3.57565 13.8645 3.63888 13.8013L5.89694 11.5432C6.15888 11.2813 6.15888 10.8477 5.89694 10.5858C5.63501 10.3239 5.20146 10.3239 4.93953 10.5858ZM13.0957 0H7.22468C6.85436 0 6.54726 0.307097 6.54726 0.677419C6.54726 1.04774 6.85436 1.35484 7.22468 1.35484H13.0957C13.466 1.35484 13.7731 1.04774 13.7731 0.677419C13.7731 0.307097 13.466 0 13.0957 0ZM7.22468 5.41935H9.48275C9.85307 5.41935 10.1602 5.72645 10.1602 6.09677C10.1602 6.4671 9.85307 6.77419 9.48275 6.77419H7.22468C6.85436 6.77419 6.54726 6.4671 6.54726 6.09677C6.54726 5.72645 6.85436 5.41935 7.22468 5.41935ZM7.6763 8.12903H7.22468C6.85436 8.12903 6.54726 8.43613 6.54726 8.80645C6.54726 9.17677 6.85436 9.48387 7.22468 9.48387H7.6763C8.04662 9.48387 8.35372 9.17677 8.35372 8.80645C8.35372 8.43613 8.04662 8.12903 7.6763 8.12903ZM7.22468 2.70968H11.2892C11.6595 2.70968 11.9666 3.01677 11.9666 3.3871C11.9666 3.75742 11.6595 4.06452 11.2892 4.06452H7.22468C6.85436 4.06452 6.54726 3.75742 6.54726 3.3871C6.54726 3.01677 6.85436 2.70968 7.22468 2.70968Z" fill="currentColor"/>
+                                        </svg>
+                                    </span>
+                                HTML,
+                            ],
+                        ],
+                        'search' => [
+                            'class' => [],
+                            'th' => [
+                                'class' => ['pb-2'],
+                                'input' => [
+                                    'class' => ['w-auto', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'focus:border-indigo-500', 'focus:ring-indigo-500 px-2', 'py-1'],
+                                ],
+                            ],
                         ],
                     ],
                 ],
@@ -1018,15 +1115,15 @@ return [
                     ],
                 ],
                 'tfoot' => [
-                    'class' => ['bg-gray-50', 'text-sm', 'text-gray-600'],
+                    'class' => ['bg-gray-50', 'text-xs', 'text-gray-600'],
                 ],
             ],
 
             'loader-overlay' => [
                 'html' => <<<HTML
             <div wire:loading.delay.long>
-                <div wire:loading.flex class="lw-dt-loader-overlay absolute inset-0 bg-white/90 flex items-center justify-center z-[9999]">
-                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-primary-500 border-t-transparent"></div>
+                <div wire:loading.flex class="absolute inset-0 bg-white/80 flex items-center justify-center z-[9999]">
+                    <div class="h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
             </div>
         HTML,
@@ -1034,9 +1131,7 @@ return [
 
             'pagination' => [
                 'default-per-page-for-non-eloquent-data-sources' => [15],
-                'container' => [
-                    'class' => ['lw-dt-pagination-container', 'mt-4', 'flex', 'justify-center'],
-                ],
+                'container' => ['class' => ['mt-4', 'justify-between']],
                 'view' => 'livewire::tailwind',
                 'simple-view' => 'livewire::simple-tailwind',
             ],
@@ -1045,255 +1140,70 @@ return [
                 'alert-before-reload' => true,
                 'function-name' => 'reloadRequiredAlert',
                 'function-code' => <<<JS
-            async function reloadRequiredAlert(message, callback) {
-                const result = await Swal.fire({
-                    text: message.replace("\\n", '<br>'),
-                    icon: 'info',
-                    confirmButtonText: 'OK',
-                    allowOutsideClick: false
-                });
-                if (result.isConfirmed) callback();
-            }
-        JS,
-            ],
+                    async function reloadRequiredAlert(message, callback) {
+                        const f = async function f(message) {
+                            const result = await Swal.fire({
+                                title: '',
+                                text: message.replace("\\n", '<br>'),
+                                icon: 'info',
+                                confirmButtonText: 'OK',
+                                allowOutsideClick: false
+                            });
 
+                            return result;
+                        };
+
+                        const result = await f(message);
+
+                        if (result.isConfirmed) {
+                            callback();
+                        }
+                    };
+                JS,
+            ],
             'assets' => [<<<'CSS'
-        <style>
-            .lw-dt-loader-overlay .spinner-border {
-                @apply border-4 border-primary-500 border-t-transparent rounded-full w-10 h-10 animate-spin;
-            }
-        </style>
-        CSS,
-            ],
-        ],
+                <style>
+                    /*
+                    :root {
+                        --lw-dt-filters-container-bg-color: #fff;
+                    }
 
-        'tailwind3-old-1' => [
-            'extends' => 'empty',
+                    .lw-dt .lw-dt-loader-overlay {
+                        position: absolute;
+                        inset: 0;
+                        width: 100%;
+                        height: 100%;
+                        background-color: rgba(255, 255, 255, 0.9);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 9999;
+                    }
 
-            'main-container' => [
-                'class' => ['container', 'mx-auto', 'relative'],
-            ],
+                    .lw-dt .lw-dt-filters-toggle-button.active {
+                        z-index: 2;
+                        color: black !important;
+                        background-color: var(--lw-dt-filters-container-bg-color) !important;
+                        padding-bottom: calc(1.0rem - 2px) !important;
+                        margin-bottom: calc(-1.0rem + 7px) !important;
+                        border-color: #dee2e6 !important;
+                        border-bottom: none;
+                        border-bottom-right-radius: 0;
+                        border-bottom-left-radius: 0;
+                    }
 
-            'actions' => [
-                'container' => [
-                    'class' => ['flex', 'justify-between', 'mb-4'],
-                ],
-                'row' => [
-                    'class' => ['flex', 'gap-3', 'flex-wrap'],
-                ],
-                'bulk-actions-and-per-page' => [
-                    'container' => [
-                        'class' => ['flex', 'gap-2'],
-                    ],
-                    'bulk-actions-select' => [
-                        'class' => ['form-select', 'w-1/3'],
-                    ],
-                    'per-page' => [
-                        'container' => [
-                            'class' => ['flex', 'gap-2'],
-                        ],
-                        'select' => [
-                            'class' => ['form-select'],
-                        ],
-                    ],
-                ],
-            ],
+                    div.lw-dt>.lw-dt-actions-container div.lw-dt-actions-row button.lw-dt-filters-toggle-button.active:focus,  div.lw-dt>.lw-dt-actions-container div.lw-dt-actions-row button.lw-dt-filters-toggle-button.active:focus-visible {
+                        box-shadow: none ;
+                    }
 
-            'search' => [
-                'container' => [
-                    'class' => ['flex', 'gap-3'],
-                ],
-                'input' => [
-                    'class' => ['form-input', 'w-auto'],
-                ],
-                'button' => [
-                    'class' => ['btn', 'btn-primary'],
-                ],
-            ],
-
-            'filters' => [
-                'collapsible' => true,
-                'container' => [
-                    'class' => ['p-4', 'border', 'border-gray-300', 'rounded'],
-                ],
-                'title' => [
-                    'class' => ['font-bold', 'text-lg'],
-                ],
-                'apply-button' => [
-                    'class' => ['btn', 'btn-success'],
-                ],
-                'item' => [
-                    'class' => ['mb-2'],
-                    'input-text' => [
-                        'class' => ['form-input'],
-                    ],
-                    'select' => [
-                        'class' => ['form-select'],
-                    ],
-                ],
-            ],
-
-            'table' => [
-                'class' => ['table-auto', 'w-full'],
-                'thead' => [
-                    'class' => ['bg-gray-200'],
-                ],
-                'tbody' => [
-                    'class' => ['bg-white'],
-                ],
-                'tfoot' => [
-                    'class' => ['bg-gray-200'],
-                ],
-            ],
-
-            'pagination' => [
-                'container' => [
-                    'class' => ['flex', 'justify-center', 'my-4'],
-                ],
-            ],
-
-            'loader-overlay' => [
-                'html' => <<<HTML
-            <div wire:loading.delay.long>
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-                    <div class="loader"></div>
-                </div>
-            </div>
-            HTML,
-            ],
-
-            'assets' => [<<<'CSS'
-            <style>
-                .loader {
-                    border: 4px solid #ccc;
-                    border-top-color: #3498db;
-                    border-radius: 50%;
-                    width: 32px;
-                    height: 32px;
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            </style>
-            CSS,
-            ],
-        ],
-
-        'tailwind4' => [
-            'extends' => 'empty',
-
-            'main-container' => [
-                'class' => ['container', 'mx-auto', 'relative'],
-            ],
-
-            'actions' => [
-                'container' => [
-                    'class' => ['flex', 'justify-between', 'mb-4'],
-                ],
-                'row' => [
-                    'class' => ['flex', 'gap-3', 'flex-wrap'],
-                ],
-                'bulk-actions-and-per-page' => [
-                    'container' => [
-                        'class' => ['flex', 'gap-2'],
-                    ],
-                    'bulk-actions-select' => [
-                        'class' => ['form-select', 'w-1/3'],
-                    ],
-                    'per-page' => [
-                        'container' => [
-                            'class' => ['flex', 'gap-2'],
-                        ],
-                        'select' => [
-                            'class' => ['form-select'],
-                        ],
-                    ],
-                ],
-            ],
-
-            'search' => [
-                'container' => [
-                    'class' => ['flex', 'gap-3'],
-                ],
-                'input' => [
-                    'class' => ['form-input', 'w-auto'],
-                ],
-                'button' => [
-                    'class' => ['btn', 'btn-primary'],
-                ],
-            ],
-
-            'filters' => [
-                'collapsible' => true,
-                'container' => [
-                    'class' => ['p-4', 'border', 'border-gray-300', 'rounded'],
-                ],
-                'title' => [
-                    'class' => ['font-bold', 'text-lg'],
-                ],
-                'apply-button' => [
-                    'class' => ['btn', 'btn-success'],
-                ],
-                'item' => [
-                    'class' => ['mb-2'],
-                    'input-text' => [
-                        'class' => ['form-input'],
-                    ],
-                    'select' => [
-                        'class' => ['form-select'],
-                    ],
-                ],
-            ],
-
-            'table' => [
-                'class' => ['table-auto', 'w-full'],
-                'thead' => [
-                    'class' => ['bg-gray-200'],
-                ],
-                'tbody' => [
-                    'class' => ['bg-white'],
-                ],
-                'tfoot' => [
-                    'class' => ['bg-gray-200'],
-                ],
-            ],
-
-            'pagination' => [
-                'container' => [
-                    'class' => ['flex', 'justify-center', 'my-4'],
-                ],
-            ],
-
-            'loader-overlay' => [
-                'html' => <<<HTML
-            <div wire:loading.delay.long>
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-                    <div class="loader"></div>
-                </div>
-            </div>
-            HTML,
-            ],
-
-            'assets' => [<<<'CSS'
-            <style>
-                .loader {
-                    border: 4px solid #ccc;
-                    border-top-color: #3498db;
-                    border-radius: 50%;
-                    width: 32px;
-                    height: 32px;
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            </style>
-            CSS,
+                    @media (max-width: 546px) {
+                        div.lw-dt>div.lw-dt-actions-container div.lw-dt-filters-container[x-show\.important="filtersContainerIsOpen"] {
+                            border-top-left-radius: 0 !important;
+                        }
+                    }
+                        */
+                </style>
+                CSS,
             ],
         ],
     ],

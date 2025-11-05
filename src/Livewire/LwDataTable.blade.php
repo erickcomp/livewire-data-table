@@ -339,123 +339,125 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
         $shouldAllowColumnsSearch = $this->shouldAllowColumnsSearch($rows);
         $shouldAllowSorting = $this->shouldAllowSorting($rows);
     @endphp
-    <table {{ $this->dataTable->tableAttributes->class($this->preset()->get('table.class')) }}>
-        <thead {{ $this->dataTable->theadAttributes->class($this->preset()->get('table.thead.class')) }}>
-            <tr {{ $this->dataTable->theadTrAttributes->class($this->preset()->get('table.thead.tr.class')) }}>
-                @foreach ($this->dataTable->columns as $column)
-                    <th {{ $column->buildThAttributes($this->preset()->get('table.thead.tr.th.class'), $shouldAllowSorting) }}>
-                        {{ $column->title }}
-
-                        @if ($shouldAllowSorting && $column->isSortable() && $this->preset()->get('table.thead.tr.th.sorting.show-indicators'))
-                            @php
-                                $lowercaseSortDir = $column->dataField === $sortBy
-                                    ? \strtolower(empty($sortDir) ? 'none' : $sortDir)
-                                    : 'none';
-
-                                $sortingHtml = $this->preset()->get("table.thead.tr.th.sorting.indicator-$lowercaseSortDir");
-                            @endphp
-                            {!! $sortingHtml !!}
-                        @endif
-                        
-                    </th>
-                @endforeach
-            </tr>
-            
-            @if($this->dataTable->hasSearchableColumns() && $this->hasRows($rows) || !empty(\array_filter($columnsSearch)))
-                <tr {{ $this->dataTable->theadSearchTrAttributes->class($this->preset()->get('table.thead.tr.search.class')) }}>
+    <div {{ $this->dataTable->tableWrapperAttributes->class($this->preset()->get('table.wrapper.class')) }}>
+        <table {{ $this->dataTable->tableAttributes->class($this->preset()->get('table.class')) }}>
+            <thead {{ $this->dataTable->theadAttributes->class($this->preset()->get('table.thead.class')) }}>
+                <tr {{ $this->dataTable->theadTrAttributes->class($this->preset()->get('table.thead.tr.class')) }}>
                     @foreach ($this->dataTable->columns as $column)
-                        <th {{ $this->dataTable->theadSearchThAttributes->class($this->preset()->get('table.thead.tr.search.th.class')) }}>
-                            @if ($column->isSearchable())
-                                <input
-                                    type="text"
-                                    wire:model.live.debounce.{{ $this->preset()->get('table.thead.tr.search.debounce-ms') }}ms="columnsSearch.{{ $column->dataField }}"
-                                    {{ $column->thSearchInputAttributes->class($this->preset()->get('table.thead.tr.search.th.input.class')) }}
-                                    value="{{ Arr::get($this->columnsSearch, $column->dataField, '') }}"
-                                    />
+                        <th {{ $column->buildThAttributes($this->preset()->get('table.thead.tr.th.class'), $shouldAllowSorting) }}>
+                            {{ $column->title }}
+
+                            @if ($shouldAllowSorting && $column->isSortable() && $this->preset()->get('table.thead.tr.th.sorting.show-indicators'))
+                                @php
+                                    $lowercaseSortDir = $column->dataField === $sortBy
+                                        ? \strtolower(empty($sortDir) ? 'none' : $sortDir)
+                                        : 'none';
+
+                                    $sortingHtml = $this->preset()->get("table.thead.tr.th.sorting.indicator-$lowercaseSortDir");
+                                @endphp
+                                {!! $sortingHtml !!}
                             @endif
+                            
                         </th>
                     @endforeach
                 </tr>
-            @endif
-        </thead>
-        <tbody {{$this->dataTable->tbodyAttributes->class($this->preset()->get('table.tbody.class')) }}>
-            @php
-                $noData = new \stdClass();
-            @endphp
-            @debugger
-            @forelse ($rows as $row)
-                <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}">
-                    @foreach ($this->dataTable->columns as $column)
-                        @php
-                            $tdAttributes = $column->buildTdAttributes($this->preset()->get('table.tbody.tr.td.class'));
-                        @endphp
-                        
-                        @if($column instanceof CustomRenderedColumn)
-                            @php
-                                $customRenderedColumn = Blade::render($column->customRendererCode, ['attributes' => $tdAttributes,'loop' => $loop->parent, '__row' => $row]);
-                                $trimmed = trim($customRenderedColumn);
-                            @endphp
-
-                            @if (\preg_match('/^<\s*td\s*.*>.*<\/\s*td\s*>$/is', $trimmed))
-                                {!! $customRenderedColumn !!}
-                            @else
-                                <td {{ $tdAttributes }} >
-                                    {!! $customRenderedColumn !!}
-                                </td>
-                            @endif
-
-                            @continue
-                        @elseif ($column instanceof DataColumn)
-                            <td {{ $tdAttributes }}>
-                                @php
-                                $cellContent = \data_get($row, $column->dataField, $noData);
-                                
-                                if($cellContent === $noData) {
-                                    throw new \LogicException("Cannot get data for column [{$column->dataField}] on row #{$loop->iteration}");
-                                }
-                                @endphp
-                                
-                                {{ $cellContent }}
-                            </td>
-                        @else
-                            @php throw new \InvalidArgumentException('Cannot render column of type ' . \get_debug_type($column)); @endphp
-                        @endif
-                    @endforeach
-                </tr>
+                
+                @if($this->dataTable->hasSearchableColumns() && $this->hasRows($rows) || !empty(\array_filter($columnsSearch)))
+                    <tr {{ $this->dataTable->theadSearchTrAttributes->class($this->preset()->get('table.thead.tr.search.class')) }}>
+                        @foreach ($this->dataTable->columns as $column)
+                            <th {{ $this->dataTable->theadSearchThAttributes->class($this->preset()->get('table.thead.tr.search.th.class')) }}>
+                                @if ($column->isSearchable())
+                                    <input
+                                        type="text"
+                                        wire:model.live.debounce.{{ $this->preset()->get('table.thead.tr.search.columns-search-debounce-ms', 200) }}ms="columnsSearch.{{ $column->dataField }}"
+                                        {{ $column->thSearchInputAttributes->class($this->preset()->get('table.thead.tr.search.th.input.class')) }}
+                                        value="{{ Arr::get($this->columnsSearch, $column->dataField, '') }}"
+                                        />
+                                @endif
+                            </th>
+                        @endforeach
+                    </tr>
+                @endif
+            </thead>
+            <tbody {{$this->dataTable->tbodyAttributes->class($this->preset()->get('table.tbody.class')) }}>
                 @php
-                    if ($rows instanceof LazyCollection) {
-                        \file_put_contents(\storage_path('logs/data-table-lazy.log'), ($loop->iteration . PHP_EOL), FILE_APPEND);
-                        unset($row);
-                    }
+                    $noData = new \stdClass();
                 @endphp
-            @empty
-                <tr {{ $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.nodatafound.class')) }}>
-                    <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns), 1]) }}">
-                        {{ __('erickcomp_lw_data_table::messages.no_data_found_table_td_text')  }}
-                    </td>
-                </tr>
-            @endforelse
-        </tbody>
+                @debugger
+                @forelse ($rows as $row)
+                    <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}">
+                        @foreach ($this->dataTable->columns as $column)
+                            @php
+                                $tdAttributes = $column->buildTdAttributes($this->preset()->get('table.tbody.tr.td.class'));
+                            @endphp
+                            
+                            @if($column instanceof CustomRenderedColumn)
+                                @php
+                                    $customRenderedColumn = Blade::render($column->customRendererCode, ['attributes' => $tdAttributes,'loop' => $loop->parent, '__row' => $row]);
+                                    $trimmed = trim($customRenderedColumn);
+                                @endphp
 
-        @if($this->dataTable->hasFooter())
-            @php
-                $rendered = Blade::render($this->dataTable->footer->rendererCode, ['___lwDataTable' => $this, 'rows' => $rows]);
-                $trimmed = \trim($rendered);
-            @endphp
+                                @if (\preg_match('/^<\s*td\s*.*>.*<\/\s*td\s*>$/is', $trimmed))
+                                    {!! $customRenderedColumn !!}
+                                @else
+                                    <td {{ $tdAttributes }} >
+                                        {!! $customRenderedColumn !!}
+                                    </td>
+                                @endif
 
-            @if (preg_match('/^<\s*tfoot\s*.*>.*<\/\s*tfoot\s*>$/is', $trimmed))
-                {!! $rendered !!}
-            @else
-                <tfoot {{ $this->dataTable->footer->attributes->class($this->preset()->get('table.tfoot.class')) }}>
+                                @continue
+                            @elseif ($column instanceof DataColumn)
+                                <td {{ $tdAttributes }}>
+                                    @php
+                                    $cellContent = \data_get($row, $column->dataField, $noData);
+                                    
+                                    if($cellContent === $noData) {
+                                        throw new \LogicException("Cannot get data for column [{$column->dataField}] on row #{$loop->iteration}");
+                                    }
+                                    @endphp
+                                    
+                                    {{ $cellContent }}
+                                </td>
+                            @else
+                                @php throw new \InvalidArgumentException('Cannot render column of type ' . \get_debug_type($column)); @endphp
+                            @endif
+                        @endforeach
+                    </tr>
+                    @php
+                        if ($rows instanceof LazyCollection) {
+                            \file_put_contents(\storage_path('logs/data-table-lazy.log'), ($loop->iteration . PHP_EOL), FILE_APPEND);
+                            unset($row);
+                        }
+                    @endphp
+                @empty
+                    <tr {{ $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.nodatafound.class')) }}>
+                        <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns), 1]) }}">
+                            {{ __('erickcomp_lw_data_table::messages.no_data_found_table_td_text')  }}
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+
+            @if($this->dataTable->hasFooter())
+                @php
+                    $rendered = Blade::render($this->dataTable->footer->rendererCode, ['___lwDataTable' => $this, 'rows' => $rows]);
+                    $trimmed = \trim($rendered);
+                @endphp
+
+                @if (preg_match('/^<\s*tfoot\s*.*>.*<\/\s*tfoot\s*>$/is', $trimmed))
                     {!! $rendered !!}
-                </tfoot>
-            @endif
+                @else
+                    <tfoot {{ $this->dataTable->footer->attributes->class($this->preset()->get('table.tfoot.class')) }}>
+                        {!! $rendered !!}
+                    </tfoot>
+                @endif
 
-            @php
-                unset($rendered, $trimmed);
-            @endphp
-        @endif
-    </table>
+                @php
+                    unset($rendered, $trimmed);
+                @endphp
+            @endif
+        </table>
+    </div>
 
     @if($this->dataTable->paginationCode !== null)    
         {!! $this->renderCustomPagination($rows) !!}

@@ -85,6 +85,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public int $columnsSearchDebounce;
     public ComponentAttributeBag $containerAttributes;
     public ComponentAttributeBag $tableAttributes;
+    public ComponentAttributeBag $tableWrapperAttributes;
     public ComponentAttributeBag $theadAttributes;
     public ComponentAttributeBag $theadTrAttributes;
     public ComponentAttributeBag $theadSearchTrAttributes;
@@ -804,6 +805,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     {
         return [
             0 => 'tableAttributes', //default
+            'table-wrapper-' => 'tableWrapperAttributes',
             'container-' => 'containerAttributes',
             'thead-tr-' => 'theadTrAttributes',
             'thead-search-tr-' => 'theadSearchTrAttributes',
