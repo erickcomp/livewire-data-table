@@ -1042,11 +1042,11 @@ return [
                     'class' => ['font-weight-bold', 'text-muted', 'mr-2'],
                 ],
                 'applied-filter-item' => [
-                    'class' => ['d-flex'],
+                    'class' => ['inline-flex'],
                     'label-class' => ['bg-gray-400', 'text-white', 'text-sm', 'font-bold', 'px-2', 'py-1', 'rounded-s', 'inline-flex', 'align-items-center', 'justify-content-start'],
                 ],
                 'button-remove-applied-filter-item' => [
-                    'class' => ['bg-gray-400', 'text-white', 'text-sm', 'm-0', 'p-1', 'rounded-e', 'applied-filter-remove-button'],
+                    'class' => ['bg-gray-400', 'hover:bg-gray-500', 'text-white', 'text-sm', 'm-0', 'p-1', 'rounded-e', 'applied-filter-remove-button'],
                     'position' => 'right',
                     'content' => '&times;',
                 ],
