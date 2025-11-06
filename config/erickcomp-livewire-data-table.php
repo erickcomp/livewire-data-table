@@ -910,7 +910,7 @@ return [
 
             'actions' => [
                 'container' => ['class' => ['mb-4']],
-                'row' => ['class' => ['flex', 'flex-wrap', 'gap-3', 'items-end']],
+                'row' => ['class' => ['flex', 'flex-wrap', 'gap-3', 'items-start']],
                 'bulk-actions-and-per-page' => [
                     'container' => ['class' => ['flex', 'justify-between', 'w-full']],
                     'bulk-actions-select' => [
@@ -948,14 +948,15 @@ return [
                 'input' => [
                     'class' => [
                         'w-auto',
+                        'text-sm',
                         'rounded-md',
                         'border',
                         'border-gray-300',
                         'shadow-sm',
                         'focus:border-indigo-500',
                         'focus:ring-indigo-500',
-                        'px-3',
-                        'py-2',
+                        'px-2',
+                        'py-1',
                     ],
                 ],
                 'button' => [
@@ -977,7 +978,7 @@ return [
                         'focus:ring-offset-2',
                     ],
                     'icon-position' => 'left',
-                    'icon' => <<<HTML
+                    'icon-old' => <<<HTML
                 <svg xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 512 512"
                     width="18" height="18"
@@ -989,7 +990,7 @@ return [
             ],
 
             'filters' => [
-                'collapsible' => false,
+                'collapsible' => true,
                 'container' => [
                     'class' => [
                         'flex',
@@ -1001,17 +1002,63 @@ return [
                         'border-gray-300',
                         'rounded-lg',
                         'bg-gray-50',
+                        'dark:bg-gray-900',
                     ],
                 ],
                 'title' => [
-                    'class' => ['w-full', 'font-bold', 'text-gray-700', 'flex', 'items-center', 'gap-2'],
+                    'class' => ['w-full', 'font-bold', 'text-gray-700', 'dark:text-gray-100', 'flex', 'items-center', 'gap-2'],
+                    'icon-position' => 'left',
+                    'icon' => <<<'ICON'
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            width="18" height="18" viewBox="0 0 24 24"
+                            style="vertical-align: middle;">
+                            <path d="M3 4h18l-7 10v5l-4 1v-6z" fill="currentColor" />
+                        </svg>
+                    ICON,
+                ],
+                'toggle-button' => [
+                    'class' => [
+                        'lw-dt-filters-toggle-button',
+                        'inline-flex',
+                        'items-center',
+                        'gap-1',
+                        'px-2',
+                        'py-1',
+                        'text-sm',
+                        'font-medium',
+                        'text-white',
+                        'bg-indigo-600',
+                        'rounded-md',
+                        'hover:bg-indigo-700',
+                        'focus:outline-none',
+                        'focus:ring-none',
+                        'border',
+                        'border-indigo-600',
+                        'hover:border-indigo-700',
+                        'focus:border-indigo-700',
+                        //'focus:ring-indigo-500',
+                        //'focus:ring-offset-2',
+                    ],
+                    'icon-position' => 'left', // left, right,whatever
+                    'icon-old' => <<<'ICON'
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            width="18" height="18" viewBox="0 0 24 24"
+                            style="vertical-align: middle;">
+                            <path d="M3 4h18l-7 10v5l-4 1v-6z" fill="currentColor" />
+                        </svg>
+                    ICON,
+                    'alpine-transition' => [
+                        //'x-transition.scale.origin.top',
+                        //'x-transition:enter.duration.200ms',
+                        //'x-transition:leave.duration.270ms',
+                    ],
                 ],
                 'apply-button' => [
                     'container' => ['class' => ['w-full', 'block', 'mt-2']],
                     'class' => [
-                        'w-full',
-                        'px-3',
-                        'py-2',
+                        'w-auto',
+                        'px-2',
+                        'py-1',
                         'text-sm',
                         'font-semibold',
                         'text-white',
@@ -1023,9 +1070,18 @@ return [
                     ],
                 ],
                 'item' => [
-                    'class' => ['block', 'bg-white', 'rounded-md', 'p-3', 'border', 'border-gray-200'],
+                    'class' => [
+                        'block',
+                        'bg-white',
+                        'dark:bg-gray-800',
+                        'rounded-md',
+                        'p-3',
+                        'border',
+                        'border-gray-200',
+                        'dark:border-gray-600',
+                    ],
                     'content' => [
-                        'legend' => ['class' => ['font-semibold', 'text-gray-700', 'mb-1']],
+                        'legend' => ['class' => ['font-semibold', 'text-gray-700', 'dark:text-gray-100', 'mb-1']],
                         'input-text' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
                         'input-date' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
                         'input-number' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
@@ -1163,9 +1219,12 @@ return [
             ],
             'assets' => [<<<'CSS'
                 <style>
-                    /*
                     :root {
                         --lw-dt-filters-container-bg-color: #fff;
+                        --lw-dt-tw-bg-gray-50: rgb(249 250 251);
+                        --lw-dt-tw-bg-gray-900: rgb(17, 24, 39);
+                        
+                        --lw-dt-tw-gray-300: #d1d5db;
                     }
 
                     .lw-dt .lw-dt-loader-overlay {
@@ -1182,14 +1241,25 @@ return [
 
                     .lw-dt .lw-dt-filters-toggle-button.active {
                         z-index: 2;
-                        color: black !important;
-                        background-color: var(--lw-dt-filters-container-bg-color) !important;
-                        padding-bottom: calc(1.0rem - 2px) !important;
-                        margin-bottom: calc(-1.0rem + 7px) !important;
-                        border-color: #dee2e6 !important;
+                        /* color: black !important; */
+                        background-color: var(--lw-dt-tw-bg-gray-50) !important;
+                        padding-bottom: calc(0.8rem + 2px) !important;
+                        margin-bottom: calc(-0.9rem + 6px) !important;
+                        
+                        border-style: solid;
+                        border-width: thin;
+                        border-color: var(--lw-dt-tw-gray-300) !important;
                         border-bottom: none;
                         border-bottom-right-radius: 0;
                         border-bottom-left-radius: 0;
+                    }
+
+                    @media (prefers-color-scheme: dark) {
+                        .lw-dt .lw-dt-filters-toggle-button.active {
+                            background-color: var(--lw-dt-tw-bg-gray-900) !important;
+                            border-color: var(--lw-dt-tw-gray-300) !important;
+                            border-bottom: none !important;
+                        }
                     }
 
                     div.lw-dt>.lw-dt-actions-container div.lw-dt-actions-row button.lw-dt-filters-toggle-button.active:focus,  div.lw-dt>.lw-dt-actions-container div.lw-dt-actions-row button.lw-dt-filters-toggle-button.active:focus-visible {
@@ -1201,7 +1271,6 @@ return [
                             border-top-left-radius: 0 !important;
                         }
                     }
-                        */
                 </style>
                 CSS,
             ],
