@@ -920,6 +920,7 @@ return [
                             'min-w-[10rem]',
                             'rounded-md',
                             'border-gray-300',
+                            'dark:border-gray-900',
                             'shadow-sm',
                             'focus:border-indigo-500',
                             'focus:ring-indigo-500',
@@ -930,13 +931,19 @@ return [
                         'label' => ['class' => ['font-semibold', 'text-gray-500', 'whitespace-nowrap']],
                         'select' => [
                             'class' => [
-                                'p-1',
+                                'py-1',
+                                'px-2',
                                 'text-gray-800',
                                 'rounded-md',
                                 'border-gray-100',
                                 'shadow-sm',
                                 'focus:border-indigo-500',
                                 'focus:ring-indigo-500',
+                                'border',
+                                'border-gray-300',
+                                'dark:text-white',
+                                'dark:bg-gray-700',
+                                'dark:border-gray-600',
                             ],
                         ],
                     ],
@@ -952,11 +959,13 @@ return [
                         'rounded-md',
                         'border',
                         'border-gray-300',
+                        'dark:border-gray-600',
                         'shadow-sm',
                         'focus:border-indigo-500',
                         'focus:ring-indigo-500',
                         'px-2',
                         'py-1',
+                        'dark:bg-gray-700',
                     ],
                 ],
                 'button' => [
@@ -969,19 +978,20 @@ return [
                         'text-sm',
                         'font-medium',
                         'text-white',
-                        'bg-indigo-600',
+                        'bg-gray-600',
                         'rounded-md',
-                        'hover:bg-indigo-700',
+                        'hover:bg-gray-700',
                         'focus:outline-none',
                         'focus:ring-2',
-                        'focus:ring-indigo-500',
+                        'focus:ring-gray-500',
                         'focus:ring-offset-2',
                     ],
                     'icon-position' => 'left',
-                    'icon-old' => <<<HTML
+                    'icon' => <<<HTML
                 <svg xmlns="http://www.w3.org/2000/svg"
+                    class="mr-1"
                     viewBox="0 0 512 512"
-                    width="18" height="18"
+                    width="14" height="14"
                     fill="currentColor">
                     <path d="M505 442.7L405.3 343c28.4-34.9 45.7-79.4 45.7-127C451 103.5 347.5 0 225.5 0S0 103.5 0 225.5 103.5 451 225.5 451c48.2 0 92.8-17.3 127.7-45.7l99.7 99.7c4.5 4.5 10.6 7 17 7s12.5-2.5 17-7c9.4-9.4 9.4-24.6 0-34zM225.5 401c-96.8 0-176-79.2-176-176s79.2-176 176-176 176 79.2 176 176-79.2 176-176 176z"/>
                 </svg>
@@ -1000,6 +1010,7 @@ return [
                         'gap-3',
                         'border',
                         'border-gray-300',
+                        'dark:border-gray-600',
                         'rounded-lg',
                         'bg-gray-50',
                         'dark:bg-gray-900',
@@ -1010,7 +1021,8 @@ return [
                     'icon-position' => 'left',
                     'icon' => <<<'ICON'
                         <svg xmlns="http://www.w3.org/2000/svg"
-                            width="18" height="18" viewBox="0 0 24 24"
+                            class="mr-1"
+                            width="16" height="16" viewBox="0 0 24 24"
                             style="vertical-align: middle;">
                             <path d="M3 4h18l-7 10v5l-4 1v-6z" fill="currentColor" />
                         </svg>
@@ -1027,20 +1039,25 @@ return [
                         'text-sm',
                         'font-medium',
                         'text-white',
-                        'bg-indigo-600',
+                        'bg-gray-600',
                         'rounded-md',
-                        'hover:bg-indigo-700',
                         'focus:outline-none',
                         'focus:ring-none',
                         'border',
-                        'border-indigo-600',
-                        'hover:border-indigo-700',
-                        'focus:border-indigo-700',
+                        'border-gray-600',
+                        'hover:bg-gray-50',
+                        'hover:text-gray-900',
+                        'hover:border-gray-300',
+                        'focus:border-gray-300',
+                        'dark:hover:bg-gray-900',
+                        'dark:hover:text-gray-100',
+                        'dark:hover:border-gray-600',
+
                         //'focus:ring-indigo-500',
                         //'focus:ring-offset-2',
                     ],
                     'icon-position' => 'left', // left, right,whatever
-                    'icon-old' => <<<'ICON'
+                    'icon' => <<<'ICON'
                         <svg xmlns="http://www.w3.org/2000/svg"
                             width="18" height="18" viewBox="0 0 24 24"
                             style="vertical-align: middle;">
@@ -1081,11 +1098,29 @@ return [
                         'dark:border-gray-600',
                     ],
                     'content' => [
+                        'class' => [
+                            'flex',
+                            'flex-col',
+                            'gap-2',
+                        ],
                         'legend' => ['class' => ['font-semibold', 'text-gray-700', 'dark:text-gray-100', 'mb-1']],
-                        'input-text' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
-                        'input-date' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
-                        'input-number' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
-                        'select' => ['class' => ['w-full', 'border-gray-300', 'rounded-md', 'shadow-sm']],
+                        'range' => [
+                            'class' => [],
+                            'label' => [],
+                            'input' => [
+                                'from' => [
+                                    'class' => ['w-full', 'px-2', 'py-1', 'border', 'border-gray-300', 'dark:border-gray-600', 'dark:bg-gray-700', 'rounded-md', 'shadow-sm'],
+                                ],
+                                'to' => [
+                                    'class' => ['w-full', 'px-2', 'py-1', 'border', 'border-gray-300', 'dark:border-gray-600', 'dark:bg-gray-700', 'rounded-md', 'shadow-sm'],
+                                ],
+                            ],
+                        ],
+                        'input-text' => ['class' => ['w-full', 'px-2', 'py-1', 'border', 'border-gray-300', 'dark:border-gray-600', 'dark:bg-gray-700', 'rounded-md', 'shadow-sm']],
+                        'input-date' => ['class' => ['w-full', 'px-2', 'py-1', 'border', 'border-gray-300', 'dark:border-gray-600', 'dark:bg-gray-700', 'rounded-md', 'shadow-sm']],
+                        'input-datetime-local' => ['class' => ['w-full', 'px-2', 'border', 'py-1', 'border-gray-300', 'dark:border-gray-600', 'dark:bg-gray-700', 'rounded-md', 'shadow-sm']],
+                        'input-number' => ['class' => ['w-full', 'px-2', 'py-1', 'border', 'border-gray-300', 'dark:border-gray-600', 'dark:bg-gray-700', 'rounded-md', 'shadow-sm']],
+                        'select' => ['class' => ['w-full', 'border', 'border-gray-300', 'dark:border-gray-700', 'dark:bg-gray-600', 'rounded-md', 'shadow-sm']],
                     ],
                 ],
             ],
@@ -1157,7 +1192,18 @@ return [
                             'th' => [
                                 'class' => ['pb-2'],
                                 'input' => [
-                                    'class' => ['w-auto', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'focus:border-indigo-500', 'focus:ring-indigo-500 px-2', 'py-1'],
+                                    'class' => [
+                                        'w-auto',
+                                        'py-1',
+                                        'border',
+                                        'border-gray-300',
+                                        'rounded-md',
+                                        'shadow-sm',
+                                        'focus:border-indigo-500',
+                                        'focus:ring-indigo-500 px-2',
+                                        'dark:bg-gray-700',
+                                        'dark:border-gray-600',
+                                    ],
                                 ],
                             ],
                         ],
@@ -1225,6 +1271,7 @@ return [
                         --lw-dt-tw-bg-gray-900: rgb(17, 24, 39);
                         
                         --lw-dt-tw-gray-300: #d1d5db;
+                        --lw-dt-tw-gray-600: rgb(75, 85, 99)
                     }
 
                     .lw-dt .lw-dt-loader-overlay {
@@ -1257,8 +1304,14 @@ return [
                     @media (prefers-color-scheme: dark) {
                         .lw-dt .lw-dt-filters-toggle-button.active {
                             background-color: var(--lw-dt-tw-bg-gray-900) !important;
-                            border-color: var(--lw-dt-tw-gray-300) !important;
+                            border-color: var(--lw-dt-tw-gray-600) !important;
                             border-bottom: none !important;
+                        }
+                    }
+
+                    @media (prefers-color-scheme: light) {
+                        .lw-dt .lw-dt-filters-toggle-button.active {
+                            color: var(--lw-dt-tw-gray-900);
                         }
                     }
 
