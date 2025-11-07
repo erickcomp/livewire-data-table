@@ -253,13 +253,13 @@ return [
                 ],
             ],
             'loader-overlay' => [
-                'html' => <<<HTML
-                <div wire:loading.delay.long>
+                'template' => <<<'BLADE'
+                <div wire:loading{{ empty($delay) ? '' : ".delay.$delay" }}>
                     <div wire:loading.flex class="lw-dt-loader-overlay" id="loader">
                         <div class="lw-dt-spinner"></div>
                     </div>
                 </div>
-                HTML,
+                BLADE,
                 'assets' => [<<<CSS
                         <style>
                             .lw-dt-loader-overlay {
@@ -763,15 +763,13 @@ return [
             ],
 
             'loader-overlay' => [
-                'html' => <<<HTML
-                <div wire:loading.delay.long>
-                    <div wire:loading.flex="" class="lw-dt-loader-overlay" id="loader">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
+                'template' => <<<'BLADE'
+                <div wire:loading{{ empty($delay) ? '' : ".delay.$delay" }}>
+                    <div wire:loading.flex class="absolute inset-0 bg-white/80 flex items-center justify-center z-[9999]">
+                        <div class="h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                 </div>
-                HTML,
+                BLADE,
             ],
 
             'pagination' => [
@@ -1221,14 +1219,15 @@ return [
                 ],
             ],
 
+            // @TODO: Implement custom loading overlay component
             'loader-overlay' => [
-                'html' => <<<HTML
-            <div wire:loading.delay.long>
-                <div wire:loading.flex class="absolute inset-0 bg-white/80 flex items-center justify-center z-[9999]">
-                    <div class="h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-            </div>
-        HTML,
+                'template' => <<<'BLADE'
+                    <div wire:loading{{ empty($delay) ? '' : ".delay.$delay" }}>
+                        <div wire:loading.flex class="absolute inset-0 bg-white/80 flex items-center justify-center z-[9999]">
+                            <div class="h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    </div>
+                BLADE,
             ],
 
             'pagination' => [

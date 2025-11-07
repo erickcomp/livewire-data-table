@@ -34,6 +34,7 @@ use Livewire\ImplicitlyBoundMethod;
 use Livewire\Wireable;
 use ErickComp\LivewireDataTable\Data\DataSource;
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
+use Illuminate\Support\Arr;
 //use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
 class DataTable extends BaseDataTableComponent //implements Wireable
@@ -46,6 +47,17 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public const PER_PAGE_MAX = 'max';
     public const PER_PAGE_ALL = 'all';
     public const PER_PAGE_ALL_OPTION_VALUE = '___all___';
+
+    public const LIVEWIRE_LOADING_DELAY_MODIFIERS = [
+        null,
+        '',
+        'shortest',
+        'shorter',
+        'short',
+        'long',
+        'longer',
+        'longest',
+    ];
 
     public ?string $paginationView = null;
     public ?string $paginationCode = null;
@@ -79,8 +91,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     protected string $searchRendererCode;
     protected ComponentAttributeBag $searchRendererCodeAttributes;
     //public bool $noStyles = false;
-    public string $dataIdentityColumn = 'id';
-    //public string $sortingClassPrefix = 'lw-dt-sort';
+    public ?string $loadingDelayModifier;
 
     public int $columnsSearchDebounce;
     public ComponentAttributeBag $containerAttributes;
@@ -173,6 +184,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         ?int $columnsSearchDebounce = null,
         int|string $collectionSortingFlags = SORT_NATURAL | SORT_FLAG_CASE,
 
+        public string $dataIdentityColumn = 'id',
+        ?string $loadingDelayModifier = null,
+
 
         public array $actions = [],
 
@@ -220,6 +234,14 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             'columns-search-debounce-ms',
             \config('erickcomp-livewire-data-table.columns-search-debounce-ms', 200),
         );
+
+        if (!\in_array($loadingDelayModifier, static::LIVEWIRE_LOADING_DELAY_MODIFIERS)) {
+            $validValues = Arr::join(static::LIVEWIRE_LOADING_DELAY_MODIFIERS, ', ', ' and ');
+
+            throw new \ValueError("Invalid delay modifier: $loadingDelayModifier. The valid values are: $validValues");
+        }
+
+        $this->loadingDelayModifier = $loadingDelayModifier;
 
         if (\is_string($collectionSortingFlags)) {
             $intFlags = 0;

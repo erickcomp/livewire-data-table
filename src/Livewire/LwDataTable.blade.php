@@ -484,8 +484,8 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
     --}}
     
 
-    @if(!empty($this->preset()->get('loader-overlay.html', null)))
-        {!! $this->preset()->get('loader-overlay.html') !!}
+    @if(!empty($this->preset()->get('loader-overlay.template', null)))
+        {!! Blade::render($this->preset()->get('loader-overlay.template'), ['delay' => $this->dataTable->loadingDelayModifier]) !!}
     @endif
 
 
