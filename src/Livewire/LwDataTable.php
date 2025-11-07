@@ -279,15 +279,16 @@ class LwDataTable extends LivewireComponent
     public function shouldShowFiltersContainer(): bool
     {
         $isCollapsible = $this->dataTable->filters?->isCollapsible() ?? false;
+
         if (!$isCollapsible) {
-            return false;
+            return true;
         }
 
         if (\is_bool($this->filtersContainerIsOpen)) {
             return $this->filtersContainerIsOpen;
         }
 
-        return false;
+        return true;
 
         // if (!$this->dataTable->filters?->isCollapsible() ?? false) {
         //     return true;
