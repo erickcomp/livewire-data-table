@@ -1210,8 +1210,8 @@ return [
                 'tbody' => [
                     'class' => ['divide-y', 'divide-gray-200'],
                     'tr' => [
-                        'td' => ['class' => ['px-3', 'py-2']],
-                        'nodatafound' => ['class' => ['text-center', 'font-semibold', 'text-gray-500', 'py-4']],
+                        'td' => ['class' => ['px-3', 'py-2', 'dark:text-gray-200']],
+                        'nodatafound' => ['class' => ['text-center', 'font-semibold', 'text-gray-500', 'dark:text-gray-400', 'py-4']],
                     ],
                 ],
                 'tfoot' => [
