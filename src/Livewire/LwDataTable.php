@@ -209,12 +209,14 @@ class LwDataTable extends LivewireComponent
     public function updating(string $property, $value)
     {
         if (\in_array($property, ['search', 'filters', 'perPage']) || \str_starts_with($property, 'columnsSearch.')) {
-            $this->resetPage();
+            $this->resetPage($this->pageNameUrlParam());
         }
     }
 
     public function setSortBy(string $dataField, ?string $sortDir = null)
     {
+        $this->resetPage($this->pageNameUrlParam());
+
         if ($this->sortBy === $dataField) {
             $this->sortDir = $sortDir ?? self::SORT_DIR_TOGGLE[$this->sortDir] ?? self::SORT_DIR_NONE;
 
