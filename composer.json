@@ -21,27 +21,7 @@
     "repositories": [
         {
             "type": "path",
-            "url": "../erickcomp-livewire-dependent-selects"
-        },
-        {
-            "type": "path",
-            "url": "../erickcomp-livewire-non-public-properties"
-        },
-        {
-            "type": "path",
-            "url": "../erickcomp-livewire-data-table"
-        },
-        {
-            "type": "path",
             "url": "../erickcomp-laravel-raw-blade-components"
-        },
-        {
-            "type": "path",
-            "url": "../erickcomp-laravel-stacked-components"
-        },
-        {
-            "type": "path",
-            "url": "../erickcomp-laravel-route-call"
         }
     ],
     "autoload": {
@@ -66,5 +46,13 @@
     },
     "suggest": {
         "laravie/serialize-queries": "Allows Eloquent and Database query builders to be used as data sources for data tables."
+    },
+    "require-dev": {
+        "pestphp/pest": "^4.7"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     }
 }
