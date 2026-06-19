@@ -2,25 +2,21 @@
 
 namespace ErickComp\LivewireDataTable\Livewire;
 
-use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\ServerExecutor;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
-use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
+use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
+use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
@@ -28,7 +24,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use Livewire\WithPagination;
-use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
 
 class LwDataTable extends LivewireComponent
 {
@@ -211,6 +206,15 @@ class LwDataTable extends LivewireComponent
         if (\in_array($property, ['search', 'filters', 'perPage']) || \str_starts_with($property, 'columnsSearch.')) {
             $this->resetPage($this->pageNameUrlParam());
         }
+    }
+
+    public function withHtmlAttributes(array $attributes): static
+    {
+        if (\array_key_exists('data-table', $attributes)) {
+            unset($attributes['data-table']);
+        }
+
+        return parent::withHtmlAttributes($attributes);
     }
 
     public function setSortBy(string $dataField, ?string $sortDir = null)
@@ -404,7 +408,7 @@ class LwDataTable extends LivewireComponent
 
     protected function setupMaxMemory()
     {
-        if (\is_string($this->dataTable->phpMaxMemory)) {
+        if (\is_string($this->dataTable?->phpMaxMemory)) {
             \ini_set('memory_limit', $this->dataTable->phpMaxMemory);
         }
     }
@@ -429,22 +433,22 @@ class LwDataTable extends LivewireComponent
                     fn(Filter $filterDefinition) => $filterDefinition->dataField === $dataField && $filterDefinition->name === $filterName
                 );
 
-                $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
-
-                // Custom formatting/parsing for date/time filter
-                if (\in_array($filterDefinition->inputType, $datetimeTypes)) {
-                    if ($isRangeMode) {
-                        foreach (['from', 'to'] as $key) {
-                            if (isset($filterVal[$key])) {
-                                $filterVal[$key] = Date::parse($filterVal[$key]);
-                            }
-                        }
-                    } else {
-                        $filterVal = Date::parse($filterVal);
-                    }
-                }
-
                 if ($filterDefinition) {
+                    $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
+
+                    // Custom formatting/parsing for date/time filter
+                    if (\in_array($filterDefinition->inputType, $datetimeTypes)) {
+                        if ($isRangeMode) {
+                            foreach (['from', 'to'] as $key) {
+                                if (isset($filterVal[$key])) {
+                                    $filterVal[$key] = Date::parse($filterVal[$key]);
+                                }
+                            }
+                        } else {
+                            $filterVal = Date::parse($filterVal);
+                        }
+                    }
+
                     $this->processedFilters[] = [
                         'column' => $dataField,
                         'mode' => $filterDefinition->mode,

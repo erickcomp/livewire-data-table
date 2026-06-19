@@ -11,7 +11,12 @@ class LwDataTableComponentHook extends LivewireComponentHook
 {
     public static function provide()
     {
-        before('mount', function ($component, $params, $id, $parent) {
+        before('mount', function ($component, $params, $id, $parent, $htmlAttributes = []) {
+
+            if (\array_key_exists('data-table', $htmlAttributes)) {
+                $params['dataTable'] ??= $htmlAttributes['data-table'];
+                unset($htmlAttributes['data-table']);
+            }
 
             if (!$component instanceof LwDataTable || !isset($params['dataTable'])) {
                 return;
