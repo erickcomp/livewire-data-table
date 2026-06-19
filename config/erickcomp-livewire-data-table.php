@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\View;
 
 return [
     'columns-search-debounce-ms' => 250,
@@ -765,8 +764,10 @@ return [
             'loader-overlay' => [
                 'template' => <<<'BLADE'
                 <div wire:loading{{ empty($delay) ? '' : ".delay.$delay" }}>
-                    <div wire:loading.flex class="absolute inset-0 bg-white/80 flex items-center justify-center z-[9999]">
-                        <div class="h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div wire:loading.flex class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center bg-white" style="top:0; left:0; z-index:9999; opacity:0.8;">
+                        <div class="spinner-border text-primary" role="status" style="width:2.5rem; height:2.5rem;">
+                            <span class="sr-only">Carregando...</span>
+                        </div>
                     </div>
                 </div>
                 BLADE,
