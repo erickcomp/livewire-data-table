@@ -14,16 +14,11 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "livewire/livewire": "^3.0|^4.0",
-        "erickcomp/laravel-raw-blade-components": "dev-master",
+        "livewire/livewire": "^3.6|^4.0",
+        "erickcomp/laravel-raw-blade-components": "2.0",
         "phpgt/dom": "^4.1"
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../erickcomp-laravel-raw-blade-components"
-        }
-    ],
+    "repositories": [],
     "autoload": {
         "psr-4": {
             "ErickComp\\LivewireDataTable\\": "src/"
@@ -34,7 +29,7 @@
             "Tests\\": "tests/"
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true,
     "extra": {
         "laravel": {
@@ -48,7 +43,8 @@
         "laravie/serialize-queries": "Allows Eloquent and Database query builders to be used as data sources for data tables."
     },
     "require-dev": {
-        "pestphp/pest": "^4.7"
+        "pestphp/pest": "^4.7",
+        "orchestra/testbench": "^11.1"
     },
     "config": {
         "allow-plugins": {

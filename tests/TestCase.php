@@ -2,9 +2,18 @@
 
 namespace Tests;
 
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use ErickComp\LivewireDataTable\ServiceProvider as LivewireDataTableServiceProvider;
+use Livewire\LivewireServiceProvider;
+use Orchestra\Testbench\TestCase as Orchestra;
 
-abstract class TestCase extends BaseTestCase
+
+class TestCase extends Orchestra
 {
-    //
+    protected function getPackageProviders($app)
+    {
+        return [
+            LivewireServiceProvider::class,
+            LivewireDataTableServiceProvider::class,
+        ];
+    }
 }

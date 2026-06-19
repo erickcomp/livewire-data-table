@@ -73,6 +73,11 @@ class LwDataTable extends LivewireComponent
     protected array $appliedFilters = [];
     protected Preset $loadedPreset;
 
+    public function __construct()
+    {
+        $this->dataTable ??= new DataTable();
+    }
+
     public function render()
     {
         $this->setupMaxMemory();
@@ -104,13 +109,11 @@ class LwDataTable extends LivewireComponent
     {
         if (!isset($this->loadedPreset)) {
 
-            $preset = $this->dataTable?->preset();
-
-            if ($preset === null) {
+            if (!isset($this->dataTable)) {
                 return Preset::loadFromName('empty');
             }
 
-            $this->loadedPreset = $preset;
+            $this->loadedPreset = $this->dataTable->preset();
         }
 
         return $this->loadedPreset;
@@ -347,7 +350,7 @@ class LwDataTable extends LivewireComponent
 
     protected function hydrateDataTable()
     {
-        $dataTable = DataTable::fromCache($this->dt, $this->sd ?? null);
+        $dataTable = DataTable::fromCache($this->dt ?? '', $this->sd ?? null);
 
         // Cache might have been busted for some reason (like a deployment or manually clearing the view cache)
         if (!$dataTable instanceof DataTable) {
@@ -408,7 +411,11 @@ class LwDataTable extends LivewireComponent
 
     protected function setupMaxMemory()
     {
-        if (\is_string($this->dataTable?->phpMaxMemory)) {
+        if (!isset($this->dataTable)) {
+            return;
+        }
+
+        if (\is_string($this->dataTable->phpMaxMemory)) {
             \ini_set('memory_limit', $this->dataTable->phpMaxMemory);
         }
     }
@@ -485,7 +492,7 @@ class LwDataTable extends LivewireComponent
 
     protected function getTableData()
     {
-        if (!$this->dataTable->dataSrc) {
+        if (!isset($this->dataTable) || !$this->dataTable->dataSrc) {
             return [];
         }
 

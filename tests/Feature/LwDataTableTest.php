@@ -27,7 +27,6 @@ it('resets page when updating search', function () {
     Livewire::test(LwDataTable::class)
         ->set('search', 'foo')
         ->assertSet('search', 'foo')
-        ->call('updating', 'search', 'foo')
         ->assertSet('paginators.page', 1);
 });
 
@@ -71,7 +70,7 @@ it('sets sort direction to ASC when changing to a different field', function () 
 it('resets page when updating filters', function () {
     $component = Livewire::test(LwDataTable::class)
         ->set('paginators', ['page' => 5])
-        ->call('updating', 'filters', ['status' => ['active' => 'yes']]);
+        ->set('filters', ['status' => ['active' => 'yes']]);
 
     expect($component->get('paginators.page'))->toBe(1);
 });
@@ -79,7 +78,7 @@ it('resets page when updating filters', function () {
 it('resets page when updating columnsSearch nested values', function () {
     $component = Livewire::test(LwDataTable::class)
         ->set('paginators', ['page' => 5])
-        ->call('updating', 'columnsSearch.name', 'john');
+        ->set('columnsSearch.name', 'john');
 
     expect($component->get('paginators.page'))->toBe(1);
 });
@@ -87,7 +86,7 @@ it('resets page when updating columnsSearch nested values', function () {
 it('resets page when updating perPage', function () {
     $component = Livewire::test(LwDataTable::class)
         ->set('paginators', ['page' => 3])
-        ->call('updating', 'perPage', '50');
+        ->set('paginators', 'perPage', 50);
 
     expect($component->get('paginators.page'))->toBe(1);
 });
@@ -95,7 +94,7 @@ it('resets page when updating perPage', function () {
 it('does not reset page when updating unrelated property', function () {
     $component = Livewire::test(LwDataTable::class)
         ->set('paginators', ['page' => 4])
-        ->call('updating', 'sortBy', 'name');
+        ->set('paginators', 'sortBy', 'name');
 
     expect($component->get('paginators.page'))->toBe(4);
 });
@@ -256,7 +255,7 @@ it('keeps existing filter values when computing initial filters', function () {
                         (object) [
                             'dataField' => 'status',
                             'name' => 'active',
-                            'mode' => \ErickComp\LivewireDataTable\DataTable\Filter::MODE_DEFAULT,
+                            'mode' => \ErickComp\LivewireDataTable\DataTable\Filter::MODE_CONTAINS,
                             'label' => 'Active',
                         ],
                     ];
@@ -285,7 +284,7 @@ it('computes initial filters with default values', function () {
                         (object) [
                             'dataField' => 'status',
                             'name' => 'active',
-                            'mode' => \ErickComp\LivewireDataTable\DataTable\Filter::MODE_DEFAULT,
+                            'mode' => \ErickComp\LivewireDataTable\DataTable\Filter::MODE_CONTAINS,
                             'label' => 'Active',
                         ],
                         (object) [

@@ -274,6 +274,18 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         //$this->initComponentAttributeBags();
         $this->attributes = new ComponentAttributeBag();
+        $this->containerAttributes = new ComponentAttributeBag();
+        $this->tableWrapperAttributes = new ComponentAttributeBag();
+        $this->tableAttributes = new ComponentAttributeBag();
+
+        //$this->tableAttributes = new ComponentAttributeBag($this->defaultTableAttributes);
+        $this->theadAttributes = new ComponentAttributeBag();
+        $this->theadTrAttributes = new ComponentAttributeBag();
+        $this->theadSearchTrAttributes = new ComponentAttributeBag();
+        $this->theadSearchThAttributes = new ComponentAttributeBag();
+        $this->thAttributes = new ComponentAttributeBag();
+        $this->tbodyAttributes = new ComponentAttributeBag();
+        $this->tbodyTrAttributes = new ComponentAttributeBag();
     }
 
     public function hasStaticDataSource(): bool
