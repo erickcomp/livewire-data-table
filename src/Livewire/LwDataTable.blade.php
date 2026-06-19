@@ -9,7 +9,6 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\LazyCollection;
-use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 
 /** @var \ErickComp\LivewireDataTable\DataTable $this->dataTable */
@@ -142,13 +141,13 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                         @else
                                             @if($filterItem->mode === Filter::MODE_RANGE)
                                                 @php
-                                                    $inputFromClasses = new ComponentAttributeBag(
+                                                    $inputFromClasses = (new ComponentAttributeBag(
                                                     [ 'class' => Arr::toCssClasses($this->preset()->get("filters.item.content.input-{$filterItem->htmlInputType()}.class", []))]
-                                                    )->class($this->preset()->get("filters.item.content.range.input.from.class", []));
+                                                    ))->class($this->preset()->get("filters.item.content.range.input.from.class", []));
 
-                                                    $inputToClasses = new ComponentAttributeBag(
+                                                    $inputToClasses = (new ComponentAttributeBag(
                                                     [ 'class' => Arr::toCssClasses($this->preset()->get("filters.item.content.input-{$filterItem->htmlInputType()}.class", []))]
-                                                    )->class($this->preset()->get("filters.item.content.range.input.to.class", []));
+                                                    ))->class($this->preset()->get("filters.item.content.range.input.to.class", []));
                                                 @endphp
                                                 <span @class($this->preset()->get("filters.item.content.range.label.from.class", ''))>
                                                     {{ __('erickcomp_lw_data_table::messages.range_filter_label_from') }}:
