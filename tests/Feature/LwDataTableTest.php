@@ -1,5 +1,7 @@
 <?php
 
+use ErickComp\LivewireDataTable\DataTable;
+use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -84,19 +86,40 @@ it('resets page when updating columnsSearch nested values', function () {
 });
 
 it('resets page when updating perPage', function () {
-    $component = Livewire::test(LwDataTable::class)
-        ->set('paginators', ['page' => 3])
-        ->set('paginators', 'perPage', 50);
+    $component = Livewire::test(LwDataTable::class);
+    $originalPage = $component->get('paginators.page');
+    $originalPerPage = $component->get('perPage');
 
-    expect($component->get('paginators.page'))->toBe(1);
+    $component->set('paginators', ['page' => 3]);
+    expect($component->get('paginators.page'))->toBe(3);
+
+    $component->set('perPage', $originalPerPage + 1);
+    expect($component->get('paginators.page'))->toBe($originalPage);
 });
 
-it('does not reset page when updating unrelated property', function () {
-    $component = Livewire::test(LwDataTable::class)
-        ->set('paginators', ['page' => 4])
-        ->set('paginators', 'sortBy', 'name');
+it('resets page when updating sort by', function () {
+    $component = Livewire::test(LwDataTable::class);
+    $originalPage = $component->get('paginators.page');
 
-    expect($component->get('paginators.page'))->toBe(4);
+    $component->set('paginators', ['page' => 3]);
+    expect($component->get('paginators.page'))->toBe(3);
+
+    $component->call('setSortBy', 'some column', 'ASC');
+    expect($component->get('paginators.page'))->toBe($originalPage);
+});
+
+it('resets page when updating sort direction', function () {
+
+    $component = Livewire::test(LwDataTable::class);
+    $originalPage = $component->get('paginators.page');
+    $originalSortBy = $component->get('sortBy');
+    $originalSortDir = $component->get('sortDir');
+
+    $component->set('paginators', ['page' => 3]);
+    expect($component->get('paginators.page'))->toBe(3);
+
+    $component->call('setSortBy', $originalSortBy, $originalSortDir === 'ASC' ? 'DESC' : 'ASC');
+    expect($component->get('paginators.page'))->toBe($originalPage);
 });
 
 it('preserves zero and false values when applying filters', function () {
@@ -132,8 +155,8 @@ it('preserves range filter from and to values when applying filters', function (
 });
 
 it('falls back gracefully when the data table cache is unavailable', function () {
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dt', 'does-not-exist');
+    $component = Livewire::test(LwDataTable::class);
+    \Livewire\invade($component->invade())->dt = 'does-not-exist';
 
     $reflection = new ReflectionClass($component->instance());
     $method = $reflection->getMethod('hydrateDataTable');
@@ -145,58 +168,33 @@ it('falls back gracefully when the data table cache is unavailable', function ()
 });
 
 it('should show filters container when component is not collapsible', function () {
-    $mockDataTable = new class {
-        public $filters;
-        public function __construct()
-        {
-            $this->filters = new class {
-                public function isCollapsible()
-                {
-                    return false;
-                }
-            };
-        }
-    };
+    $mockDataTable = new DataTable();
 
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable)
-        ->set('filtersContainerIsOpen', null)
-        ->set('filters', []);
+    $component = Livewire::test(LwDataTable::class);
+    \Livewire\invade($component->invade())->dataTable = $mockDataTable;
 
-    expect($component->call('shouldShowFiltersContainer'))->toBeTrue();
+    $component->set([
+        'filtersContainerIsOpen' => null,
+        'filters' => [],
+    ]);
+
+    $componentShouldShowFiltersContainer = $component->instance()->shouldShowFiltersContainer();
+
+    expect($componentShouldShowFiltersContainer)->toBeTrue();
 });
 
 it('returns default Livewire query string parameter names', function () {
-    $mockDataTable = new class {
-        public $pageName = null;
-        public $filtersName = null;
-        public $searchName = null;
-        public $columnsSearchName = null;
+    $mockDataTable = new DataTable();
 
-        public function preset()
-        {
-            return new class {
-                public function get($key, $default)
-                {
-                    return $default;
-                }
-            };
-        }
-    };
+    $component = Livewire::test(LwDataTable::class);
 
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable);
+    \Livewire\invade($component->invade())->dataTable = $mockDataTable;
 
     $reflection = new ReflectionClass($component->instance());
     $pageNameMethod = $reflection->getMethod('pageNameUrlParam');
     $filtersNameMethod = $reflection->getMethod('filtersUrlParam');
     $searchNameMethod = $reflection->getMethod('searchUrlParam');
     $columnsSearchNameMethod = $reflection->getMethod('columnsSearchUrlParam');
-
-    $pageNameMethod->setAccessible(true);
-    $filtersNameMethod->setAccessible(true);
-    $searchNameMethod->setAccessible(true);
-    $columnsSearchNameMethod->setAccessible(true);
 
     expect($pageNameMethod->invoke($component->instance()))->toBe('page');
     expect($filtersNameMethod->invoke($component->instance()))->toBe('filters');
@@ -206,12 +204,13 @@ it('returns default Livewire query string parameter names', function () {
 
 it('delegates runAction to the underlying data table instance', function () {
     $called = [];
-    $mockDataTable = new class ($called) {
+    $mockDataTable = new class ($called) extends DataTable {
         public $called;
 
         public function __construct(&$called)
         {
             $this->called = &$called;
+            parent::__construct();
         }
 
         public function runAction(string $action, ...$params)
@@ -220,9 +219,10 @@ it('delegates runAction to the underlying data table instance', function () {
         }
     };
 
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable)
-        ->call('runAction', 'delete', 42);
+    $component = Livewire::test(LwDataTable::class);
+    \Livewire\invade($component->invade())->dataTable = $mockDataTable;
+
+    $component->invade()->runAction('delete', 42);
 
     expect($called[0])->toBe('delete')
         ->and($called[1])->toBe([42]);
@@ -243,11 +243,13 @@ it('allows columns search only when more than one row exists', function () {
 });
 
 it('keeps existing filter values when computing initial filters', function () {
-    $mockDataTable = new class {
-        public $filters;
+    $mockDataTable = new class extends DataTable {
+        
         public function __construct()
         {
-            $this->filters = new class {
+            parent::__construct();
+
+            $this->filters = new class extends Filters {
                 public $filtersItems;
                 public function __construct()
                 {

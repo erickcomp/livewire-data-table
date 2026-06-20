@@ -22,7 +22,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 
 ?>
 {{-- @debugger --}}
-<div {{ $this->dataTable->containerAttributes->class([...$this->preset()->get('main-container.class'), 'lw-dt']) }}
+<div {{ $this->dataTable->containerAttributes->class([...($this->preset()->get('main-container.class') ?? []), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
     @if($this->dataTable->hasTableActions())
         <div @class($this->preset()->get('actions.container.class'))>
