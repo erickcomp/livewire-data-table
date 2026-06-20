@@ -764,7 +764,7 @@ return [
             'loader-overlay' => [
                 'template' => <<<'BLADE'
                 <div wire:loading{{ empty($delay) ? '' : ".delay.$delay" }}>
-                    <div wire:loading.flex class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center bg-white" style="top:0; left:0; z-index:9999; opacity:0.8;">
+                    <div wire:loading.flex class="position-fixed d-flex align-items-center justify-content-center bg-white" style="top:0; left:0;right:0; bottom:0; z-index:9999; opacity:0.8;">
                         <div class="spinner-border text-primary" role="status" style="width:2.5rem; height:2.5rem;">
                             <span class="sr-only">Carregando...</span>
                         </div>
