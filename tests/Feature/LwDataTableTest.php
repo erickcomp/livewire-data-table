@@ -1,10 +1,13 @@
 <?php
 
+use ErickComp\LivewireDataTable\Data\DataSourceFactory;
+use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\DataTable;
+use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
+use ErickComp\LivewireDataTable\Livewire\Preset;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\Livewire;
 use ReflectionClass;
@@ -156,11 +159,11 @@ it('preserves range filter from and to values when applying filters', function (
 
 it('falls back gracefully when the data table cache is unavailable', function () {
     $component = Livewire::test(LwDataTable::class);
-    \Livewire\invade($component->invade())->dt = 'does-not-exist';
+    $component->invade()->dt = 'does-not-exist';
 
     $reflection = new ReflectionClass($component->instance());
     $method = $reflection->getMethod('hydrateDataTable');
-    $method->setAccessible(true);
+    //$method->setAccessible(true);
 
     $result = $method->invoke($component->instance());
 
@@ -170,8 +173,7 @@ it('falls back gracefully when the data table cache is unavailable', function ()
 it('should show filters container when component is not collapsible', function () {
     $mockDataTable = new DataTable();
 
-    $component = Livewire::test(LwDataTable::class);
-    \Livewire\invade($component->invade())->dataTable = $mockDataTable;
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $mockDataTable]);
 
     $component->set([
         'filtersContainerIsOpen' => null,
@@ -186,9 +188,7 @@ it('should show filters container when component is not collapsible', function (
 it('returns default Livewire query string parameter names', function () {
     $mockDataTable = new DataTable();
 
-    $component = Livewire::test(LwDataTable::class);
-
-    \Livewire\invade($component->invade())->dataTable = $mockDataTable;
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $mockDataTable]);
 
     $reflection = new ReflectionClass($component->instance());
     $pageNameMethod = $reflection->getMethod('pageNameUrlParam');
@@ -204,6 +204,7 @@ it('returns default Livewire query string parameter names', function () {
 
 it('delegates runAction to the underlying data table instance', function () {
     $called = [];
+
     $mockDataTable = new class ($called) extends DataTable {
         public $called;
 
@@ -219,9 +220,10 @@ it('delegates runAction to the underlying data table instance', function () {
         }
     };
 
+    // Cannot set $mockDataTable here using ['data-table' => $mockDataTable] because anonymous classes cannot be serialized
+    // So we invade the component in order to set the new DataTable and then call the runAction method
     $component = Livewire::test(LwDataTable::class);
-    \Livewire\invade($component->invade())->dataTable = $mockDataTable;
-
+    $component->invade()->dataTable = $mockDataTable;
     $component->invade()->runAction('delete', 42);
 
     expect($called[0])->toBe('delete')
@@ -243,67 +245,58 @@ it('allows columns search only when more than one row exists', function () {
 });
 
 it('keeps existing filter values when computing initial filters', function () {
-    $mockDataTable = new class extends DataTable {
-        
-        public function __construct()
-        {
-            parent::__construct();
+    $mockDataTable = new DataTable();
+    $mockFilters = new Filters(new ComponentAttributeBag(), Preset::loadFromName('empty'));
+    $mockFilters->filtersItems = [
+        new Filter(
+            new ComponentAttributeBag([
+                'data-field' => 'status',
+                'name' => 'active',
+                'mode' => Filter::MODE_EXACT,
+                'label' => 'Active',
+            ]),
+        ),
+    ];
 
-            $this->filters = new class extends Filters {
-                public $filtersItems;
-                public function __construct()
-                {
-                    $this->filtersItems = [
-                        (object) [
-                            'dataField' => 'status',
-                            'name' => 'active',
-                            'mode' => \ErickComp\LivewireDataTable\DataTable\Filter::MODE_CONTAINS,
-                            'label' => 'Active',
-                        ],
-                    ];
-                }
-            };
-        }
-    };
+    $mockDataTable->filters = $mockFilters;
 
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable)
-        ->set('filters', ['status' => ['active' => 'yes']]);
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $mockDataTable]);
+    $component->set('filters', ['status' => ['active' => '1']]);
 
-    expect($component->call('computeInitialFilters')['status']['active'])->toBe('yes');
+    $initialFilters = $component->invade()->computeInitialFilters();
+
+    expect($initialFilters['status']['active'])->toBe('1');
 });
 
 it('computes initial filters with default values', function () {
-    $mockDataTable = new class {
-        public $filters;
-        public function __construct()
-        {
-            $this->filters = new class {
-                public $filtersItems;
-                public function __construct()
-                {
-                    $this->filtersItems = [
-                        (object) [
-                            'dataField' => 'status',
-                            'name' => 'active',
-                            'mode' => \ErickComp\LivewireDataTable\DataTable\Filter::MODE_CONTAINS,
-                            'label' => 'Active',
-                        ],
-                        (object) [
-                            'dataField' => 'date',
-                            'name' => 'created',
-                            'mode' => \ErickComp\LivewireDataTable\DataTable\Filter::MODE_RANGE,
-                            'label' => 'Created',
-                        ],
-                    ];
-                }
-            };
-        }
-    };
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable)
-        ->set('filters', []);
-    $filters = $component->call('computeInitialFilters');
+
+    $mockDataTable = new DataTable();
+    $mockFilters = new Filters(new ComponentAttributeBag(), Preset::loadFromName('empty'));
+    $mockFilters->filtersItems = [
+        new Filter(
+            new ComponentAttributeBag([
+                'data-field' => 'status',
+                'name' => 'active',
+                'mode' => Filter::MODE_EXACT,
+                'label' => 'Active',
+            ]),
+        ),
+        new Filter(
+            new ComponentAttributeBag([
+                'data-field' => 'date',
+                'name' => 'created',
+                'mode' => Filter::MODE_RANGE,
+                'label' => 'Created',
+            ]),
+        ),
+    ];
+
+    $mockDataTable->filters = $mockFilters;
+
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $mockDataTable]);
+
+    $component->set('filters', []);
+    $filters = $component->instance()->computeInitialFilters();
     expect($filters['status']['active'])->toBe('');
     expect($filters['date']['created'])->toBe(['from' => '', 'to' => '']);
 });
@@ -311,109 +304,66 @@ it('computes initial filters with default values', function () {
 it('should show filters container if filtersContainerIsOpen is true', function () {
     $component = Livewire::test(LwDataTable::class)
         ->set('filtersContainerIsOpen', true);
-    expect($component->call('shouldShowFiltersContainer'))->toBeTrue();
+    expect($component->instance()->shouldShowFiltersContainer())->toBeTrue();
 });
 
 it('should show filters container if filters are not empty', function () {
     $component = Livewire::test(LwDataTable::class)
         ->set('filtersContainerIsOpen', null)
         ->set('filters', ['foo' => ['bar' => 'baz']]);
-    expect($component->call('shouldShowFiltersContainer'))->toBeTrue();
+    expect($component->instance()->shouldShowFiltersContainer())->toBeTrue();
 });
 
 it('hides filters container when collapsible and explicitly closed', function () {
-    $mockDataTable = new class {
-        public $filters;
-        public function __construct()
-        {
-            $this->filters = new class {
-                public function isCollapsible()
-                {
-                    return true;
-                }
-            };
-        }
-    };
+    $mockDataTable = new DataTable();
+    $mockDataTable->filters = new Filters(
+        new ComponentAttributeBag(['collapsible' => true]),
+        Preset::loadFromName('empty'),
+    );
 
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable)
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $mockDataTable])
         ->set('filtersContainerIsOpen', false)
         ->set('filters', []);
 
-    expect($component->call('shouldShowFiltersContainer'))->toBeFalse();
+    expect($component->instance()->shouldShowFiltersContainer())->toBeFalse();
 });
 
 it('shows filters container when collapsible and open state is undefined', function () {
-    $mockDataTable = new class {
-        public $filters;
-        public function __construct()
-        {
-            $this->filters = new class {
-                public function isCollapsible()
-                {
-                    return true;
-                }
-            };
-        }
-    };
+    $mockDataTable = new DataTable();
+    $mockDataTable->filters = new Filters(
+        new ComponentAttributeBag(['collapsible' => true]),
+        Preset::loadFromName('empty'),
+    );
 
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable)
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $mockDataTable])
         ->set('filtersContainerIsOpen', null)
         ->set('filters', []);
 
-    expect($component->call('shouldShowFiltersContainer'))->toBeTrue();
+    expect($component->instance()->shouldShowFiltersContainer())->toBeTrue();
 });
 
 it('renders view with rows and initialFilters data', function () {
-    $rows = collect([
-        ['id' => 1, 'name' => 'John'],
-        ['id' => 2, 'name' => 'Jane'],
-    ]);
+    $mockDataTable = new DataTable(paginationView: 'bootstrap');
+    $mockFilters = new Filters(new ComponentAttributeBag(['collapsible' => false]), Preset::loadFromName('empty'));
+    $mockFilters->filtersItems = [
+        new Filter(
+            new ComponentAttributeBag([
+                'data-field' => 'status',
+                'name' => 'active',
+                'mode' => Filter::MODE_EXACT,
+                'label' => 'Active',
+            ]),
+        ),
+    ];
 
-    $mockDataTable = new class {
-        public $filters;
-        public $preset;
+    $mockDataTable->filters = $mockFilters;
 
-        public function __construct()
-        {
-            $this->filters = new class {
-                public $filtersItems;
-                public function isCollapsible()
-                {
-                    return false;
-                }
-                public function __construct()
-                {
-                    $this->filtersItems = [];
-                }
-            };
-        }
+    $component = Livewire::test(
+        LwDataTable::class,
+        ['data-table' => $mockDataTable],
+    );
 
-        public function preset()
-        {
-            return new class {
-                public function get($key, $default = null)
-                {
-                    return $default;
-                }
-            };
-        }
-
-        public function paginationView()
-        {
-            return 'livewire::tailwind';
-        }
-
-        public function paginationSimpleView()
-        {
-            return 'livewire::simple-tailwind';
-        }
-    };
-
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable)
-        ->set('filters', []);
+    $component->set('filters', []);
 
     $view = $component->instance()->render();
 
@@ -421,82 +371,143 @@ it('renders view with rows and initialFilters data', function () {
 });
 
 it('handles page reset when paginated results exceed lastPage', function () {
+    // $paginator = new LengthAwarePaginator(
+    //     collect([['id' => 1]]),
+    //     10,
+    //     15,
+    //     2,
+    // );
+
+    // $mockDataTable = new class {
+    //     public $filters;
+    //     public $pageName = 'page';
+
+    //     public function __construct()
+    //     {
+    //         $this->filters = new class {
+    //             public $filtersItems;
+    //             public function isCollapsible()
+    //             {
+    //                 return false;
+    //             }
+    //             public function __construct()
+    //             {
+    //                 $this->filtersItems = [];
+    //             }
+    //         };
+    //     }
+
+    //     public function preset()
+    //     {
+    //         return new class {
+    //             public function get($key, $default = null)
+    //             {
+    //                 return $default;
+    //             }
+    //         };
+    //     }
+
+    //     public function paginationView()
+    //     {
+    //         return 'livewire::tailwind';
+    //     }
+
+    //     public function paginationSimpleView()
+    //     {
+    //         return 'livewire::simple-tailwind';
+    //     }
+    // };
+
+    // $component = Livewire::test(LwDataTable::class)
+    //     ->set('dataTable', $mockDataTable)
+    //     ->set('filters', [])
+    //     ->set('paginators', ['page' => 5]);
+
+    // $reflection = new ReflectionClass($component->instance());
+    // $renderMethod = $reflection->getMethod('render');
+    // $renderMethod->setAccessible(true);
+
+    // $renderMethod->invoke($component->instance());
+
     $paginator = new LengthAwarePaginator(
-        collect([['id' => 1]]),
-        10,
+        collect([['id' => 1,]]),
+        1,
         15,
         2,
     );
 
-    $mockDataTable = new class {
-        public $filters;
-        public $pageName = 'page';
 
-        public function __construct()
-        {
-            $this->filters = new class {
-                public $filtersItems;
-                public function isCollapsible()
-                {
-                    return false;
-                }
-                public function __construct()
-                {
-                    $this->filtersItems = [];
-                }
-            };
-        }
 
-        public function preset()
-        {
-            return new class {
-                public function get($key, $default = null)
-                {
-                    return $default;
-                }
-            };
-        }
+    $data = collect([
+        ['id' => 1],
+        ['id' => 2],
+        ['id' => 3],
+        ['id' => 4],
+        ['id' => 5],
+        ['id' => 6],
+        ['id' => 7],
+        ['id' => 8],
+        ['id' => 9],
+        ['id' => 10],
+    ]);
 
-        public function paginationView()
-        {
-            return 'livewire::tailwind';
-        }
+    $mockDataTable = new DataTable(paginationView: 'bootstrap', pageName: 'page');
+    $mockFilters = new Filters(new ComponentAttributeBag(['collapsible' => false]), Preset::loadFromName('empty'));
+    $mockFilters->filtersItems = [];
 
-        public function paginationSimpleView()
-        {
-            return 'livewire::simple-tailwind';
-        }
-    };
+    $mockDataTable->filters = $mockFilters;
+    $mockDataTable->dataSrc = DataSourceFactory::new()->make($data, DataSourcePaginationType::LengthAware);
 
-    $component = Livewire::test(LwDataTable::class)
-        ->set('dataTable', $mockDataTable)
-        ->set('filters', [])
-        ->set('paginators', ['page' => 5]);
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $mockDataTable]);
+    $component->instance()->perPage = 3;
+    $component2 = $component->set([
+        'filters' => [],
+        'search' => '',
+        'paginators' => ['page' => 5],
+    ]);
 
-    $reflection = new ReflectionClass($component->instance());
-    $renderMethod = $reflection->getMethod('render');
-    $renderMethod->setAccessible(true);
+    $component2->instance()->render();
 
-    $renderMethod->invoke($component->instance());
+    //$component;
+    $component->assertSet('paginators.page', 1);
 });
 
 it('validates that renderPagination handles different paginator types', function () {
-    $component = Livewire::test(LwDataTable::class);
+    // $component = Livewire::test(LwDataTable::class);
+
+    // $collection = collect([['id' => 1]]);
+    // $paginator = new LengthAwarePaginator(
+    //     $collection,
+    //     10,
+    //     15,
+    //     1,
+    // );
+
+    // $reflection = new ReflectionClass($component->instance());
+    // $method = $reflection->getMethod('renderPagination');
+    // $method->setAccessible(true);
+
+    // $resultCollection = $method->invoke($component->instance(), $collection);
+    // $resultPaginator = $method->invoke($component->instance(), $paginator);
+
+    // expect($resultCollection)->toBe('');
+    // expect($resultPaginator)->not()->toBe('');
 
     $collection = collect([['id' => 1]]);
     $paginator = new LengthAwarePaginator(
         $collection,
         10,
         15,
-        1,
+        2,
     );
 
-    $reflection = new ReflectionClass($component->instance());
-    $method = $reflection->getMethod('renderPagination');
-    $method->setAccessible(true);
+    $mockDataTable = new DataTable(paginationView: 'bootstrap', pageName: 'page');
+    $mockFilters = new Filters(new ComponentAttributeBag(['collapsible' => false]), Preset::loadFromName('empty'));
+    $mockDataTable->filters = $mockFilters;
 
-    $resultCollection = $method->invoke($component->instance(), $collection);
-    $resultPaginator = $method->invoke($component->instance(), $paginator);
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $mockDataTable]);
+    $resultCollection = $component->instance()->renderPagination($collection);
+    $resultPaginator = $component->instance()->renderPagination($paginator);
 
     expect($resultCollection)->toBe('');
     expect($resultPaginator)->not()->toBe('');
