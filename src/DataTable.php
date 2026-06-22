@@ -44,6 +44,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public DataSource $dataSrc;
 
     public DataSourcePaginationType $dataSrcPaginationType = DataSource::PAGINATION_DEFAULT;
+
+    public const VIEWS_NAMESPACE = 'erickcomp_lw_data_table';
     public const PER_PAGE_MAX = 'max';
     public const PER_PAGE_ALL = 'all';
     public const PER_PAGE_ALL_OPTION_VALUE = '___all___';
@@ -616,7 +618,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             null => $this->preset()->get('pagination.view', static::$defaultPaginationView),
             'bootstrap' => 'livewire::bootstrap',
             'tailwind' => 'livewire::tailwind',
-            default => null
+            default => $this->paginationView
         };
     }
 
@@ -626,7 +628,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             null => $this->preset()->get('pagination.simple-view', static::$defaultPaginationSimpleView),
             'bootstrap' => 'livewire::simple-bootstrap',
             'tailwind' => 'livewire::simple-tailwind',
-            default => null
+            default => $this->paginationView
         };
     }
 

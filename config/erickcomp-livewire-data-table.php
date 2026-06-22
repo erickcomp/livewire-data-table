@@ -296,8 +296,8 @@ return [
                 'container' => [
                     'class' => 'lw-dt-pagination-container',
                 ],
-                'view' => 'livewire::bootstrap',
-                'simple-view' => 'livewire::simple-bootstrap',
+                'view' => 'erickcomp_lw_data_table::bootstrap',
+                'simple-view' => 'erickcomp_lw_data_table::simple-bootstrap',
                 //'default-style-for-pagination' => true,
             ],
 
@@ -778,8 +778,8 @@ return [
                 'container' => [
                     'class' => 'lw-dt-pagination-container',
                 ],
-                'view' => 'livewire::bootstrap',
-                'simple-view' => 'livewire::simple-bootstrap',
+                'view' => 'erickcomp_lw_data_table::bootstrap4',
+                'simple-view' => 'erickcomp_lw_data_table::simple-bootstrap4',
                 //'default-style-for-pagination' => true,
             ],
 
@@ -1234,8 +1234,8 @@ return [
             'pagination' => [
                 'default-per-page-for-non-eloquent-data-sources' => [15],
                 'container' => ['class' => ['mt-4', 'justify-between']],
-                'view' => 'livewire::tailwind',
-                'simple-view' => 'livewire::simple-tailwind',
+                'view' => 'erickcomp_lw_data_table::tailwind3',
+                'simple-view' => 'erickcomp_lw_data_table::simple-tailwind3',
             ],
 
             'reload-alert' => [

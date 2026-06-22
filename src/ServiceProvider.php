@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable;
 
+use Illuminate\Support\Facades\View;
 use \Illuminate\Support\ServiceProvider as LaravelAbstractServiceProvider;
 use ErickComp\LivewireDataTable\DataTable\Action;
 use ErickComp\LivewireDataTable\DataTable\BulkAction;
@@ -31,6 +32,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerRawBladeComponents();
         $this->registerBladeComponents();
         $this->registerLivewireComponents();
+        $this->registerPaginationViews();
 
         //Paginator::useBootstrap();
     }
@@ -56,6 +58,11 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     protected function registerLivewireComponents()
     {
         Livewire::component('lw-data-table', LwDataTable::class);
+    }
+
+    protected function registerPaginationViews()
+    {
+        $this->loadViewsFrom(__DIR__ . '/DataTable/Pagination/Views', DataTable::VIEWS_NAMESPACE);
     }
 
     protected function registerEarlyBladeDirectives()
