@@ -222,7 +222,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                         @endif
 
                         @php
-                            $removeFilterButtonPosition = $this->preset()->get('applied-filters.applied-filter-item.position', 'right');
+                            $removeFilterButtonPosition = $this->preset()->get('applied-filters.button-remove-applied-filter-item.position', 'right');
                         @endphp
 
                         @if(!empty(\trim($search)))
