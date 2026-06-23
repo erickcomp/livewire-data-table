@@ -496,21 +496,52 @@ class LwDataTable extends LivewireComponent
             return [];
         }
 
+        $sortBy = $this->sanitizeSortBy($this->sortBy);
+        $columnsSearch = $this->sanitizeColumnsSearch($this->columnsSearch);
+
         $params = new LwDataRetrievalParams(
             page: Paginator::resolveCurrentPage($this->pageNameUrlParam()),
             perPage: $this->perPage,
             pageName: $this->pageNameUrlParam(),
             search: $this->search,
             //searchDataFields: $this->dataTable?->search->dataFields ?? [],
-            columnsSearch: $this->columnsSearch,
+            columnsSearch: $columnsSearch,
             filters: $this->processedFilters,
-            sortBy: $this->sortBy,
+            sortBy: $sortBy,
             sortDir: $this->sortDir,
             collectionsSortingFlags: $this->dataTable->collectionSortingFlags,
             dataTable: $this->dataTable,
         );
 
         return $this->dataTable->dataSrc->getData($params);
+    }
+
+    protected function sanitizeSortBy(string $sortBy): string
+    {
+        if ($sortBy === '') {
+            return '';
+        }
+
+        $sortableFields = $this->dataTable->columns
+            ->filter(fn($col) => $col->isSortable() && $col->dataField !== null)
+            ->pluck('dataField')
+            ->all();
+
+        return \in_array($sortBy, $sortableFields, true) ? $sortBy : '';
+    }
+
+    protected function sanitizeColumnsSearch(array $columnsSearch): array
+    {
+        if (empty($columnsSearch)) {
+            return [];
+        }
+
+        $searchableFields = $this->dataTable->columns
+            ->filter(fn($col) => $col->isSearchable() && $col->dataField !== null)
+            ->pluck('dataField')
+            ->all();
+
+        return \array_intersect_key($columnsSearch, \array_flip($searchableFields));
     }
 
     protected function dataProviderProvidesDataTableData(): bool
