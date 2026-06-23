@@ -29,7 +29,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             <div @class($this->preset()->get('actions.row.class'))>
                 @if($this->dataTable->isSearchable())
                     <div {{ $this->dataTable->search->componentAttributes->class($this->preset()->get('search.container.class', [])) }}>
-                        @if ($this->dataTable->search->hasCustomRenderer()))
+                        @if ($this->dataTable->search->hasCustomRenderer())
                             @php
                                 $searchViewData = [
                                     //'__dataTable' => $this->dataTable,
@@ -461,7 +461,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
     @if($this->dataTable->paginationCode !== null)    
         {!! $this->renderCustomPagination($rows) !!}
     @else
-        <div @class($this->preset()->get('pagination.container.class', [])))>
+        <div @class($this->preset()->get('pagination.container.class', []))>
             {{ $this->renderPagination($rows) }}
         </div>
     @endif
