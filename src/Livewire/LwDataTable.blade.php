@@ -95,7 +95,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                     {!! $this->preset()->get('filters.title.icon', '') !!}
                                 @endif
                                 {{ $this->dataTable->filters->title() }}
-                                @if($this->preset()->get('filters.title.icon-position') === 'rigth')
+                                @if($this->preset()->get('filters.title.icon-position') === 'right')
                                     {!! $this->preset()->get('filters.title.icon', '') !!}
                                 @endif
                             </span>
