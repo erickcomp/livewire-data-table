@@ -4,9 +4,6 @@ namespace ErickComp\LivewireDataTable;
 
 use Illuminate\Support\Facades\View;
 use \Illuminate\Support\ServiceProvider as LaravelAbstractServiceProvider;
-use ErickComp\LivewireDataTable\DataTable\Action;
-use ErickComp\LivewireDataTable\DataTable\BulkAction;
-use ErickComp\LivewireDataTable\DataTable\BulkActions;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;

@@ -1,6 +1,6 @@
 <?php
 
-namespace ErickComp\LivewireDataTable\Src\Drawer;
+namespace ErickComp\LivewireDataTable\Exceptions;
 
 class ErrorMessageForUserException extends \Exception
 {

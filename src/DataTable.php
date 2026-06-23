@@ -17,8 +17,6 @@ use ErickComp\LivewireDataTable\DataTable\Footer;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\LivewireDataTable\Livewire\Preset;
-use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
-use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Query\Builder as QueryBuilder;
