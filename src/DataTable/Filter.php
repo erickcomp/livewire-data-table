@@ -110,6 +110,13 @@ class Filter
         $this->customRendererCode = $customRendererCode;
     }
 
+    public function getSelectOptions(): array
+    {
+        $options = $this->attributes->get('options', []);
+
+        return \is_array($options) ? $options : [];
+    }
+
     public function htmlInputType(): ?string
     {
         return match ($this->inputType) {
@@ -225,7 +232,7 @@ class Filter
             throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
         }
 
-        $attrs = $this->attributes->except(\array_merge(['label', 'data-field', 'input-type', 'mode'], Arr::wrap($except)));
+        $attrs = $this->attributes->except(\array_merge(['label', 'data-field', 'input-type', 'mode', 'options'], Arr::wrap($except)));
 
         if ($range === 'from') {
             $attrs = $attrs->merge($this->rangeFromAttributes->all());

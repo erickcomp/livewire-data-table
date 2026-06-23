@@ -126,7 +126,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                             </span>
                                         </legend>
 
-                                        @if(\in_array($filterItem, [Filter::TYPE_SELECT, Filter::TYPE_SELECT_MULTIPLE], true))
+                                        @if(\in_array($filterItem->inputType, [Filter::TYPE_SELECT, Filter::TYPE_SELECT_MULTIPLE], true))
                                             <select {{ $filterItem->inputAttributes(except: 'name')->class($this->preset()->get('filters.item.content.select.class')) }}
                                                 name="{{ $filterItem->buildInputNameAttribute($this->filtersUrlParam()) }}"
                                                 {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
