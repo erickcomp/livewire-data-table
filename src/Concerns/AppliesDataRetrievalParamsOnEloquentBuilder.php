@@ -83,7 +83,8 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
                     case Filter::MODE_IN:
                         $castedValues = [];
                         foreach ($filter['value'] as $v) {
-                            $castedValues[] = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
+                            $singleValueFilter = array_merge($filter, ['value' => $v]);
+                            $castedValues[] = EloquentCaster::castValueFromFilterUsingModel($query, $singleValueFilter);
                         }
                         $query->whereIn($filter['column'], $castedValues);
 
