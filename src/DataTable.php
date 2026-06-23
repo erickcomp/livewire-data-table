@@ -727,10 +727,10 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             ];
 
             foreach ($varsToExcludeFromSerializationHash as $var) {
-                if (isset($dataTable->$var)) {
-                    $$var = $dataTable->$var;
+                if (isset($this->$var)) {
+                    $$var = $this->$var;
 
-                    unset($dataTable->$var);
+                    unset($this->$var);
                 }
             }
 
@@ -739,7 +739,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
             foreach ($varsToExcludeFromSerializationHash as $var) {
                 if (isset($$var)) {
-                    $dataTable->$var = $$var;
+                    $this->$var = $$var;
                 }
             }
         }
