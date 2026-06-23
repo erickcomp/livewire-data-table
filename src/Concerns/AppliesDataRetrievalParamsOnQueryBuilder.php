@@ -26,61 +26,59 @@ trait AppliesDataRetrievalParamsOnQueryBuilder
             return;
         }
 
-        if (!empty($params->filters)) {
-            foreach ($params->filters as $filter) {
+        foreach ($params->filters as $filter) {
 
-                switch ($filter['mode']) {
-                    case Filter::MODE_EXACT:
-                        $value = $filter['value'];
-                        $query->where($filter['column'], $value);
+            switch ($filter['mode']) {
+                case Filter::MODE_EXACT:
+                    $value = $filter['value'];
+                    $query->where($filter['column'], $value);
 
-                        break;
+                    break;
 
-                    case Filter::MODE_CONTAINS:
-                        $value = $filter['value'];
-                        $query->whereLike($filter['column'], "%$value%");
+                case Filter::MODE_CONTAINS:
+                    $value = $filter['value'];
+                    $query->whereLike($filter['column'], "%$value%");
 
-                        break;
+                    break;
 
-                    case Filter::MODE_STARTS_WITH:
-                        $value = $filter['value'];
-                        $query->whereLike($filter['column'], "$value%");
+                case Filter::MODE_STARTS_WITH:
+                    $value = $filter['value'];
+                    $query->whereLike($filter['column'], "$value%");
 
-                        break;
+                    break;
 
-                    case Filter::MODE_ENDS_WITH:
-                        $value = $filter['value'];
-                        $query->whereLike($filter['column'], "%$value");
+                case Filter::MODE_ENDS_WITH:
+                    $value = $filter['value'];
+                    $query->whereLike($filter['column'], "%$value");
 
-                        break;
+                    break;
 
-                    case Filter::MODE_FULLTEXT:
-                        $value = $filter['value'];
-                        $query->whereFullText($filter['column'], $value);
+                case Filter::MODE_FULLTEXT:
+                    $value = $filter['value'];
+                    $query->whereFullText($filter['column'], $value);
 
-                        break;
+                    break;
 
-                    case Filter::MODE_IN:
-                        $vals = [];
-                        foreach ($filter['value'] as $v) {
-                            $vals[] = $v;
-                        }
-                        $query->whereIn($filter['column'], $vals);
+                case Filter::MODE_IN:
+                    $vals = [];
+                    foreach ($filter['value'] as $v) {
+                        $vals[] = $v;
+                    }
+                    $query->whereIn($filter['column'], $vals);
 
-                        break;
+                    break;
 
-                    case Filter::MODE_RANGE:
-                        $query
-                            ->when($filter['value']['from'] ?? false, function ($query) use ($filter) {
-                                $value = $filter['value']['from'];
-                                $query->where($filter['column'], '>=', $value);
-                            })
-                            ->when($filter['value']['to'] ?? false, function ($query) use ($filter) {
-                                $value = $filter['value']['to'];
-                                $query->where($filter['column'], '<=', $value);
-                            });
-                        break;
-                }
+                case Filter::MODE_RANGE:
+                    $query
+                        ->when($filter['value']['from'] ?? false, function ($query) use ($filter) {
+                            $value = $filter['value']['from'];
+                            $query->where($filter['column'], '>=', $value);
+                        })
+                        ->when($filter['value']['to'] ?? false, function ($query) use ($filter) {
+                            $value = $filter['value']['to'];
+                            $query->where($filter['column'], '<=', $value);
+                        });
+                    break;
             }
         }
     }

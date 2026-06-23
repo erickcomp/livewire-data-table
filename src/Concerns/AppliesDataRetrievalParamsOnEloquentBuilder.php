@@ -46,62 +46,60 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
             return;
         }
 
-        if (!empty($params->filters)) {
-            foreach ($params->filters as $filter) {
+        foreach ($params->filters as $filter) {
 
-                switch ($filter['mode']) {
-                    case Filter::MODE_EXACT:
-                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
-                        $query->where($filter['column'], $value);
+            switch ($filter['mode']) {
+                case Filter::MODE_EXACT:
+                    $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
+                    $query->where($filter['column'], $value);
 
-                        break;
+                    break;
 
-                    case Filter::MODE_CONTAINS:
-                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
-                        $query->whereLike($filter['column'], "%$value%");
+                case Filter::MODE_CONTAINS:
+                    $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
+                    $query->whereLike($filter['column'], "%$value%");
 
-                        break;
+                    break;
 
-                    case Filter::MODE_STARTS_WITH:
-                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
-                        $query->whereLike($filter['column'], "$value%");
+                case Filter::MODE_STARTS_WITH:
+                    $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
+                    $query->whereLike($filter['column'], "$value%");
 
-                        break;
+                    break;
 
-                    case Filter::MODE_ENDS_WITH:
-                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
-                        $query->whereLike($filter['column'], "%$value");
+                case Filter::MODE_ENDS_WITH:
+                    $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
+                    $query->whereLike($filter['column'], "%$value");
 
-                        break;
+                    break;
 
-                    case Filter::MODE_FULLTEXT:
-                        $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
-                        $query->whereFullText($filter['column'], $value);
+                case Filter::MODE_FULLTEXT:
+                    $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter);
+                    $query->whereFullText($filter['column'], $value);
 
-                        break;
+                    break;
 
-                    case Filter::MODE_IN:
-                        $castedValues = [];
-                        foreach ($filter['value'] as $v) {
-                            $singleValueFilter = array_merge($filter, ['value' => $v]);
-                            $castedValues[] = EloquentCaster::castValueFromFilterUsingModel($query, $singleValueFilter);
-                        }
-                        $query->whereIn($filter['column'], $castedValues);
+                case Filter::MODE_IN:
+                    $castedValues = [];
+                    foreach ($filter['value'] as $v) {
+                        $singleValueFilter = array_merge($filter, ['value' => $v]);
+                        $castedValues[] = EloquentCaster::castValueFromFilterUsingModel($query, $singleValueFilter);
+                    }
+                    $query->whereIn($filter['column'], $castedValues);
 
-                        break;
+                    break;
 
-                    case Filter::MODE_RANGE:
-                        $query
-                            ->when($filter['value']['from'] ?? false, function ($query) use ($filter) {
-                                $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter, 'from');
-                                $query->where($filter['column'], '>=', $value);
-                            })
-                            ->when($filter['value']['to'] ?? false, function ($query) use ($filter) {
-                                $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter, 'to');
-                                $query->where($filter['column'], '<=', $value);
-                            });
-                        break;
-                }
+                case Filter::MODE_RANGE:
+                    $query
+                        ->when($filter['value']['from'] ?? false, function ($query) use ($filter) {
+                            $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter, 'from');
+                            $query->where($filter['column'], '>=', $value);
+                        })
+                        ->when($filter['value']['to'] ?? false, function ($query) use ($filter) {
+                            $value = EloquentCaster::castValueFromFilterUsingModel($query, $filter, 'to');
+                            $query->where($filter['column'], '<=', $value);
+                        });
+                    break;
             }
         }
     }
