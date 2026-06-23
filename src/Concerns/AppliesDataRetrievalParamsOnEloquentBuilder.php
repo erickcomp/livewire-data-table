@@ -24,13 +24,11 @@ trait AppliesDataRetrievalParamsOnEloquentBuilder
 
     protected function modelInstance(): EloquentModel
     {
-        static $model = null;
-
-        if ($model === null) {
-            $model = app()->make($this->modelClass());
+        if (!isset($this->resolvedModelInstance)) {
+            $this->resolvedModelInstance = app()->make($this->modelClass());
         }
 
-        return $model;
+        return $this->resolvedModelInstance;
     }
 
     protected function applyDataRetrievalParamsOnEloquentBuilder(EloquentBuilder $query, LwDataRetrievalParams $params): EloquentBuilder
