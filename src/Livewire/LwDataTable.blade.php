@@ -6,9 +6,11 @@ use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\LazyCollection;
+use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 
 /** @var \ErickComp\LivewireDataTable\DataTable $this->dataTable */
