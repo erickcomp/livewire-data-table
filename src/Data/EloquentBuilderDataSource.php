@@ -77,6 +77,6 @@ class EloquentBuilderDataSource implements DataSource
      */
     protected function modelClass(): string
     {
-        return $this->query->getModel();
+        return get_class($this->query->getModel());
     }
 }
