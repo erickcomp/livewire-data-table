@@ -382,7 +382,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 @php
                     $noData = new \stdClass();
                 @endphp
-                @debugger
                 @forelse ($rows as $row)
                     <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}">
                         @foreach ($this->dataTable->columns as $column)
@@ -422,12 +421,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             @endif
                         @endforeach
                     </tr>
-                    @php
-                        if ($rows instanceof LazyCollection) {
-                            \file_put_contents(\storage_path('logs/data-table-lazy.log'), ($loop->iteration . PHP_EOL), FILE_APPEND);
-                            unset($row);
-                        }
-                    @endphp
                 @empty
                     <tr {{ $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.nodatafound.class')) }}>
                         <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns), 1]) }}">
