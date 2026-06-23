@@ -2,14 +2,9 @@
 
 namespace ErickComp\LivewireDataTable;
 
-use Illuminate\Support\Facades\View;
 use \Illuminate\Support\ServiceProvider as LaravelAbstractServiceProvider;
-use ErickComp\LivewireDataTable\DataTable\Column;
-use ErickComp\LivewireDataTable\DataTable\Filter;
-use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\RawBladeComponents\RawComponent;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
 use Illuminate\Support\Str;

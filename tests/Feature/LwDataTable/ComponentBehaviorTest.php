@@ -53,32 +53,6 @@ it('returns default Livewire query string parameter names', function () {
         ->and($columnsSearchNameMethod->invoke($component->instance()))->toBe('cols-search');
 });
 
-it('delegates runAction to the underlying data table instance', function () {
-    $called = [];
-
-    $mockDataTable = new class ($called) extends DataTable {
-        public $called;
-
-        public function __construct(&$called)
-        {
-            $this->called = &$called;
-            parent::__construct();
-        }
-
-        public function runAction(string $action, ...$params)
-        {
-            $this->called = [$action, $params];
-        }
-    };
-
-    $component = Livewire::test(LwDataTable::class);
-    $component->invade()->dataTable = $mockDataTable;
-    $component->invade()->runAction('delete', 42);
-
-    expect($called[0])->toBe('delete')
-        ->and($called[1])->toBe([42]);
-});
-
 it('allows columns search only when more than one row exists', function () {
     $component = Livewire::test(LwDataTable::class);
 

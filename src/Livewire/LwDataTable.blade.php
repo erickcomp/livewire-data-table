@@ -23,7 +23,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 };
 
 ?>
-{{-- @debugger --}}
 <div {{ $this->dataTable->containerAttributes->class([...($this->preset()->get('main-container.class') ?? []), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
     @if($this->dataTable->hasTableActions())
@@ -281,15 +280,8 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 </div>
             @endif
 
-            @if ($this->dataTable->hasBulkActions() || count($this->dataTable->perPageOptions) > 1)
+            @if (count($this->dataTable->perPageOptions) > 1)
                 <div @class($this->preset()->get('actions.bulk-actions-and-per-page.container.class', []))>
-                    @if ($this->dataTable->hasBulkActions() && false)
-                        <select @class($this->preset()->get('actions.bulk-actions-and-per-page.bulk-actions-select.class', []))>
-                            @foreach(['' => __('erickcomp_lw_data_table::messages.bulk_actions_label') , 1 => 'mock bulk action 1', 2 => 'mock bulk action 2'] as $bulkAction => $bulkActionLabel)
-                                <option value="{{ $bulkAction }}">{{ $bulkActionLabel }}</option>
-                            @endforeach
-                        </select>
-                    @endif
                     @if(count($this->dataTable->perPageOptions) > 1)
                         <div @class($this->preset()->get('actions.bulk-actions-and-per-page.per-page.container.class', []))>
 
@@ -317,24 +309,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             @endif
         </div> <!-- end: lw-dt-table-actions -->
     @endif
-
-    {{--
-    @foreach($this->dataTable->actionsRows as $actionsRow)
-    <div class="lw-dt-table-actions-row">
-        @if($actionsRow->hasCustomRenderer())
-        @php
-        $actionsRowViewData = [
-        '__dataTable' => $this->dataTable,
-        '___lwDataTable' => $this,
-        ];
-        @endphp
-        {!! Blade::render($actionsRow->customRendererCode, $actionsRowViewData) !!}
-        @else
-        {!! $actionsRow->render() !!}
-        @endif
-    </div>
-    @endforeach
-    --}}
 
     @php
         $shouldAllowColumnsSearch = $this->shouldAllowColumnsSearch($rows);
@@ -460,23 +434,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             {{ $this->renderPagination($rows) }}
         </div>
     @endif
-
-    {{-- 
-    @if (\is_object($rows) && \method_exists($rows, 'links'))
-        @if($this->dataTable->paginationCode != null)
-            $paginationVars = [
-            '__dataTable' => $this->dataTable,
-            '__rows' => $rows
-            ];
-            {!! Blade::render($this->dataTable->paginationCode, $paginationVars) !!}
-        @else
-            <div @class(['lw-dt-pagination-container'])>
-                {{ $rows->render() }}
-            </div>
-        @endif
-    @endif
-    --}}
-    
 
     @if(!empty($this->preset()->get('loader-overlay.template', null)))
         {!! Blade::render($this->preset()->get('loader-overlay.template'), ['delay' => $this->dataTable->loadingDelayModifier]) !!}
@@ -623,43 +580,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
         })
     );
 
-    {{--
-    debugger;
-    document.addEventListener('livewire:init', () => {
-        Livewire.hook('request', ({ fail }) => {
-            fail(({ status, preventDefault }) => {
-                debugger;
-                if (status === 419) {
-                    //confirm('Your custom page expiration behavior...')
-                    @if ($reloadAlertConfig === null || ($reloadAlertConfig['alert-before-reload'] ?? true) === true)
-                        @php
-                        $reloadRequiredmessage = 'Hue';
-                        @endphp
-                        {{ $reloadAlertConfig['function-name'] }}('{{ $reloadRequiredmessage }}', function () {window.location.reload();});
-                    @else
-                        //alert('sem alert. =P');
-                        window.location.reload();
-                    @endif
- 
-                    preventDefault();
-                }
-            });
-        });
-    });
-    --}}
 
-    {{-- 
-    $wire.on('{{ $this::EVENT_RELOAD_REQUIRED }}', () => {
-        @if ($reloadAlertConfig === null || ($reloadAlertConfig['alert-before-reload'] ?? true) === true)
-            {{ $reloadAlertConfig['function-name'] }}('{{ $message }}', function () {window.location.reload();});
-        @else
-            alert('sem alert. =P');
-            window.location.reload();
-        @endif
-        
-    });
-    --}}
-    
 </script>
 
 @foreach ($this->preset()->get('scripts', []) as $script)

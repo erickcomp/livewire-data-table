@@ -241,10 +241,6 @@ class LwDataTable extends LivewireComponent
         return $this->appliedFilters;
     }
 
-    public function runAction(string $action, ...$params)
-    {
-        $this->dataTable->runAction($action, ...$params);
-    }
     public function applyFilters(array $inputFilters)
     {
         $removeEmptyValues = function (array $data) use (&$removeEmptyValues) {

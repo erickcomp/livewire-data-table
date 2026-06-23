@@ -381,7 +381,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     {
         return $this->isSearchable()
             || $this->isFilterable()
-            || $this->hasBulkActions()
             || $this->hasPerPageOptions();
     }
 
@@ -398,12 +397,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public function isFilterable(): bool
     {
         return $this->initalizedFilters() && count($this->filters->filtersItems) > 0;
-    }
-
-    public function hasBulkActions()
-    {
-        // @TODO: implement bulk actions
-        return false;
     }
 
     public function hasSearchableColumns(): bool
@@ -511,8 +504,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     {
         $this->footer = new Footer($filterContainerAttributes, $rendererCode);
     }
-
-    public function addAction() {}
 
     public function initFilters(ComponentAttributeBag $filterContainerAttributes)
     {
@@ -778,26 +769,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             }
         }
     }
-
-    // public function runAction(string $action, ...$params)
-    // {
-    //     // try {
-
-    //     //     $return = $this->actions->run($action, ...$params);
-
-    //     //     if ($return === false) {
-    //     //         return new DataTableActionResponse(isOk: false, message: 'Erro ao executar ');
-    //     //     }
-    //     // } catch (ErrorMessageForUserException $e1) {
-    //     //     return new DataTableActionResponse(isOk: false, message: $e1->getMessage());
-    //     // }
-    //     // //$this->get
-    // }
-
-    // protected function executeServerCallable($callable, ...$params)
-    // {
-    //     return ImplicitlyBoundMethod::call(app(), $callable, $params);
-    // }
 
     protected function viewFile()
     {
