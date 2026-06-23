@@ -325,7 +325,7 @@ class LwDataTable extends LivewireComponent
         return $this->hasMoreThanOneRow($rows);
     }
 
-    protected function hasRows($rows): bool
+    public function hasRows($rows): bool
     {
         return ($rows instanceof LazyCollection ? $rows->take(1)->count() === 1 : $rows->count() > 0);
     }
@@ -388,7 +388,7 @@ class LwDataTable extends LivewireComponent
             ?? \config('erickcomp-livewire-data-table.query-string-page-name', 'page');
     }
 
-    protected function filtersUrlParam(): string
+    public function filtersUrlParam(): string
     {
         return $this->dataTable->filtersName
             ?? $this->preset()->get('query-string-filters')
@@ -481,7 +481,7 @@ class LwDataTable extends LivewireComponent
         }
     }
 
-    protected function getFilterValue(Filter $filterDefinition): mixed
+    public function getFilterValue(Filter $filterDefinition): mixed
     {
         if (isset($this->filters[$filterDefinition->dataField][$filterDefinition->name])) {
             return $this->filters[$filterDefinition->dataField][$filterDefinition->name];
