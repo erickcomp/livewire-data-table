@@ -6,7 +6,6 @@ use ErickComp\LivewireDataTable\ServiceProvider as LivewireDataTableServiceProvi
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
-
 class TestCase extends Orchestra
 {
     protected function getPackageProviders($app)
@@ -15,5 +14,10 @@ class TestCase extends Orchestra
             LivewireServiceProvider::class,
             LivewireDataTableServiceProvider::class,
         ];
+    }
+
+    protected function defineDatabaseMigrations()
+    {
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
     }
 }
