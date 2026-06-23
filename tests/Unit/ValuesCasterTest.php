@@ -1,0 +1,78 @@
+<?php
+
+use ErickComp\LivewireDataTable\Data\ValuesCaster;
+use ErickComp\LivewireDataTable\DataTable\Filter;
+
+it('casts text filter values to string', function () {
+    $filter = ['type' => Filter::TYPE_TEXT, 'value' => 123];
+
+    $result = ValuesCaster::castValueFromFilter($filter);
+
+    expect($result)->toBe('123')
+        ->and($result)->toBeString();
+});
+
+it('casts number filter values to int', function () {
+    $filter = ['type' => Filter::TYPE_NUMBER, 'value' => '42'];
+
+    $result = ValuesCaster::castValueFromFilter($filter);
+
+    expect($result)->toBe(42)
+        ->and($result)->toBeInt();
+});
+
+it('casts float number filter values to float', function () {
+    $filter = ['type' => Filter::TYPE_NUMBER, 'value' => '3.14'];
+
+    $result = ValuesCaster::castValueFromFilter($filter);
+
+    expect($result)->toBe(3.14)
+        ->and($result)->toBeFloat();
+});
+
+it('returns raw value for select filter type', function () {
+    $filter = ['type' => Filter::TYPE_SELECT, 'value' => 'active'];
+
+    $result = ValuesCaster::castValueFromFilter($filter);
+
+    expect($result)->toBe('active');
+});
+
+it('returns raw value for select-multiple filter type', function () {
+    $filter = ['type' => Filter::TYPE_SELECT_MULTIPLE, 'value' => ['a', 'b']];
+
+    $result = ValuesCaster::castValueFromFilter($filter);
+
+    expect($result)->toBe(['a', 'b']);
+});
+
+it('extracts range values correctly', function () {
+    $filter = ['type' => Filter::TYPE_NUMBER, 'value' => ['from' => '10', 'to' => '20']];
+
+    $from = ValuesCaster::castValueFromFilter($filter, 'from');
+    $to = ValuesCaster::castValueFromFilter($filter, 'to');
+
+    expect($from)->toBe(10)
+        ->and($to)->toBe(20);
+});
+
+it('does not return null for non-cast filter values', function () {
+    $filter = ['type' => Filter::TYPE_TEXT, 'value' => 'hello'];
+
+    $result = ValuesCaster::castValueFromFilter($filter);
+
+    expect($result)->not->toBeNull()
+        ->and($result)->toBe('hello');
+});
+
+it('throws on invalid range parameter', function () {
+    $filter = ['type' => Filter::TYPE_TEXT, 'value' => 'test'];
+
+    ValuesCaster::castValueFromFilter($filter, 'invalid');
+})->throws(LogicException::class);
+
+it('throws on unknown filter type', function () {
+    $filter = ['type' => 'unknown_type', 'value' => 'test'];
+
+    ValuesCaster::castValueFromFilter($filter);
+})->throws(UnexpectedValueException::class);
