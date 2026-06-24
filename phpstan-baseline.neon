@@ -1,0 +1,557 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method ErickComp\\LivewireDataTable\\Data\\BuildsDataTableQuery\:\:buildLwDataTableQuery\(\) has invalid return type Illuminate\\Database\\Builder\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Data/BuildsDataTableQuery.php
+
+		-
+			message: '#^Call to function is_callable\(\) with non\-empty\-list\<mixed\>&callable\(\)\: mixed will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Data/CallableDataSource.php
+
+		-
+			message: '#^PHPDoc tag @var for property ErickComp\\LivewireDataTable\\Data\\CallableDataSource\:\:\$dataSource with type \(callable\)\|string is not subtype of native type array\|object\|string\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: src/Data/CallableDataSource.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 1
+			path: src/Data/CallableDataSource.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: src/Data/DataSourceFactory.php
+
+		-
+			message: '#^Access to an undefined property ErickComp\\LivewireDataTable\\Data\\EloquentBuilderDataSource\:\:\$resolvedModelInstance\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Data/EloquentBuilderDataSource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableColumnsSearch\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Data/EloquentBuilderDataSource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableSearchToQuery\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Data/EloquentBuilderDataSource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableSorting\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Data/EloquentBuilderDataSource.php
+
+		-
+			message: '#^Parameter \#2 \$direction of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:orderBy\(\) expects ''asc''\|''desc''\|SortDirection, non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/EloquentBuilderDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:cursorPaginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/EloquentBuilderDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:paginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/EloquentBuilderDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:simplePaginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/EloquentBuilderDataSource.php
+
+		-
+			message: '#^Access to an undefined property ErickComp\\LivewireDataTable\\Data\\EloquentDataSource\:\:\$resolvedModelInstance\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableColumnsSearch\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableSearchToQuery\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableSorting\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:dataTableData\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:dataTableQuery\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Call to function is_a\(\) with arguments class\-string\<Illuminate\\Database\\Eloquent\\Model\>, ''Illuminate\\\\Database\\\\Eloquent\\\\Model'' and true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^PHPDoc tag @return with type void is incompatible with native type Illuminate\\Pagination\\CursorPaginator\|Illuminate\\Pagination\\LengthAwarePaginator\|Illuminate\\Pagination\\Paginator\|Illuminate\\Support\\Collection\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Parameter \#2 \$direction of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:orderBy\(\) expects ''asc''\|''desc''\|SortDirection, non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:cursorPaginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:paginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:simplePaginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/EloquentDataSource.php
+
+		-
+			message: '#^Parameter \#2 \$options of method Illuminate\\Support\\Collection\<\(int\|string\),mixed\>\:\:sortBy\(\) expects 0\|1\|2\|3\|5\|6\|7\|8\|9\|10\|11\|13\|14\|15, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/IterableDataSource.php
+
+		-
+			message: '#^Variable \$clauses might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: src/Data/IterableDataSource.php
+
+		-
+			message: '#^Method ErickComp\\LivewireDataTable\\Data\\ProvidesDataTableData\:\:dataTableData\(\) has invalid return type ErickComp\\LivewireDataTable\\Data\\Paginator\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Data/ProvidesDataTableData.php
+
+		-
+			message: '#^Parameter \#2 \$direction of method Illuminate\\Database\\Query\\Builder\:\:orderBy\(\) expects ''asc''\|''desc''\|SortDirection, non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/QueryBuilderDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Query\\Builder\:\:cursorPaginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/QueryBuilderDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Query\\Builder\:\:paginate\(\) expects Closure\|int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/QueryBuilderDataSource.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Query\\Builder\:\:simplePaginate\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Data/QueryBuilderDataSource.php
+
+		-
+			message: '#^Access to an undefined property ErickComp\\LivewireDataTable\\DataTable\:\:\$cacheBaseFilename\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Access to an undefined property ErickComp\\LivewireDataTable\\DataTable\:\:\$dataField\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Access to an undefined property ErickComp\\LivewireDataTable\\DataTable\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Call to method modelPerPage\(\) on an unknown class ErickComp\\LivewireDataTable\\EloquentBuilderDataSource\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Class ErickComp\\LivewireDataTable\\EloquentBuilderDataSource not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Instanceof between ErickComp\\LivewireDataTable\\DataTable\\Footer and ErickComp\\LivewireDataTable\\DataTable\\Footer will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Property ErickComp\\LivewireDataTable\\DataTable\:\:\$preset on left side of \?\? is not nullable nor uninitialized\.$#'
+			identifier: nullCoalesce.initializedProperty
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between ErickComp\\LivewireDataTable\\DataTable\\Search and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Undefined variable\: \$rowLevelAttributesCode$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Undefined variable\: \$rowLevelAttributesCodePath$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Undefined variable\: \$rowLevelClassCode$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Undefined variable\: \$rowLevelClassCodePath$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Undefined variable\: \$rowLevelStyleCode$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Undefined variable\: \$rowLevelStyleCodePath$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/DataTable.php
+
+		-
+			message: '#^Method ErickComp\\LivewireDataTable\\DataTable\\BaseDataTableComponent\:\:makeViewObject\(\) should return Illuminate\\View\\View but returns Illuminate\\Contracts\\View\\View\.$#'
+			identifier: return.type
+			count: 1
+			path: src/DataTable/BaseDataTableComponent.php
+
+		-
+			message: '#^Class GT\\Dom\\HTMLDocument referenced with incorrect case\: Gt\\Dom\\HTMLDocument\.$#'
+			identifier: class.nameCase
+			count: 1
+			path: src/DataTable/Filter.php
+
+		-
+			message: '#^Constant LIBXML_ERR_NONE is not allowed for parameter \#2 \$options of method DOMDocument\:\:loadHTML\(\)\.$#'
+			identifier: argument.invalidConstant
+			count: 1
+			path: src/DataTable/Filter.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: src/DataTable/Filter.php
+
+		-
+			message: '#^Property ErickComp\\LivewireDataTable\\DataTable\\Search\:\:\$dataFields \(array\<string\>\|true\) in isset\(\) is not nullable\.$#'
+			identifier: isset.property
+			count: 1
+			path: src/DataTable/Search.php
+
+		-
+			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:68\:\:\$resolvedModelInstance\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:98\:\:\$originalType\.$#'
+			identifier: property.notFound
+			count: 3
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableColumnsSearch\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableSearchToQuery\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableSorting\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Instanceof between Illuminate\\Support\\Collection and Illuminate\\Database\\Query\\Builder will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Method ErickComp\\LivewireDataTable\\Livewire\\LwDataRetrievalParams\:\:cursorPaginate\(\) should return Illuminate\\Pagination\\CursorPaginator but returns Illuminate\\Contracts\\Pagination\\CursorPaginator\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Method ErickComp\\LivewireDataTable\\Livewire\\LwDataRetrievalParams\:\:simplePaginate\(\) should return Illuminate\\Pagination\\Paginator but returns Illuminate\\Contracts\\Pagination\\Paginator\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$searchDataFields$#'
+			identifier: parameter.notFound
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Parameter \#2 \$direction of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:orderBy\(\) expects ''asc''\|''desc''\|SortDirection, non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Parameter \#2 \$direction of method Illuminate\\Database\\Query\\Builder\:\:orderBy\(\) expects ''asc''\|''desc''\|SortDirection, non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Parameter \#2 \$options of method Illuminate\\Support\\Collection\<\(int\|string\),mixed\>\:\:sortBy\(\) expects 0\|1\|2\|3\|5\|6\|7\|8\|9\|10\|11\|13\|14\|15, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:paginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:simplePaginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Query\\Builder\:\:cursorPaginate\(\) expects int\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Variable \$clauses might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: src/Livewire/LwDataRetrievalParams.php
+
+		-
+			message: '#^Call to function class_exists\(\) with ErickComp\\LivewireDataTable\\Data\\DataSource will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Call to static method parse\(\) on an unknown class ErickComp\\LivewireDataTable\\Livewire\\Date\.$#'
+			identifier: class.notFound
+			count: 2
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Class ErickComp\\LivewireDataTable\\DataTable\\Data\\BuildsDataTableQuery not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Class ErickComp\\LivewireDataTable\\DataTable\\Data\\ProvidesDataTableData not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: true$#'
+			identifier: match.unhandled
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Method ErickComp\\LivewireDataTable\\Livewire\\LwDataTable\:\:withHtmlAttributes\(\) should return static\(ErickComp\\LivewireDataTable\\Livewire\\LwDataTable\) but returns Livewire\\Component\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Parameter \#1 \$callback of static method Illuminate\\Support\\Str\:\:parseCallback\(\) expects string, ErickComp\\LivewireDataTable\\Data\\DataSource given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Parameter \#1 \$class of function class_exists expects string, ErickComp\\LivewireDataTable\\Data\\DataSource given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Property ErickComp\\LivewireDataTable\\Livewire\\LwDataTable\:\:\$dataTable in isset\(\) is not nullable nor uninitialized\.$#'
+			identifier: isset.initializedProperty
+			count: 5
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Property ErickComp\\LivewireDataTable\\Livewire\\LwDataTable\:\:\$sd \(ErickComp\\LivewireDataTable\\Data\\StaticDataDataSource\|null\) does not accept ErickComp\\LivewireDataTable\\Data\\DataSource\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and array\{\} will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>filtersItems" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '''
+				#^PHPDoc tag @param has invalid value \(array \{
+				    extends\: \?string,
+				    main\-container\-class\: array\<int, string\>\|array\<string, bool\>,
+				    actions\-container\-class\: array\<int, string\>\|array\<string, bool\>,
+				    actions\-row\-class\: array\<int, string\>\|array\<string, bool\>,
+				    search\: array\{
+				        container\-class\: array\<int, string\>\|array\<string, bool\>,
+				        input\-class\: array\<int, string\>\|array\<string, bool\>,
+				        button\-class\: array\<int, string\>\|array\<string, bool\>,
+				        button\-use\-default\-icon\: bool
+				    \},
+				    filters\: array\{
+				        collapsible\: bool,
+				        toggle\-button\-use\-default\-icon\: bool,
+				        toggle\-button\-class\: array\<int, string\>\|array\<string, bool\>,
+				        apply\-button\-use\-default\-icon\: bool,
+				        apply\-button\-container\-class\: array\<int, string\>\|array\<string, bool\>,
+				        apply\-button\-class\: array\<int, string\>\|array\<string, bool\>,
+				        item\-class\: array\<int, string\>\|array\<string, bool\>,
+				        content\-class\: array\<int, string\>\|array\<string, bool\>,
+				        range\-class\: array\<int, string\>\|array\<string, bool\>,
+				        select\-class\: array\<int, string\>\|array\<string, bool\>,
+				        input\-text\-class\: array\<int, string\>\|array\<string, bool\>,
+				        input\-date\-class\: array\<int, string\>\|array\<string, bool\>,
+				        input\-datetime\-local\-class\: array\<int, string\>\|array\<string, bool\>,
+				        input\-number\-class\: array\<int, string\>\|array\<string, bool\>
+				    \},
+				    applied\-filters\: array\{
+				        container\-class\: array\<int, string\>\|array\<string, bool\>,
+				        label\-class\: array\<int, string\>\|array\<string, bool\>,
+				        applied\-filter\-item\-class\: array\<int, string\>\|array\<string, bool\>,
+				        button\-remove\-applied\-filter\-item\-class\: array\<int, string\>\|array\<string, bool\>
+				    \},
+				    columns\-search\: array\{
+				        debounce\-ms\: int,
+				        columns\: mixed // TODO\: Add columns configuration
+				    \},
+				    sorting\: array\{
+				        default\-sorting\-indicators\: bool,
+				        indicator\-class\: array\<int, string\>\|array\<string, bool\>,
+				        indicator\-asc\-class\: array\<int, string\>\|array\<string, bool\>,
+				        indicator\-desc\-class\: array\<int, string\>\|array\<string, bool\>
+				    \},
+				    table\: array\<string, mixed\>, // TODO\: Add table configuration
+				    pagination\: array\{
+				        view\: string,
+				        simple\-view\: string,
+				        default\-style\-for\-pagination\: bool
+				    \}
+				\}
+				\$presetInfo\)\: Unexpected token "\{", expected variable at offset 24 on line 2$#
+			'''
+			identifier: phpDoc.parseError
+			count: 1
+			path: src/Livewire/Preset.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: src/Livewire/Preset.php
+
+		-
+			message: '#^Anonymous function has an unused use \$codePropSetter\.$#'
+			identifier: closure.unusedUse
+			count: 1
+			path: src/ServiceProvider.php
