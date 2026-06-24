@@ -217,6 +217,12 @@ parameters:
 			path: src/DataTable.php
 
 		-
+			message: '#^Cannot unset property ErickComp\\LivewireDataTable\\DataTable\:\:\$dataSrc because it might have hooks in a subclass\.$#'
+			identifier: unset.possiblyHookedProperty
+			count: 1
+			path: src/DataTable.php
+
+		-
 			message: '#^Class ErickComp\\LivewireDataTable\\EloquentBuilderDataSource not found\.$#'
 			identifier: class.notFound
 			count: 1
@@ -412,6 +418,12 @@ parameters:
 			message: '#^Call to static method parse\(\) on an unknown class ErickComp\\LivewireDataTable\\Livewire\\Date\.$#'
 			identifier: class.notFound
 			count: 2
+			path: src/Livewire/LwDataTable.php
+
+		-
+			message: '#^Cannot unset property ErickComp\\LivewireDataTable\\Livewire\\LwDataTable\:\:\$sd because it might have hooks in a subclass\.$#'
+			identifier: unset.possiblyHookedProperty
+			count: 1
 			path: src/Livewire/LwDataTable.php
 
 		-
