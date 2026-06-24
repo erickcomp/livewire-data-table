@@ -57,10 +57,16 @@ The package uses Laravel's auto-discovery, so the service provider is registered
 Publish the configuration file:
 
 ```bash
-php artisan vendor:publish --provider="ErickComp\LivewireDataTable\ServiceProvider"
+php artisan vendor:publish --tag=erickcomp-livewire-data-table-config
 ```
 
-> TODO: Review this section manually — the ServiceProvider does not currently define publishable groups. Add `$this->publishes(...)` calls to enable `vendor:publish`.
+Publish the translation files:
+
+```bash
+php artisan vendor:publish --tag=erickcomp-livewire-data-table-lang
+```
+
+> **Note:** This package stores compiled component definitions in `storage/framework/views/`, alongside Laravel's compiled Blade templates. They are automatically cleared by `php artisan view:clear`, which is typically part of deployment scripts.
 
 The configuration file (`config/erickcomp-livewire-data-table.php`) contains:
 
