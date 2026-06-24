@@ -2,8 +2,6 @@
 
 namespace ErickComp\LivewireDataTable\Data;
 
-use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
@@ -31,6 +29,7 @@ class ValuesCaster
             Filter::TYPE_TEXT => (string) $rawValue,
             Filter::TYPE_NUMBER, Filter::TYPE_NUMBER_RANGE => static::tryToParseAsNumber($rawValue),
             Filter::TYPE_DATE, Filter::TYPE_DATE_PICKER, Filter::TYPE_DATETIME, Filter::TYPE_DATETIME_PICKER => static::tryToParseAsDatetime($rawValue),
+            Filter::TYPE_SELECT, Filter::TYPE_SELECT_MULTIPLE => $rawValue,
             default => throw new \UnexpectedValueException('Invalid filter type: [' . $filterType . ']'),
         };
     }
@@ -38,18 +37,9 @@ class ValuesCaster
 
     public static function castValueFromFilter(array $filter, ?string $range = null)
     {
-        // // if ($range !== null && !\in_array(\strtolower($range), ['from', 'to'])) {
-        // //     throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
-        // // }
+        $value = static::getRawValueFromFilter($filter, $range);
 
-        // $value = $range !== null ? $filter['value'][$range] : $filter['value'];
-
-        // $castedValue = match($filter['type']) {
-        //     Filter::TYPE_NUMBER => static::cast
-        // }
-
-        // return static::tryToCastFromDateFilterTypes($filter, $value);
-
+        return static::castValueToFilterType($value, $filter['type']);
     }
 
     protected static function getRawValueFromFilter(array $filter, ?string $range = null)
@@ -61,35 +51,6 @@ class ValuesCaster
         return $range !== null
             ? $filter['value'][$range]
             : $filter['value'];
-    }
-
-    protected static function castByFilterType($filter, $value)
-    {
-        // match($filter['type']) {
-        //     Filter::TYPE
-        // }
-    }
-
-    protected static function tryToCastFromDateFilterTypes(array $filter, mixed $value)
-    {
-        $datetimeTypes = [
-            Filter::TYPE_DATE,
-            Filter::TYPE_DATE_PICKER,
-            Filter::TYPE_DATETIME,
-            Filter::TYPE_DATETIME_PICKER,
-        ];
-
-        if (\in_array($filter['type'], $datetimeTypes)) {
-
-            try {
-                $parsed = Date::parse($value);
-            } catch (\Throwable $t) {
-                Log::warning("erickcomp/livewire-data-table: Could not convert value [$value] to a Date/Datetime instance");
-                $parsed = $value;
-            }
-        }
-
-        return $parsed;
     }
 
     protected static function tryToParseAsDatetime($rawValue)
@@ -114,11 +75,11 @@ class ValuesCaster
 
         $parsed = \filter_var($rawValue, \FILTER_VALIDATE_FLOAT, \FILTER_NULL_ON_FAILURE);
 
-        if (\is_int($parsed)) {
+        if (\is_float($parsed)) {
             return $parsed;
         }
 
-        Log::warning("erickcomp/livewire-data-table: Could parse value [$rawValue] as a number (int or float)");
+        Log::warning("erickcomp/livewire-data-table: Could not parse value [$rawValue] as a number (int or float)");
 
         return $rawValue;
     }

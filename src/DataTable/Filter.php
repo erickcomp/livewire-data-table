@@ -47,7 +47,6 @@ class Filter
     public const MODE_STARTS_WITH = self::TEXT_MODE_STARTS_WITH; // like <value>%
     public const MODE_ENDS_WITH = self::TEXT_MODE_ENDS_WITH; // like %<value>
     public const MODE_FULLTEXT = self::TEXT_MODE_FULLTEXT; // like %<value>
-
     public const MODE_RANGE = 'range'; // between
     //public const MODE_EQUALS = 'equals'; // =
     public const MODE_IN = 'IN'; // IN
@@ -109,6 +108,13 @@ class Filter
         $this->fillComponentAttributeBags($attributes);
 
         $this->customRendererCode = $customRendererCode;
+    }
+
+    public function getSelectOptions(): array
+    {
+        $options = $this->attributes->get('options', []);
+
+        return \is_array($options) ? $options : [];
     }
 
     public function htmlInputType(): ?string
@@ -226,7 +232,7 @@ class Filter
             throw new \LogicException("Invalid range: $range. The valid values for the \$range parameter are: \"from\", \"to\"");
         }
 
-        $attrs = $this->attributes->except(\array_merge(['label', 'data-field', 'input-type', 'mode'], Arr::wrap($except)));
+        $attrs = $this->attributes->except(\array_merge(['label', 'data-field', 'input-type', 'mode', 'options'], Arr::wrap($except)));
 
         if ($range === 'from') {
             $attrs = $attrs->merge($this->rangeFromAttributes->all());

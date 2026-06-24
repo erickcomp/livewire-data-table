@@ -2,25 +2,21 @@
 
 namespace ErickComp\LivewireDataTable\Livewire;
 
-use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\ServerExecutor;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
-use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
+use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
+use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
@@ -28,7 +24,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use Livewire\WithPagination;
-use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
 
 class LwDataTable extends LivewireComponent
 {
@@ -78,6 +73,11 @@ class LwDataTable extends LivewireComponent
     protected array $appliedFilters = [];
     protected Preset $loadedPreset;
 
+    public function __construct()
+    {
+        $this->dataTable ??= new DataTable();
+    }
+
     public function render()
     {
         $this->setupMaxMemory();
@@ -109,13 +109,11 @@ class LwDataTable extends LivewireComponent
     {
         if (!isset($this->loadedPreset)) {
 
-            $preset = $this->dataTable?->preset();
-
-            if ($preset === null) {
+            if (!isset($this->dataTable)) {
                 return Preset::loadFromName('empty');
             }
 
-            $this->loadedPreset = $preset;
+            $this->loadedPreset = $this->dataTable->preset();
         }
 
         return $this->loadedPreset;
@@ -213,6 +211,15 @@ class LwDataTable extends LivewireComponent
         }
     }
 
+    public function withHtmlAttributes(array $attributes): static
+    {
+        if (\array_key_exists('data-table', $attributes)) {
+            unset($attributes['data-table']);
+        }
+
+        return parent::withHtmlAttributes($attributes);
+    }
+
     public function setSortBy(string $dataField, ?string $sortDir = null)
     {
         $this->resetPage($this->pageNameUrlParam());
@@ -234,10 +241,6 @@ class LwDataTable extends LivewireComponent
         return $this->appliedFilters;
     }
 
-    public function runAction(string $action, ...$params)
-    {
-        $this->dataTable->runAction($action, ...$params);
-    }
     public function applyFilters(array $inputFilters)
     {
         $removeEmptyValues = function (array $data) use (&$removeEmptyValues) {
@@ -318,7 +321,7 @@ class LwDataTable extends LivewireComponent
         return $this->hasMoreThanOneRow($rows);
     }
 
-    protected function hasRows($rows): bool
+    public function hasRows($rows): bool
     {
         return ($rows instanceof LazyCollection ? $rows->take(1)->count() === 1 : $rows->count() > 0);
     }
@@ -343,7 +346,7 @@ class LwDataTable extends LivewireComponent
 
     protected function hydrateDataTable()
     {
-        $dataTable = DataTable::fromCache($this->dt, $this->sd ?? null);
+        $dataTable = DataTable::fromCache($this->dt ?? '', $this->sd ?? null);
 
         // Cache might have been busted for some reason (like a deployment or manually clearing the view cache)
         if (!$dataTable instanceof DataTable) {
@@ -381,7 +384,7 @@ class LwDataTable extends LivewireComponent
             ?? \config('erickcomp-livewire-data-table.query-string-page-name', 'page');
     }
 
-    protected function filtersUrlParam(): string
+    public function filtersUrlParam(): string
     {
         return $this->dataTable->filtersName
             ?? $this->preset()->get('query-string-filters')
@@ -404,6 +407,10 @@ class LwDataTable extends LivewireComponent
 
     protected function setupMaxMemory()
     {
+        if (!isset($this->dataTable)) {
+            return;
+        }
+
         if (\is_string($this->dataTable->phpMaxMemory)) {
             \ini_set('memory_limit', $this->dataTable->phpMaxMemory);
         }
@@ -429,22 +436,22 @@ class LwDataTable extends LivewireComponent
                     fn(Filter $filterDefinition) => $filterDefinition->dataField === $dataField && $filterDefinition->name === $filterName
                 );
 
-                $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
-
-                // Custom formatting/parsing for date/time filter
-                if (\in_array($filterDefinition->inputType, $datetimeTypes)) {
-                    if ($isRangeMode) {
-                        foreach (['from', 'to'] as $key) {
-                            if (isset($filterVal[$key])) {
-                                $filterVal[$key] = Date::parse($filterVal[$key]);
-                            }
-                        }
-                    } else {
-                        $filterVal = Date::parse($filterVal);
-                    }
-                }
-
                 if ($filterDefinition) {
+                    $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
+
+                    // Custom formatting/parsing for date/time filter
+                    if (\in_array($filterDefinition->inputType, $datetimeTypes)) {
+                        if ($isRangeMode) {
+                            foreach (['from', 'to'] as $key) {
+                                if (isset($filterVal[$key])) {
+                                    $filterVal[$key] = Date::parse($filterVal[$key]);
+                                }
+                            }
+                        } else {
+                            $filterVal = Date::parse($filterVal);
+                        }
+                    }
+
                     $this->processedFilters[] = [
                         'column' => $dataField,
                         'mode' => $filterDefinition->mode,
@@ -470,7 +477,7 @@ class LwDataTable extends LivewireComponent
         }
     }
 
-    protected function getFilterValue(Filter $filterDefinition): mixed
+    public function getFilterValue(Filter $filterDefinition): mixed
     {
         if (isset($this->filters[$filterDefinition->dataField][$filterDefinition->name])) {
             return $this->filters[$filterDefinition->dataField][$filterDefinition->name];
@@ -481,9 +488,12 @@ class LwDataTable extends LivewireComponent
 
     protected function getTableData()
     {
-        if (!$this->dataTable->dataSrc) {
+        if (!isset($this->dataTable) || !$this->dataTable->dataSrc) {
             return [];
         }
+
+        $sortBy = $this->sanitizeSortBy($this->sortBy);
+        $columnsSearch = $this->sanitizeColumnsSearch($this->columnsSearch);
 
         $params = new LwDataRetrievalParams(
             page: Paginator::resolveCurrentPage($this->pageNameUrlParam()),
@@ -491,15 +501,43 @@ class LwDataTable extends LivewireComponent
             pageName: $this->pageNameUrlParam(),
             search: $this->search,
             //searchDataFields: $this->dataTable?->search->dataFields ?? [],
-            columnsSearch: $this->columnsSearch,
+            columnsSearch: $columnsSearch,
             filters: $this->processedFilters,
-            sortBy: $this->sortBy,
+            sortBy: $sortBy,
             sortDir: $this->sortDir,
             collectionsSortingFlags: $this->dataTable->collectionSortingFlags,
             dataTable: $this->dataTable,
         );
 
         return $this->dataTable->dataSrc->getData($params);
+    }
+
+    protected function sanitizeSortBy(string $sortBy): string
+    {
+        if ($sortBy === '') {
+            return '';
+        }
+
+        $sortableFields = $this->dataTable->columns
+            ->filter(fn($col) => $col->isSortable() && $col->dataField !== null)
+            ->pluck('dataField')
+            ->all();
+
+        return \in_array($sortBy, $sortableFields, true) ? $sortBy : '';
+    }
+
+    protected function sanitizeColumnsSearch(array $columnsSearch): array
+    {
+        if (empty($columnsSearch)) {
+            return [];
+        }
+
+        $searchableFields = $this->dataTable->columns
+            ->filter(fn($col) => $col->isSearchable() && $col->dataField !== null)
+            ->pluck('dataField')
+            ->all();
+
+        return \array_intersect_key($columnsSearch, \array_flip($searchableFields));
     }
 
     protected function dataProviderProvidesDataTableData(): bool

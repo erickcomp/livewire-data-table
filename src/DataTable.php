@@ -17,8 +17,6 @@ use ErickComp\LivewireDataTable\DataTable\Footer;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\LivewireDataTable\Livewire\Preset;
-use ErickComp\LivewireDataTable\Src\Drawer\DataTableActionResponse;
-use ErickComp\LivewireDataTable\Src\Drawer\ErrorMessageForUserException;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -44,6 +42,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public DataSource $dataSrc;
 
     public DataSourcePaginationType $dataSrcPaginationType = DataSource::PAGINATION_DEFAULT;
+
+    public const VIEWS_NAMESPACE = 'erickcomp_lw_data_table';
     public const PER_PAGE_MAX = 'max';
     public const PER_PAGE_ALL = 'all';
     public const PER_PAGE_ALL_OPTION_VALUE = '___all___';
@@ -274,6 +274,18 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         //$this->initComponentAttributeBags();
         $this->attributes = new ComponentAttributeBag();
+        $this->containerAttributes = new ComponentAttributeBag();
+        $this->tableWrapperAttributes = new ComponentAttributeBag();
+        $this->tableAttributes = new ComponentAttributeBag();
+
+        //$this->tableAttributes = new ComponentAttributeBag($this->defaultTableAttributes);
+        $this->theadAttributes = new ComponentAttributeBag();
+        $this->theadTrAttributes = new ComponentAttributeBag();
+        $this->theadSearchTrAttributes = new ComponentAttributeBag();
+        $this->theadSearchThAttributes = new ComponentAttributeBag();
+        $this->thAttributes = new ComponentAttributeBag();
+        $this->tbodyAttributes = new ComponentAttributeBag();
+        $this->tbodyTrAttributes = new ComponentAttributeBag();
     }
 
     public function hasStaticDataSource(): bool
@@ -369,7 +381,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     {
         return $this->isSearchable()
             || $this->isFilterable()
-            || $this->hasBulkActions()
             || $this->hasPerPageOptions();
     }
 
@@ -386,12 +397,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public function isFilterable(): bool
     {
         return $this->initalizedFilters() && count($this->filters->filtersItems) > 0;
-    }
-
-    public function hasBulkActions()
-    {
-        // @TODO: implement bulk actions
-        return false;
     }
 
     public function hasSearchableColumns(): bool
@@ -500,8 +505,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         $this->footer = new Footer($filterContainerAttributes, $rendererCode);
     }
 
-    public function addAction() {}
-
     public function initFilters(ComponentAttributeBag $filterContainerAttributes)
     {
         $this->filters = new Filters(componentAttributes: $filterContainerAttributes, preset: $this->preset());
@@ -604,7 +607,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             null => $this->preset()->get('pagination.view', static::$defaultPaginationView),
             'bootstrap' => 'livewire::bootstrap',
             'tailwind' => 'livewire::tailwind',
-            default => null
+            default => $this->paginationView
         };
     }
 
@@ -614,7 +617,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             null => $this->preset()->get('pagination.simple-view', static::$defaultPaginationSimpleView),
             'bootstrap' => 'livewire::simple-bootstrap',
             'tailwind' => 'livewire::simple-tailwind',
-            default => null
+            default => $this->paginationView
         };
     }
 
@@ -713,10 +716,10 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             ];
 
             foreach ($varsToExcludeFromSerializationHash as $var) {
-                if (isset($dataTable->$var)) {
-                    $$var = $dataTable->$var;
+                if (isset($this->$var)) {
+                    $$var = $this->$var;
 
-                    unset($dataTable->$var);
+                    unset($this->$var);
                 }
             }
 
@@ -725,7 +728,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
             foreach ($varsToExcludeFromSerializationHash as $var) {
                 if (isset($$var)) {
-                    $dataTable->$var = $$var;
+                    $this->$var = $$var;
                 }
             }
         }
@@ -766,26 +769,6 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             }
         }
     }
-
-    // public function runAction(string $action, ...$params)
-    // {
-    //     // try {
-
-    //     //     $return = $this->actions->run($action, ...$params);
-
-    //     //     if ($return === false) {
-    //     //         return new DataTableActionResponse(isOk: false, message: 'Erro ao executar ');
-    //     //     }
-    //     // } catch (ErrorMessageForUserException $e1) {
-    //     //     return new DataTableActionResponse(isOk: false, message: $e1->getMessage());
-    //     // }
-    //     // //$this->get
-    // }
-
-    // protected function executeServerCallable($callable, ...$params)
-    // {
-    //     return ImplicitlyBoundMethod::call(app(), $callable, $params);
-    // }
 
     protected function viewFile()
     {

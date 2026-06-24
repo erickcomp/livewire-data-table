@@ -14,4 +14,15 @@ return [
     'bulk_actions_label' => 'Actions',
     'per_page_label' => 'Per page',
     'per_page_option_all_label' => 'All',
+    'pagination' => [
+        'showing' => 'Showing',
+        'showing_from' => '',
+        'showing_to' => 'to',
+        'showing_of' => 'of',
+        'showing_results' => 'results',
+        'previous' => 'Previous',
+        'next' => 'Next',
+        'go_to_page' => 'Go to page :page',
+        'aria_pagination_navigation' => 'Pagination Navigation',
+    ],
 ];

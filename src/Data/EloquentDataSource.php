@@ -47,7 +47,7 @@ class EloquentDataSource implements DataSource
 
     public function getQuery(LwDataRetrievalParams $params): EloquentBuilder
     {
-        return $this->applyDataRetrievalParamsOnQuery($this->newQuery(), $params);
+        return $this->applyDataRetrievalParamsOnEloquentBuilder($this->newQuery(), $params);
     }
 
     /**

@@ -3,15 +3,8 @@
 namespace ErickComp\LivewireDataTable;
 
 use \Illuminate\Support\ServiceProvider as LaravelAbstractServiceProvider;
-use ErickComp\LivewireDataTable\DataTable\Action;
-use ErickComp\LivewireDataTable\DataTable\BulkAction;
-use ErickComp\LivewireDataTable\DataTable\BulkActions;
-use ErickComp\LivewireDataTable\DataTable\Column;
-use ErickComp\LivewireDataTable\DataTable\Filter;
-use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\RawBladeComponents\RawComponent;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Livewire;
 use Illuminate\Support\Str;
@@ -27,12 +20,25 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     {
         $this->registerLwDataTableComponentHook();
         $this->loadTranslationsFrom(__DIR__ . '/../lang', 'erickcomp_lw_data_table');
+        $this->registerPublishableAssets();
         $this->registerEarlyBladeDirectives();
         $this->registerRawBladeComponents();
         $this->registerBladeComponents();
         $this->registerLivewireComponents();
+        $this->registerPaginationViews();
+    }
 
-        //Paginator::useBootstrap();
+    protected function registerPublishableAssets()
+    {
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/../config/erickcomp-livewire-data-table.php' => config_path('erickcomp-livewire-data-table.php'),
+            ], 'erickcomp-livewire-data-table-config');
+
+            $this->publishes([
+                __DIR__ . '/../lang' => $this->app->langPath('vendor/erickcomp_lw_data_table'),
+            ], 'erickcomp-livewire-data-table-lang');
+        }
     }
 
     protected function registerLwDataTableComponentHook()
@@ -56,6 +62,11 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     protected function registerLivewireComponents()
     {
         Livewire::component('lw-data-table', LwDataTable::class);
+    }
+
+    protected function registerPaginationViews()
+    {
+        $this->loadViewsFrom(__DIR__ . '/DataTable/Pagination/Views', DataTable::VIEWS_NAMESPACE);
     }
 
     protected function registerEarlyBladeDirectives()

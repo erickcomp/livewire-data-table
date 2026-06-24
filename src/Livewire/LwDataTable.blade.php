@@ -6,6 +6,7 @@ use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\LazyCollection;
@@ -22,15 +23,14 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 };
 
 ?>
-{{-- @debugger --}}
-<div {{ $this->dataTable->containerAttributes->class([...$this->preset()->get('main-container.class'), 'lw-dt']) }}
+<div {{ $this->dataTable->containerAttributes->class([...($this->preset()->get('main-container.class') ?? []), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
     @if($this->dataTable->hasTableActions())
         <div @class($this->preset()->get('actions.container.class'))>
             <div @class($this->preset()->get('actions.row.class'))>
                 @if($this->dataTable->isSearchable())
                     <div {{ $this->dataTable->search->componentAttributes->class($this->preset()->get('search.container.class', [])) }}>
-                        @if ($this->dataTable->search->hasCustomRenderer()))
+                        @if ($this->dataTable->search->hasCustomRenderer())
                             @php
                                 $searchViewData = [
                                     //'__dataTable' => $this->dataTable,
@@ -96,7 +96,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                     {!! $this->preset()->get('filters.title.icon', '') !!}
                                 @endif
                                 {{ $this->dataTable->filters->title() }}
-                                @if($this->preset()->get('filters.title.icon-position') === 'rigth')
+                                @if($this->preset()->get('filters.title.icon-position') === 'right')
                                     {!! $this->preset()->get('filters.title.icon', '') !!}
                                 @endif
                             </span>
@@ -127,7 +127,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                             </span>
                                         </legend>
 
-                                        @if(\in_array($filterItem, [Filter::TYPE_SELECT, Filter::TYPE_SELECT_MULTIPLE], true))
+                                        @if(\in_array($filterItem->inputType, [Filter::TYPE_SELECT, Filter::TYPE_SELECT_MULTIPLE], true))
                                             <select {{ $filterItem->inputAttributes(except: 'name')->class($this->preset()->get('filters.item.content.select.class')) }}
                                                 name="{{ $filterItem->buildInputNameAttribute($this->filtersUrlParam()) }}"
                                                 {{-- wire:model="{{ $filterItem->buildWireModelAttribute('inputFilters') }}" --}}
@@ -142,13 +142,13 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                         @else
                                             @if($filterItem->mode === Filter::MODE_RANGE)
                                                 @php
-                                                    $inputFromClasses = new ComponentAttributeBag(
+                                                    $inputFromClasses = (new ComponentAttributeBag(
                                                     [ 'class' => Arr::toCssClasses($this->preset()->get("filters.item.content.input-{$filterItem->htmlInputType()}.class", []))]
-                                                    )->class($this->preset()->get("filters.item.content.range.input.from.class", []));
+                                                    ))->class($this->preset()->get("filters.item.content.range.input.from.class", []));
 
-                                                    $inputToClasses = new ComponentAttributeBag(
+                                                    $inputToClasses = (new ComponentAttributeBag(
                                                     [ 'class' => Arr::toCssClasses($this->preset()->get("filters.item.content.input-{$filterItem->htmlInputType()}.class", []))]
-                                                    )->class($this->preset()->get("filters.item.content.range.input.to.class", []));
+                                                    ))->class($this->preset()->get("filters.item.content.range.input.to.class", []));
                                                 @endphp
                                                 <span @class($this->preset()->get("filters.item.content.range.label.from.class", ''))>
                                                     {{ __('erickcomp_lw_data_table::messages.range_filter_label_from') }}:
@@ -223,7 +223,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                         @endif
 
                         @php
-                            $removeFilterButtonPosition = $this->preset()->get('applied-filters.applied-filter-item.position', 'right');
+                            $removeFilterButtonPosition = $this->preset()->get('applied-filters.button-remove-applied-filter-item.position', 'right');
                         @endphp
 
                         @if(!empty(\trim($search)))
@@ -280,15 +280,8 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 </div>
             @endif
 
-            @if ($this->dataTable->hasBulkActions() || count($this->dataTable->perPageOptions) > 1)
+            @if (count($this->dataTable->perPageOptions) > 1)
                 <div @class($this->preset()->get('actions.bulk-actions-and-per-page.container.class', []))>
-                    @if ($this->dataTable->hasBulkActions() && false)
-                        <select @class($this->preset()->get('actions.bulk-actions-and-per-page.bulk-actions-select.class', []))>
-                            @foreach(['' => __('erickcomp_lw_data_table::messages.bulk_actions_label') , 1 => 'mock bulk action 1', 2 => 'mock bulk action 2'] as $bulkAction => $bulkActionLabel)
-                                <option value="{{ $bulkAction }}">{{ $bulkActionLabel }}</option>
-                            @endforeach
-                        </select>
-                    @endif
                     @if(count($this->dataTable->perPageOptions) > 1)
                         <div @class($this->preset()->get('actions.bulk-actions-and-per-page.per-page.container.class', []))>
 
@@ -316,24 +309,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             @endif
         </div> <!-- end: lw-dt-table-actions -->
     @endif
-
-    {{--
-    @foreach($this->dataTable->actionsRows as $actionsRow)
-    <div class="lw-dt-table-actions-row">
-        @if($actionsRow->hasCustomRenderer())
-        @php
-        $actionsRowViewData = [
-        '__dataTable' => $this->dataTable,
-        '___lwDataTable' => $this,
-        ];
-        @endphp
-        {!! Blade::render($actionsRow->customRendererCode, $actionsRowViewData) !!}
-        @else
-        {!! $actionsRow->render() !!}
-        @endif
-    </div>
-    @endforeach
-    --}}
 
     @php
         $shouldAllowColumnsSearch = $this->shouldAllowColumnsSearch($rows);
@@ -383,7 +358,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 @php
                     $noData = new \stdClass();
                 @endphp
-                @debugger
                 @forelse ($rows as $row)
                     <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}">
                         @foreach ($this->dataTable->columns as $column)
@@ -423,12 +397,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             @endif
                         @endforeach
                     </tr>
-                    @php
-                        if ($rows instanceof LazyCollection) {
-                            \file_put_contents(\storage_path('logs/data-table-lazy.log'), ($loop->iteration . PHP_EOL), FILE_APPEND);
-                            unset($row);
-                        }
-                    @endphp
                 @empty
                     <tr {{ $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.nodatafound.class')) }}>
                         <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns), 1]) }}">
@@ -462,27 +430,10 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
     @if($this->dataTable->paginationCode !== null)    
         {!! $this->renderCustomPagination($rows) !!}
     @else
-        <div @class($this->preset()->get('pagination.container.class', [])))>
+        <div @class($this->preset()->get('pagination.container.class', []))>
             {{ $this->renderPagination($rows) }}
         </div>
     @endif
-
-    {{-- 
-    @if (\is_object($rows) && \method_exists($rows, 'links'))
-        @if($this->dataTable->paginationCode != null)
-            $paginationVars = [
-            '__dataTable' => $this->dataTable,
-            '__rows' => $rows
-            ];
-            {!! Blade::render($this->dataTable->paginationCode, $paginationVars) !!}
-        @else
-            <div @class(['lw-dt-pagination-container'])>
-                {{ $rows->render() }}
-            </div>
-        @endif
-    @endif
-    --}}
-    
 
     @if(!empty($this->preset()->get('loader-overlay.template', null)))
         {!! Blade::render($this->preset()->get('loader-overlay.template'), ['delay' => $this->dataTable->loadingDelayModifier]) !!}
@@ -629,43 +580,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
         })
     );
 
-    {{--
-    debugger;
-    document.addEventListener('livewire:init', () => {
-        Livewire.hook('request', ({ fail }) => {
-            fail(({ status, preventDefault }) => {
-                debugger;
-                if (status === 419) {
-                    //confirm('Your custom page expiration behavior...')
-                    @if ($reloadAlertConfig === null || ($reloadAlertConfig['alert-before-reload'] ?? true) === true)
-                        @php
-                        $reloadRequiredmessage = 'Hue';
-                        @endphp
-                        {{ $reloadAlertConfig['function-name'] }}('{{ $reloadRequiredmessage }}', function () {window.location.reload();});
-                    @else
-                        //alert('sem alert. =P');
-                        window.location.reload();
-                    @endif
- 
-                    preventDefault();
-                }
-            });
-        });
-    });
-    --}}
 
-    {{-- 
-    $wire.on('{{ $this::EVENT_RELOAD_REQUIRED }}', () => {
-        @if ($reloadAlertConfig === null || ($reloadAlertConfig['alert-before-reload'] ?? true) === true)
-            {{ $reloadAlertConfig['function-name'] }}('{{ $message }}', function () {window.location.reload();});
-        @else
-            alert('sem alert. =P');
-            window.location.reload();
-        @endif
-        
-    });
-    --}}
-    
 </script>
 
 @foreach ($this->preset()->get('scripts', []) as $script)
