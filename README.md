@@ -30,13 +30,11 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 
 | Dependency | Version |
 |---|---|
-| PHP | `^8.2` |
-| Laravel | `^11.0` or `^12.0` |
+| PHP | `^8.3` |
+| Laravel | `^12.60` or `^13.10` |
 | Livewire | `^3.6` or `^4.0` |
 | [erickcomp/laravel-raw-blade-components](https://github.com/erickcomp/laravel-raw-blade-components) | `2.0` (installed automatically) |
 | [phpgt/dom](https://github.com/PhpGt/Dom) | `^4.1` (installed automatically) |
-
-> TODO: Review this section manually — verify the exact supported Laravel framework versions.
 
 ### Optional
 
@@ -629,7 +627,13 @@ To add a new locale, publish the translations and create a file at `lang/vendor/
 The package uses [Pest](https://pestphp.com/) with [Orchestra Testbench](https://github.com/orchestral/testbench):
 
 ```bash
-./vendor/bin/pest
+composer test
+```
+
+Static analysis with [PHPStan](https://phpstan.org/) (level 5):
+
+```bash
+composer analyse
 ```
 
 ## Contributing

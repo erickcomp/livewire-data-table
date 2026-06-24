@@ -1,7 +1,6 @@
 {
-    "version": "dev-master",
     "name": "erickcomp/livewire-data-table",
-    "type": "package",
+    "type": "library",
     "description": "Provides a html/blade centric data table approach leveraging Livewire's reactiveness for a great UX.",
     "keywords": [
         "laravel",
@@ -16,10 +15,9 @@
         "php": "^8.3",
         "laravel/framework": "^12.60|^13.10",
         "livewire/livewire": "^3.6|^4.0",
-        "erickcomp/laravel-raw-blade-components": "2.0",
+        "erickcomp/laravel-raw-blade-components": "^3.0",
         "phpgt/dom": "^4.1"
     },
-    "repositories": [],
     "autoload": {
         "psr-4": {
             "ErickComp\\LivewireDataTable\\": "src/"
@@ -47,6 +45,10 @@
         "pestphp/pest": "^4.7",
         "orchestra/testbench": "^10.0|^11.0",
         "larastan/larastan": "^3.0"
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "analyse": "vendor/bin/phpstan analyse --memory-limit=512M"
     },
     "config": {
         "allow-plugins": {
