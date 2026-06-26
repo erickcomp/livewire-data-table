@@ -32,10 +32,9 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                     <div {{ $this->dataTable->search->componentAttributes->class($this->preset()->get('search.container.class', [])) }}>
                         @if ($this->dataTable->search->hasCustomRenderer())
                             @php
-                                $searchViewData = [
-                                    //'__dataTable' => $this->dataTable,
+                                $searchViewData = array_merge($this->dataTable->allViewData(), [
                                     '___lwDataTable' => $this,
-                                ];
+                                ]);
                             @endphp
                             {!! Blade::render($this->dataTable->search->customRendererCode, $searchViewData) !!}
                             @php unset($searchViewData); @endphp
@@ -109,7 +108,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                     ...($filterItem->mode === Filter::MODE_RANGE ? $this->preset()->get('filters.item.content.range.class', []) : [])
                                     ])>
                                     @if(!empty($filterItem->customRendererCode))
-                                        {!! $filterItem->getCustomRendererCodeWithXModel('inputFilters', ['___lwDataTable' => $this]) !!}
+                                        {!! $filterItem->getCustomRendererCodeWithXModel('inputFilters', array_merge($this->dataTable->allViewData(), ['___lwDataTable' => $this])) !!}
                                     @else
                                         @php
                                             if (\in_array($filterItem->attributes['name'], $renderedFilterItemsNames)) {
@@ -367,7 +366,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             
                             @if($column instanceof CustomRenderedColumn)
                                 @php
-                                    $customRenderedColumn = Blade::render($column->customRendererCode, ['attributes' => $tdAttributes,'loop' => $loop->parent, '__row' => $row]);
+                                    $customRenderedColumn = Blade::render($column->customRendererCode, array_merge($this->dataTable->allViewData(), ['attributes' => $tdAttributes, 'loop' => $loop->parent, '__row' => $row]));
                                     $trimmed = trim($customRenderedColumn);
                                 @endphp
 
@@ -408,7 +407,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 
             @if($this->dataTable->hasFooter())
                 @php
-                    $rendered = Blade::render($this->dataTable->footer->rendererCode, ['___lwDataTable' => $this, 'rows' => $rows]);
+                    $rendered = Blade::render($this->dataTable->footer->rendererCode, array_merge($this->dataTable->allViewData(), ['___lwDataTable' => $this, 'rows' => $rows]));
                     $trimmed = \trim($rendered);
                 @endphp
 

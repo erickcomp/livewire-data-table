@@ -43,6 +43,9 @@ class LwDataTable extends LivewireComponent
     /** @var ?StaticDataDataSource $s Static data passed to component, as arrays or collections*/
     public ?StaticDataDataSource $sd;
 
+    #[Locked]
+    public string $vd = '';
+
     #[Url]
     public string $search = '';
 
@@ -339,6 +342,10 @@ class LwDataTable extends LivewireComponent
             unset($this->sd);
         }
 
+        if (!empty($dataTable->dynamicViewData)) {
+            $this->vd = \encrypt(\serialize($dataTable->dynamicViewData));
+        }
+
         $this->dataTable = $dataTable;
 
         $this->dt = DataTable::toCache($dataTable);
@@ -370,6 +377,10 @@ class LwDataTable extends LivewireComponent
             $this->js($reloadJs);
 
             return;
+        }
+
+        if (!empty($this->vd)) {
+            $dataTable->dynamicViewData = \unserialize(\decrypt($this->vd));
         }
 
         $this->dataTable = $dataTable;

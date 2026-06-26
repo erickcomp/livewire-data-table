@@ -247,6 +247,12 @@ parameters:
 			path: src/DataTable.php
 
 		-
+			message: '#^Undefined variable\: \$dynamicViewData$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/DataTable.php
+
+		-
 			message: '#^Undefined variable\: \$rowLevelAttributesCode$#'
 			identifier: variable.undefined
 			count: 1

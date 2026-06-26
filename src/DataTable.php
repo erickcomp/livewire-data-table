@@ -189,6 +189,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
 
         public array $actions = [],
+        public array $dynamicViewData = [],
+        public array $staticViewData = [],
 
         // Rows
         ?string $rowLevelClassCode = null,
@@ -286,6 +288,11 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         $this->thAttributes = new ComponentAttributeBag();
         $this->tbodyAttributes = new ComponentAttributeBag();
         $this->tbodyTrAttributes = new ComponentAttributeBag();
+    }
+
+    public function allViewData(): array
+    {
+        return array_merge($this->staticViewData, $this->dynamicViewData);
     }
 
     public function hasStaticDataSource(): bool
@@ -649,10 +656,13 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         $isUsingStaticDataSource = $dataTable->hasStaticDataSource();
         $dataSrc = $dataTable->dataSrc;
+        $dynamicViewData = $dataTable->dynamicViewData;
 
         if ($isUsingStaticDataSource) {
             unset($dataTable->dataSrc);
         }
+
+        $dataTable->dynamicViewData = [];
 
         static::createCodeCachesFiles($dataTable);
 
@@ -666,6 +676,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         if ($isUsingStaticDataSource) {
             $dataTable->dataSrc = $dataSrc;
         }
+
+        $dataTable->dynamicViewData = $dynamicViewData;
 
         return $cacheBaseFilename;
     }
@@ -707,6 +719,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     {
         if (!isset($this->cacheBaseFilename)) {
             $varsToExcludeFromSerializationHash = [
+                'dynamicViewData',
                 'rowLevelClassCode',
                 'rowLevelClassCodePath',
                 'rowLevelStyleCode',
