@@ -327,6 +327,128 @@ Inject custom CSS or JavaScript alongside the table:
 </x-data-table>
 ```
 
+### Passing Data to Renderers
+
+Custom column renderers, custom filter renderers, footer templates, and custom search templates run inside isolated `Blade::render()` scopes — they don't inherit variables from the parent view. To pass data into these renderers, use **dynamic view data** and/or **static view data**.
+
+#### Dynamic View Data (`dynamic-view-data`)
+
+Data that **varies per user or per request** — permissions, session state, locale, user preferences.
+
+**How it works:** Serialized and encrypted into a Livewire property on mount. Travels over the wire on every Livewire update (sort, filter, paginate). Decrypted and unserialized on the server for each render cycle.
+
+**When to use:** The data is different for each user viewing the same page. Storing it in the compiled cache would create a separate cache file per user — wasteful. Instead, it rides along with the Livewire snapshot.
+
+**Keep it small.** Every byte in dynamic view data is sent on every interaction.
+
+```blade
+<x-data-table
+    :data-src="App\Models\Order::class"
+    preset="tailwind3v1"
+    :dynamic-view-data="[
+        'permissions' => $userPermissions,
+        'locale' => app()->getLocale(),
+    ]"
+>
+    <x-data-table.column title="Actions" data-field="id">
+        @if($permissions->canEdit)
+            <a href="/orders/{{ $__row->id }}/edit">Edit</a>
+        @endif
+    </x-data-table.column>
+</x-data-table>
+```
+
+#### Static View Data (`static-view-data`)
+
+Data that is **the same for all users** — ViewModels, formatters, configuration objects, app settings.
+
+**How it works:** Serialized with the compiled DataTable into `storage/framework/views/`. Loaded from disk on every Livewire hydration. Never sent over the wire — zero network overhead.
+
+**When to use:** The data doesn't change between users or requests. A ViewModel with convenience methods, a currency formatter, app config values — these are identical for every visitor. Compiling them into the cache file means they're loaded from disk (fast) instead of transmitted over the network (slow for large objects).
+
+**Trade-off:** Different static view data values produce different cache files. This is fine for shared objects (one file serves all users), but would cause cache proliferation if the values varied per user.
+
+```blade
+@php
+    $vm = new App\ViewModels\OrderTableViewModel();
+@endphp
+
+<x-data-table
+    :data-src="App\Models\Order::class"
+    preset="tailwind3v1"
+    :static-view-data="[
+        'vm' => $vm,
+        'currency' => $currency,
+        'appName' => config('app.name'),
+    ]"
+>
+    <x-data-table.column title="Status" data-field="status">
+        <span class="{{ $vm->statusClass($__row->status) }}">
+            {{ $vm->statusLabel($__row->status) }}
+        </span>
+    </x-data-table.column>
+
+    <x-data-table.column title="Total" data-field="total">
+        {{ $currency->format($__row->total) }}
+    </x-data-table.column>
+
+    <x-data-table.footer>
+        <tr>
+            <td colspan="2">{{ $appName }} — all values in {{ $currency->code }}</td>
+        </tr>
+    </x-data-table.footer>
+</x-data-table>
+```
+
+#### Combining Both
+
+Use both attributes together when your table needs shared configuration and per-user context. When keys overlap, dynamic view data takes precedence over static:
+
+```blade
+<x-data-table
+    :data-src="App\Models\Order::class"
+    :static-view-data="['vm' => $vm, 'currency' => $currency]"
+    :dynamic-view-data="['permissions' => $userPermissions]"
+>
+    <x-data-table.column title="Total" data-field="total">
+        {{ $currency->format($__row->total) }}
+    </x-data-table.column>
+
+    <x-data-table.column title="Actions" data-field="id">
+        @if($permissions->canEdit)
+            <a href="{{ $vm->editUrl($__row->id) }}">Edit</a>
+        @endif
+    </x-data-table.column>
+</x-data-table>
+```
+
+#### Choosing Between Them
+
+| Data type | Use | Why |
+|---|---|---|
+| ViewModels with helper methods | `static-view-data` | Same for all users, avoids wire overhead |
+| Currency / number formatters | `static-view-data` | Shared configuration, loaded once from disk |
+| App config (`config('app.name')`) | `static-view-data` | Never changes between requests |
+| User permissions | `dynamic-view-data` | Different per user, avoids per-user cache files |
+| Session or auth state | `dynamic-view-data` | Changes per user |
+| Small strings or booleans | Either | Negligible cost both ways |
+| Large collections or DTOs | `static-view-data` | Avoids bloating every Livewire round-trip |
+
+#### Where View Data Is Available
+
+Both types are merged and available in all `Blade::render()` contexts:
+
+- Custom column content (between `<x-data-table.column>` tags)
+- Custom filter content (between `<x-data-table.filter>` tags)
+- Custom search content (between `<x-data-table.search>` tags)
+- Footer content (between `<x-data-table.footer>` tags)
+
+#### Constraints
+
+- All values must be **serializable** — scalars, arrays, stdClass, objects implementing `Serializable` or `__serialize()/__unserialize()`. Closures and anonymous classes are not supported.
+- For non-serializable dependencies, resolve them from the service container inside the template: `{{ app(MyService::class)->method() }}`.
+- View data variables cannot override internal variables (`$__row`, `$loop`, `$attributes`, `$___lwDataTable`). Internal variables always take precedence.
+
 ### Pagination
 
 The component supports multiple pagination types via the `data-src-pagination` attribute:
@@ -394,6 +516,8 @@ For large datasets, you can increase the memory limit per table:
 | `loading-delay-modifier` | `string` | `null` | Livewire loading delay modifier |
 | `data-identity-column` | `string` | `'id'` | Row identity column |
 | `php-max-memory` | `string` | `null` | PHP memory_limit override |
+| `dynamic-view-data` | `array` | `[]` | Per-user/per-request variables passed to Blade renderers (encrypted, travels over the wire) |
+| `static-view-data` | `array` | `[]` | Shared variables passed to Blade renderers (compiled into cache file, zero wire overhead) |
 | `collection-sorting-flags` | `int\|string` | `SORT_NATURAL \| SORT_FLAG_CASE` | Sorting flags for collection data sources |
 
 HTML attributes prefixed with specific namespaces are forwarded to internal elements:
