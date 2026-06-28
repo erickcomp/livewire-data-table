@@ -301,7 +301,7 @@ class Filter
         if ($attributes->has('input-type') && !\in_array($attributes['input-type'], static::INPUT_TYPES)) {
             $inputTypesAsStr = \implode(', ', static::INPUT_TYPES);
 
-            throw new \InvalidArgumentException("The attribute [input-type] must be one of the following: [$inputTypesAsStr], \"{$this->attributes['input-type']}\" given");
+            throw new \InvalidArgumentException("The attribute [input-type] must be one of the following: [$inputTypesAsStr], \"{$attributes['input-type']}\" given");
         }
 
         // HTML names defaults to data-fields's name
