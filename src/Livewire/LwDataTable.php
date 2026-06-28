@@ -15,11 +15,11 @@ use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
-use Illuminate\Support\Stringable;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
@@ -450,6 +450,9 @@ class LwDataTable extends LivewireComponent
                 if ($filterDefinition) {
                     $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
 
+                    $isSelectFilter = $filterDefinition->inputType === Filter::TYPE_SELECT;
+                    $isMultiSelectFilter = $filterDefinition->inputType === Filter::TYPE_SELECT_MULTIPLE;
+
                     // Custom formatting/parsing for date/time filter
                     if (\in_array($filterDefinition->inputType, $datetimeTypes)) {
                         if ($isRangeMode) {
@@ -474,14 +477,32 @@ class LwDataTable extends LivewireComponent
                         'wire-name' => $filterDefinition->buildWireModelAttribute($this->filtersUrlParam()),
                         'removal-key' => $filterDefinition->buildInputNameAttribute($this->filtersUrlParam()),
                         'name' => $filterDefinition->name,
-                        'label' => str($filterDefinition->label . ': ')
-                            ->when($isRangeMode, function (Stringable $string) use ($filterVal) {
-                                return $string->append(($filterVal['from'] ?? '...') . ' - ' . ($filterVal['to'] ?? '...'));
-                            })
-                            ->unless($isRangeMode, function (Stringable $string) use ($filterVal) {
+                        'label' => value(
+                            function ($string) use ($filterDefinition, $filterVal, $isRangeMode, $isSelectFilter, $isMultiSelectFilter) {
+                                if ($isRangeMode) {
+                                    return $string->append(($filterVal['from'] ?? '...') . ' - ' . ($filterVal['to'] ?? '...'));
+                                }
+
+                                if ($isSelectFilter) {
+                                    return $string->append((string) $filterDefinition->attributes->get('options')[$filterVal]);
+                                }
+
+                                if ($isMultiSelectFilter) {
+                                    $labels = [];
+                                    foreach ($filterVal as $fv) {
+                                        //$labels[] = '"' . $filterDefinition->attributes->get('options')[$fv] . '"';
+                                        $labels[] = '"' . ($filterDefinition->getSelectOptions()[$fv] ?? $fv) . '"';
+
+                                    }
+                                    $strLabels = Arr::join($labels, ', ', __('erickcomp_lw_data_table::messages.multi_select_filter_label_final_glue'));
+
+                                    return $string->append($strLabels);
+
+                                }
                                 return $string->append((string) $filterVal);
-                            })
-                            ->toString(),
+                            },
+                            str($filterDefinition->label . ': '),
+                        )->toString(),
                     ];
                 }
             }
