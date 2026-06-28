@@ -672,7 +672,7 @@ return [
                     'label-class' => ['bg-info', 'text-white', 'font-weight-bold', 'px-2', 'rounded-left', 'd-inline-flex', 'align-items-center', 'justify-content-start'],
                 ],
                 'button-remove-applied-filter-item' => [
-                    'class' => ['btn', 'btn-sm btn-info', 'm-0', 'p-1', 'rounded-left-0', 'applied-filter-remove-button'],
+                    'class' => ['btn', 'btn-sm bg-info', 'm-0', 'p-1', 'rounded-left-0', 'applied-filter-remove-button'],
                     'position' => 'right',
                     'content' => '&times;',
                 ],
@@ -812,6 +812,7 @@ return [
                 <style>
                     :root {
                         --lw-dt-filters-container-bg-color: #fff;
+                        --lw-dt-filters-toggle-button-color: #fff;
                     }
 
                     /*
@@ -830,6 +831,10 @@ return [
                         align-items: center;
                         justify-content: center;
                         z-index: 9999;
+                    }
+
+                    .lw-dt .filters-container-bg-color {
+                        background-color: var(--lw-dt-filters-container-bg-color);
                     }
 
                     .lw-dt .filters-container-bg-color {
