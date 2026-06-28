@@ -236,6 +236,8 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                 <button
                                     x-on:click="clearSearch()"
                                     @class($this->preset()->get('applied-filters.button-remove-applied-filter-item.class', []))
+                                    title="{{ __('erickcomp_lw_data_table::messages.remove_applied_search_aria_label') }}"
+                                    aria-label="{{ __('erickcomp_lw_data_table::messages.remove_applied_search_aria_label') }}"
                                     >
                                     {!! $this->preset()->get('applied-filters.button-remove-applied-filter-item.content', '') !!}
                                 </button>
@@ -250,9 +252,6 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                         
                         @foreach ($this->appliedFiltersData() as $appliedFilterData)
                             <span @class($this->preset()->get('applied-filters.applied-filter-item.class', []))>
-                                {{-- <button wire:click="removeFilter('{{ $appliedFilterData['wire-name'] }}')">x</button></button>
-                                --}}
-
                                 @if ($removeFilterButtonPosition === 'right')
                                     <span @class($this->preset()->get('applied-filters.applied-filter-item.label-class', []))>
                                         {{ $appliedFilterData['label'] }}
@@ -260,12 +259,13 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                 @endif
                                 
                                 <button
-                                    {{-- 
-                                    x-on:click="removeFilter('{{ Str::chopStart($appliedFilterData['wire-name'], "{$this->filtersUrlParam()}.") }}')"
-                                    --}}
                                     x-on:click="removeFilter('{{ Str::chopStart($appliedFilterData['removal-key'], "{$this->filtersUrlParam()}") }}')"
-                                    @class($this->preset()->get('applied-filters.button-remove-applied-filter-item.class', []))>
+                                    @class($this->preset()->get('applied-filters.button-remove-applied-filter-item.class', []))
+                                    title="{{ __('erickcomp_lw_data_table::messages.remove_applied_filter_aria_label') }}"
+                                    aria-label="{{ __('erickcomp_lw_data_table::messages.remove_applied_filter_aria_label') }}"
+                                    >
                                     {!! $this->preset()->get('applied-filters.button-remove-applied-filter-item.content') !!}
+                                    
                                 </button>
 
                                 @if ($removeFilterButtonPosition === 'left')
