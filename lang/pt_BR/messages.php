@@ -3,6 +3,8 @@
 return [
     'applied_search_label' => 'Busca',
     'active_filters_label' => 'Filtros aplicados',
+    'remove_applied_search_aria_label' => 'Remover termos buscados',
+    'remove_applied_filter_aria_label' => 'Remover filtro',
     'filters_container_label' => 'Filtros',
     'toggle_filters_button_label' => 'Filtros',
     'search_button_label' => 'Buscar',
@@ -10,6 +12,7 @@ return [
     'range_filter_label_from' => 'De',
     'range_filter_label_to' => 'Até',
     'apply_filters_button_label' => 'Aplicar filtros',
+    'multi_select_filter_label_final_glue' => ' e ',
     'reload_required' => "Esta página precisa ser atualizada antes de executar esta ação.\n\nPressione OK para continuar",
     'bulk_actions_label' => 'Ações',
     'per_page_label' => 'Por página',
