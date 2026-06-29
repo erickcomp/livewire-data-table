@@ -7,7 +7,6 @@ use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
 use ErickComp\LivewireDataTable\DataTable\Filter;
-use ErickComp\LivewireDataTable\ServerExecutor;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
@@ -15,11 +14,11 @@ use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
-use Illuminate\Support\Stringable;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
@@ -450,6 +449,24 @@ class LwDataTable extends LivewireComponent
                 if ($filterDefinition) {
                     $isRangeMode = $filterDefinition->mode === Filter::MODE_RANGE;
 
+                    $isSelectFilter = $filterDefinition->inputType === Filter::TYPE_SELECT;
+                    $isMultiSelectFilter = $filterDefinition->inputType === Filter::TYPE_SELECT_MULTIPLE;
+
+                    // Filtros select com custom renderer não recebem a prop 'options', então
+                    // precisamos renderizar o Blade e extrair as options do HTML antes de montar
+                    // os labels dos filtros aplicados. O resultado é cacheado no Filter para que
+                    // a view não precise re-renderizar — basta chamar o mesmo método novamente.
+                    if (
+                        ($isSelectFilter || $isMultiSelectFilter)
+                        && !empty($filterDefinition->customRendererCode)
+                        && empty($filterDefinition->getSelectOptions())
+                    ) {
+                        $filterDefinition->getCustomRendererCodeWithXModel(
+                            'inputFilters',
+                            \array_merge($this->dataTable->allViewData(), ['___lwDataTable' => $this]),
+                        );
+                    }
+
                     // Custom formatting/parsing for date/time filter
                     if (\in_array($filterDefinition->inputType, $datetimeTypes)) {
                         if ($isRangeMode) {
@@ -474,14 +491,33 @@ class LwDataTable extends LivewireComponent
                         'wire-name' => $filterDefinition->buildWireModelAttribute($this->filtersUrlParam()),
                         'removal-key' => $filterDefinition->buildInputNameAttribute($this->filtersUrlParam()),
                         'name' => $filterDefinition->name,
-                        'label' => str($filterDefinition->label . ': ')
-                            ->when($isRangeMode, function (Stringable $string) use ($filterVal) {
-                                return $string->append(($filterVal['from'] ?? '...') . ' - ' . ($filterVal['to'] ?? '...'));
-                            })
-                            ->unless($isRangeMode, function (Stringable $string) use ($filterVal) {
+                        'label' => value(
+                            function ($string) use ($filterDefinition, $filterVal, $isRangeMode, $isSelectFilter, $isMultiSelectFilter) {
+                                if ($isRangeMode) {
+                                    return $string->append(($filterVal['from'] ?? '...') . ' - ' . ($filterVal['to'] ?? '...'));
+                                }
+
+                                if ($isSelectFilter) {
+                                    $label = '"' . ($filterDefinition->getSelectOptions()["$filterVal"] ?? $filterVal) . '"';
+
+                                    return $string->append($label);
+                                }
+
+                                if ($isMultiSelectFilter) {
+                                    $labels = [];
+                                    foreach ($filterVal as $fv) {
+                                        $labels[] = '"' . ($filterDefinition->getSelectOptions()[$fv] ?? $fv) . '"';
+
+                                    }
+                                    $strLabels = Arr::join($labels, ', ', __('erickcomp_lw_data_table::messages.multi_select_filter_label_final_glue'));
+
+                                    return $string->append($strLabels);
+
+                                }
                                 return $string->append((string) $filterVal);
-                            })
-                            ->toString(),
+                            },
+                            str($filterDefinition->label . ': '),
+                        )->toString(),
                     ];
                 }
             }
@@ -581,11 +617,6 @@ class LwDataTable extends LivewireComponent
 
         return \is_callable([$callable[0], $callable[1]])
             || \is_callable([app()->make($callable[0]), $callable[1]]);
-    }
-
-    protected function executeCallable($callable, ...$params)
-    {
-        return ServerExecutor::call($callable, ...$params);
     }
 
     protected function queryString()

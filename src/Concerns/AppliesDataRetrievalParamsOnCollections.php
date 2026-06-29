@@ -48,12 +48,12 @@ trait AppliesDataRetrievalParamsOnCollections
                     break;
 
                 case Filter::MODE_STARTS_WITH:
-                    $clauses[] = fn($item) => \str_starts_with(\data_get($item, $filter['column']), $filter['value']);
+                    $clauses[] = fn($item) => \str_starts_with(\strtolower(\data_get($item, $filter['column'])), \strtolower($filter['value']));
 
                     break;
 
                 case Filter::MODE_ENDS_WITH:
-                    $clauses[] = fn($item) => \str_ends_with(\data_get($item, $filter['column']), $filter['value']);
+                    $clauses[] = fn($item) => \str_ends_with(\strtolower(\data_get($item, $filter['column'])), \strtolower($filter['value']));
 
                     break;
 
@@ -72,11 +72,11 @@ trait AppliesDataRetrievalParamsOnCollections
                 case Filter::MODE_RANGE:
                     $clauses[] = function ($item) use ($filter) {
                         $itemValueIsGreatherThanOrEqualToFilterValue = isset($filter['value']['from'])
-                            ? \data_get($item, $filter['column']) >= $filter['value']
+                            ? \data_get($item, $filter['column']) >= $filter['value']['from']
                             : true;
 
                         $itemValueIsLesserThanOrEqualToFilterValue = isset($filter['value']['to'])
-                            ? \data_get($item, $filter['column']) <= $filter['value']
+                            ? \data_get($item, $filter['column']) <= $filter['value']['to']
                             : true;
 
                         return $itemValueIsGreatherThanOrEqualToFilterValue && $itemValueIsLesserThanOrEqualToFilterValue;
@@ -109,15 +109,15 @@ trait AppliesDataRetrievalParamsOnCollections
                     break;
 
                 case Column::SEARCH_MODE_CONTAINS:
-                    $clauses[] = fn($item) => \str_contains(\data_get($item, $dataField), $value);
+                    $clauses[] = fn($item) => \str_contains(\strtolower(\data_get($item, $dataField)), \strtolower($value));
                     break;
 
                 case Column::SEARCH_MODE_STARTS_WITH:
-                    $clauses[] = fn($item) => \str_starts_with(\data_get($item, $dataField), $value);
+                    $clauses[] = fn($item) => \str_starts_with(\strtolower(\data_get($item, $dataField)), \strtolower($value));
                     break;
 
                 case Column::SEARCH_MODE_ENDS_WITH:
-                    $clauses[] = fn($item) => \str_ends_with(\data_get($item, $dataField), $value);
+                    $clauses[] = fn($item) => \str_ends_with(\strtolower(\data_get($item, $dataField)), \strtolower($value));
                     break;
 
                 case Column::SEARCH_MODE_FULLTEXT:
@@ -163,15 +163,15 @@ trait AppliesDataRetrievalParamsOnCollections
                         break;
 
                     case Search::SEARCH_MODE_CONTAINS:
-                        $clauses[] = fn($item) => \str_contains(\data_get($item, $dataField), $params->search);
+                        $clauses[] = fn($item) => \str_contains(\strtolower(\data_get($item, $dataField)), \strtolower($params->search));
                         break;
 
                     case Search::SEARCH_MODE_STARTS_WITH:
-                        $clauses[] = fn($item) => \str_starts_with(\data_get($item, $dataField), $params->search);
+                        $clauses[] = fn($item) => \str_starts_with(\strtolower(\data_get($item, $dataField)), \strtolower($params->search));
                         break;
 
                     case Search::SEARCH_MODE_ENDS_WITH:
-                        $clauses[] = fn($item) => \str_ends_with(\data_get($item, $dataField), $params->search);
+                        $clauses[] = fn($item) => \str_ends_with(\strtolower(\data_get($item, $dataField)), \strtolower($params->search));
                         break;
 
                     case Search::SEARCH_MODE_FULLTEXT:

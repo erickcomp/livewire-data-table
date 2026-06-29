@@ -2,9 +2,10 @@
 
 namespace ErickComp\LivewireDataTable;
 
-use ErickComp\LivewireDataTable\Builders\Column\BaseColumn;
 use ErickComp\LivewireDataTable\Concerns\FillsComponentAttributeBags;
+use ErickComp\LivewireDataTable\Data\DataSource;
 use ErickComp\LivewireDataTable\Data\DataSourceFactory;
+use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
@@ -18,21 +19,15 @@ use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\LivewireDataTable\Livewire\Preset;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Illuminate\View\Component as BladeComponent;
 use Illuminate\View\ComponentAttributeBag;
-use Livewire\ImplicitlyBoundMethod;
 use Livewire\Wireable;
-use ErickComp\LivewireDataTable\Data\DataSource;
-use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
-use Illuminate\Support\Arr;
 //use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
 class DataTable extends BaseDataTableComponent //implements Wireable

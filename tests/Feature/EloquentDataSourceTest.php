@@ -4,6 +4,8 @@ use ErickComp\LivewireDataTable\Data\DataSourceFactory;
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\DataTable;
+use ErickComp\LivewireDataTable\DataTable\Column;
+use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
@@ -143,6 +145,34 @@ it('filters with contains mode', function () {
         ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
 });
 
+it('filters with starts_with mode', function () {
+    seedProducts();
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'filters' => [
+            ['column' => 'name', 'mode' => Filter::MODE_STARTS_WITH, 'value' => 'Laptop', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('filters with ends_with mode', function () {
+    seedProducts();
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'filters' => [
+            ['column' => 'name', 'mode' => Filter::MODE_ENDS_WITH, 'value' => 'Mouse', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Wireless Mouse');
+});
+
 it('filters with range mode', function () {
     seedProducts();
 
@@ -189,6 +219,73 @@ it('applies per-column search with contains mode', function () {
         ->and($result->first()->name)->toBe('USB Cable');
 });
 
+it('applies per-column search respecting starts_with mode from column definition', function () {
+    seedProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_STARTS_WITH));
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+
+    $result = $source->getData(makeParams([
+        'columnsSearch' => ['name' => 'Laptop'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('applies per-column search respecting exact mode from column definition', function () {
+    seedProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Category', 'category', searchable: Column::SEARCH_MODE_EXACT));
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+
+    $result = $source->getData(makeParams([
+        'columnsSearch' => ['category' => 'electronics'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Wireless Mouse']);
+});
+
+it('per-column search with starts_with mode does not match mid-string', function () {
+    seedProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_STARTS_WITH));
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+
+    $result = $source->getData(makeParams([
+        'columnsSearch' => ['name' => 'Mouse'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(0);
+});
+
+it('applies per-column search respecting ends_with mode from column definition', function () {
+    seedProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_ENDS_WITH));
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+
+    $result = $source->getData(makeParams([
+        'columnsSearch' => ['name' => 'Stand'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Laptop Stand');
+});
+
 // --- Global search ---
 
 it('applies global search across specified fields', function () {
@@ -208,6 +305,66 @@ it('applies global search across specified fields', function () {
     ]));
 
     expect($result)->toHaveCount(2);
+});
+
+it('applies global search with starts_with mode', function () {
+    seedProducts();
+
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_STARTS_WITH],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'search' => 'Laptop',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('applies global search with exact mode', function () {
+    seedProducts();
+
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['category' => Search::SEARCH_MODE_EXACT],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'search' => 'furniture',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Ergonomic Chair', 'Office Desk']);
+});
+
+it('applies global search with ends_with mode', function () {
+    seedProducts();
+
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_ENDS_WITH],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'search' => 'Cable',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('USB Cable');
 });
 
 // --- Combined operations ---
@@ -263,4 +420,22 @@ it('returns empty result when filter matches nothing', function () {
     ]));
 
     expect($result)->toHaveCount(0);
+});
+
+// --- Validation ---
+
+it('throws when model class is not an Eloquent model', function () {
+    new EloquentDataSource('stdClass', DataSourcePaginationType::None);
+})->throws(\LogicException::class);
+
+// --- Cursor pagination ---
+
+it('retrieves paginated rows with cursor pagination', function () {
+    seedProducts();
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::Cursor);
+    $result = $source->getData(makeParams(['perPage' => '3']));
+
+    expect($result)->toBeInstanceOf(\Illuminate\Pagination\CursorPaginator::class)
+        ->and($result->items())->toHaveCount(3);
 });

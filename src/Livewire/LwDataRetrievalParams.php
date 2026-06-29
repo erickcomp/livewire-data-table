@@ -44,7 +44,11 @@ class LwDataRetrievalParams
     }
     public function columnSearchMode(string $column): string
     {
-        return Column::SEARCH_MODE_DEFAULT;
+        $col = $this->dataTable->columns->first(
+            fn(Column $c) => $c->dataField === $column
+        );
+
+        return $col !== null ? $col->searchMode : Column::SEARCH_MODE_DEFAULT;
     }
 
     public function dataTableSearchDataFields(): bool|array

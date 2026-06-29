@@ -44,7 +44,8 @@
     "require-dev": {
         "pestphp/pest": "^4.7",
         "orchestra/testbench": "^10.0|^11.0",
-        "larastan/larastan": "^3.0"
+        "larastan/larastan": "^3.0",
+        "laravie/serialize-queries": "^3.3"
     },
     "scripts": {
         "test": "vendor/bin/pest",
