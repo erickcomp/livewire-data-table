@@ -4,6 +4,8 @@ use ErickComp\LivewireDataTable\Data\DataSourceFactory;
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\DataTable;
+use ErickComp\LivewireDataTable\DataTable\Column;
+use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
@@ -187,6 +189,56 @@ it('applies per-column search with contains mode', function () {
 
     expect($result)->toHaveCount(1)
         ->and($result->first()->name)->toBe('USB Cable');
+});
+
+it('applies per-column search respecting starts_with mode from column definition', function () {
+    seedProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_STARTS_WITH));
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+
+    $result = $source->getData(makeParams([
+        'columnsSearch' => ['name' => 'Laptop'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('applies per-column search respecting exact mode from column definition', function () {
+    seedProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Category', 'category', searchable: Column::SEARCH_MODE_EXACT));
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+
+    $result = $source->getData(makeParams([
+        'columnsSearch' => ['category' => 'electronics'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Wireless Mouse']);
+});
+
+it('per-column search with starts_with mode does not match mid-string', function () {
+    seedProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_STARTS_WITH));
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+
+    $result = $source->getData(makeParams([
+        'columnsSearch' => ['name' => 'Mouse'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(0);
 });
 
 // --- Global search ---
