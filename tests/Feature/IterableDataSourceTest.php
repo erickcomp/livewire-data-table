@@ -89,6 +89,57 @@ it('returns empty result when range matches nothing', function () {
     expect($result)->toHaveCount(0);
 });
 
+// --- Exact filter ---
+
+it('filters with exact mode', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'filters' => [
+            ['column' => 'category', 'mode' => Filter::MODE_EXACT, 'value' => 'furniture', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Ergonomic Chair', 'Office Desk']);
+});
+
+it('filters with exact mode using loose comparison', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'filters' => [
+            ['column' => 'price', 'mode' => Filter::MODE_EXACT, 'value' => '29.99', 'type' => Filter::TYPE_NUMBER],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()['name'])->toBe('Wireless Mouse');
+});
+
+// --- IN filter ---
+
+it('filters with IN mode', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'filters' => [
+            ['column' => 'category', 'mode' => Filter::MODE_IN, 'value' => ['electronics', 'accessories'], 'type' => Filter::TYPE_SELECT_MULTIPLE],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(4)
+        ->and($result->pluck('category')->unique()->sort()->values()->all())->toBe(['accessories', 'electronics']);
+});
+
+// --- Fulltext filter (unsupported) ---
+
+it('throws on fulltext filter for iterable data source', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $source->getData(makeIterableParams([
+        'filters' => [
+            ['column' => 'name', 'mode' => Filter::MODE_FULLTEXT, 'value' => 'laptop', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+})->throws(\ValueError::class);
+
 // --- Case-insensitive text filters ---
 
 it('filters with starts_with mode case-insensitively', function () {
