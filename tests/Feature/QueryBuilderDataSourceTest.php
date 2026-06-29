@@ -3,6 +3,8 @@
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\QueryBuilderDataSource;
 use ErickComp\LivewireDataTable\DataTable;
+use ErickComp\LivewireDataTable\DataTable\Column;
+use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
@@ -104,4 +106,105 @@ it('paginates with length-aware pagination on query builder', function () {
     expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
         ->and($result->items())->toHaveCount(2)
         ->and($result->total())->toBe(4);
+});
+
+// --- Per-column search ---
+
+it('applies per-column search with contains mode on query builder', function () {
+    seedQueryBuilderProducts();
+
+    $source = new QueryBuilderDataSource(DB::table('test_products'), DataSourcePaginationType::None);
+    $result = $source->getData(makeQueryBuilderParams([
+        'columnsSearch' => ['name' => 'Mouse'],
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Wireless Mouse');
+});
+
+it('applies per-column search with starts_with mode on query builder', function () {
+    seedQueryBuilderProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_STARTS_WITH));
+
+    $source = new QueryBuilderDataSource(DB::table('test_products'), DataSourcePaginationType::None);
+    $result = $source->getData(makeQueryBuilderParams([
+        'columnsSearch' => ['name' => 'Office'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Office Desk');
+});
+
+// --- Global search ---
+
+it('applies global search with contains mode on query builder', function () {
+    seedQueryBuilderProducts();
+
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_CONTAINS, 'category' => Search::SEARCH_MODE_CONTAINS],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new QueryBuilderDataSource(DB::table('test_products'), DataSourcePaginationType::None);
+    $result = $source->getData(makeQueryBuilderParams([
+        'search' => 'electronics',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2);
+});
+
+it('applies global search with starts_with mode on query builder', function () {
+    seedQueryBuilderProducts();
+
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_STARTS_WITH],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new QueryBuilderDataSource(DB::table('test_products'), DataSourcePaginationType::None);
+    $result = $source->getData(makeQueryBuilderParams([
+        'search' => 'Wireless',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Wireless Mouse');
+});
+
+it('throws when global search has no data-fields on query builder', function () {
+    seedQueryBuilderProducts();
+
+    $search = new Search(new ComponentAttributeBag([]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new QueryBuilderDataSource(DB::table('test_products'), DataSourcePaginationType::None);
+    $source->getData(makeQueryBuilderParams([
+        'search' => 'test',
+        'dataTable' => $dataTable,
+    ]));
+})->throws(\LogicException::class);
+
+// --- Sorting ---
+
+it('sorts by column on query builder', function () {
+    seedQueryBuilderProducts();
+
+    $source = new QueryBuilderDataSource(DB::table('test_products'), DataSourcePaginationType::None);
+    $result = $source->getData(makeQueryBuilderParams([
+        'sortBy' => 'price',
+        'sortDir' => 'ASC',
+    ]));
+
+    expect($result->first()->name)->toBe('Wireless Mouse')
+        ->and($result->last()->name)->toBe('Laptop Pro');
 });
