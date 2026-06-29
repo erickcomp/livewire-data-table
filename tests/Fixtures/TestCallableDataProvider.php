@@ -20,3 +20,11 @@ class TestCallableDataProvider
         return static::getStaticData();
     }
 }
+
+class TestInvokableDataProvider
+{
+    public function __invoke(): Collection
+    {
+        return TestCallableDataProvider::getStaticData();
+    }
+}

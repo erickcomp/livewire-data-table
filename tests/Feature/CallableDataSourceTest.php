@@ -6,6 +6,7 @@ use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Support\Collection;
 use Tests\Fixtures\TestCallableDataProvider;
+use Tests\Fixtures\TestInvokableDataProvider;
 
 function makeCallableParams(array $overrides = []): LwDataRetrievalParams
 {
@@ -40,6 +41,18 @@ it('retrieves data from a static method callable', function () {
 it('retrieves data from an instance method callable', function () {
     $source = new CallableDataSource(
         TestCallableDataProvider::class . '@getData',
+        DataSourcePaginationType::None,
+    );
+
+    $result = $source->getData(makeCallableParams());
+
+    expect($result)->toBeInstanceOf(Collection::class)
+        ->and($result)->toHaveCount(3);
+});
+
+it('retrieves data from an invokable class', function () {
+    $source = new CallableDataSource(
+        new TestInvokableDataProvider(),
         DataSourcePaginationType::None,
     );
 
