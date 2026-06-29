@@ -8,6 +8,8 @@ use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\View\ComponentAttributeBag;
 
@@ -304,3 +306,55 @@ it('throws on fulltext column search for iterable data source', function () {
         'dataTable' => $dataTable,
     ]));
 })->throws(\ValueError::class);
+
+// --- Sorting ---
+
+it('sorts collection ascending by field', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'sortBy' => 'price',
+        'sortDir' => 'ASC',
+    ]));
+
+    expect($result)->toBeInstanceOf(Collection::class)
+        ->and($result->first()['name'])->toBe('USB Cable')
+        ->and($result->last()['name'])->toBe('Laptop Pro');
+});
+
+it('sorts collection descending by field', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'sortBy' => 'price',
+        'sortDir' => 'DESC',
+    ]));
+
+    expect($result->first()['name'])->toBe('Laptop Pro')
+        ->and($result->last()['name'])->toBe('USB Cable');
+});
+
+// --- Pagination ---
+
+it('returns full collection with no pagination', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams());
+
+    expect($result)->toBeInstanceOf(Collection::class)
+        ->and($result)->toHaveCount(6);
+});
+
+it('paginates collection with length-aware pagination', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::LengthAware);
+    $result = $source->getData(makeIterableParams(['perPage' => '2']));
+
+    expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
+        ->and($result->items())->toHaveCount(2)
+        ->and($result->total())->toBe(6);
+});
+
+it('paginates collection with simple pagination', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::Simple);
+    $result = $source->getData(makeIterableParams(['perPage' => '3']));
+
+    expect($result)->toBeInstanceOf(Paginator::class)
+        ->and($result->items())->toHaveCount(3);
+});
