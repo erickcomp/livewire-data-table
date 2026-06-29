@@ -94,3 +94,41 @@ it('rejects unknown input type', function () {
         'label' => 'Status',
     ]));
 })->throws(\InvalidArgumentException::class);
+
+it('rejects unknown filter mode via attribute', function () {
+    new Filter(new ComponentAttributeBag([
+        'data-field' => 'status',
+        'name' => 'status',
+        'mode' => 'banana',
+        'label' => 'Status',
+    ]));
+})->throws(\InvalidArgumentException::class);
+
+it('rejects unknown filter mode via data-field suffix', function () {
+    new Filter(new ComponentAttributeBag([
+        'data-field' => 'status:banana',
+        'name' => 'status',
+        'label' => 'Status',
+    ]));
+})->throws(\InvalidArgumentException::class);
+
+it('accepts valid filter mode via attribute', function () {
+    $filter = new Filter(new ComponentAttributeBag([
+        'data-field' => 'name',
+        'name' => 'name',
+        'mode' => Filter::MODE_STARTS_WITH,
+        'label' => 'Name',
+    ]));
+
+    expect($filter->mode)->toBe(Filter::MODE_STARTS_WITH);
+});
+
+it('accepts valid filter mode via data-field suffix', function () {
+    $filter = new Filter(new ComponentAttributeBag([
+        'data-field' => 'name:ends_with',
+        'name' => 'name',
+        'label' => 'Name',
+    ]));
+
+    expect($filter->mode)->toBe(Filter::MODE_ENDS_WITH);
+});

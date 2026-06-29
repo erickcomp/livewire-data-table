@@ -382,6 +382,12 @@ class Filter
             throw new \InvalidArgumentException("The attribute [input-type] must be one of the following: [$inputTypesAsStr], \"{$attributes['input-type']}\" given");
         }
 
+        if ($attributes->has('mode') && !\in_array($attributes['mode'], static::MODES, true)) {
+            $modesAsStr = \implode(', ', static::MODES);
+
+            throw new \InvalidArgumentException("The attribute [mode] must be one of the following: [$modesAsStr], \"{$attributes['mode']}\" given");
+        }
+
         // HTML names defaults to data-fields's name
         if (!$attributes->has('name')) {
             $attributes['name'] = $this->normalizeNameAttribute($attributes['data-field']);
