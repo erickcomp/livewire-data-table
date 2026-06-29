@@ -3,6 +3,8 @@
 use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\IterableDataSource;
 use ErickComp\LivewireDataTable\DataTable;
+use ErickComp\LivewireDataTable\DataTable\Column;
+use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
@@ -233,3 +235,72 @@ it('applies global search with ends_with mode case-insensitively', function () {
     expect($result)->toHaveCount(1)
         ->and($result->first()['name'])->toBe('Wireless Mouse');
 });
+
+// --- Per-column search on collections ---
+
+it('applies per-column search with contains mode on collection', function () {
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_CONTAINS));
+
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'columnsSearch' => ['name' => 'cable'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()['name'])->toBe('USB Cable');
+});
+
+it('applies per-column search with starts_with mode case-insensitively on collection', function () {
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_STARTS_WITH));
+
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'columnsSearch' => ['name' => 'laptop'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('applies per-column search with ends_with mode case-insensitively on collection', function () {
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_ENDS_WITH));
+
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'columnsSearch' => ['name' => 'DESK'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()['name'])->toBe('Office Desk');
+});
+
+it('applies per-column search with exact mode on collection', function () {
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Category', 'category', searchable: Column::SEARCH_MODE_EXACT));
+
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'columnsSearch' => ['category' => 'electronics'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Wireless Mouse']);
+});
+
+it('throws on fulltext column search for iterable data source', function () {
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_FULLTEXT));
+
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $source->getData(makeIterableParams([
+        'columnsSearch' => ['name' => 'laptop'],
+        'dataTable' => $dataTable,
+    ]));
+})->throws(\ValueError::class);
