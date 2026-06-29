@@ -619,11 +619,6 @@ class LwDataTable extends LivewireComponent
             || \is_callable([app()->make($callable[0]), $callable[1]]);
     }
 
-    protected function executeCallable($callable, ...$params)
-    {
-        return ServerExecutor::call($callable, ...$params);
-    }
-
     protected function queryString()
     {
         return [

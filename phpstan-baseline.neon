@@ -297,13 +297,7 @@ parameters:
 		-
 			message: '#^Class GT\\Dom\\HTMLDocument referenced with incorrect case\: Gt\\Dom\\HTMLDocument\.$#'
 			identifier: class.nameCase
-			count: 1
-			path: src/DataTable/Filter.php
-
-		-
-			message: '#^Constant LIBXML_ERR_NONE is not allowed for parameter \#2 \$options of method DOMDocument\:\:loadHTML\(\)\.$#'
-			identifier: argument.invalidConstant
-			count: 1
+			count: 2
 			path: src/DataTable/Filter.php
 
 		-
@@ -319,15 +313,15 @@ parameters:
 			path: src/DataTable/Search.php
 
 		-
-			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:68\:\:\$resolvedModelInstance\.$#'
+			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:102\:\:\$originalType\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 3
 			path: src/Livewire/LwDataRetrievalParams.php
 
 		-
-			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:98\:\:\$originalType\.$#'
+			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:72\:\:\$resolvedModelInstance\.$#'
 			identifier: property.notFound
-			count: 3
+			count: 2
 			path: src/Livewire/LwDataRetrievalParams.php
 
 		-
