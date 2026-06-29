@@ -145,6 +145,34 @@ it('filters with contains mode', function () {
         ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
 });
 
+it('filters with starts_with mode', function () {
+    seedProducts();
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'filters' => [
+            ['column' => 'name', 'mode' => Filter::MODE_STARTS_WITH, 'value' => 'Laptop', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('filters with ends_with mode', function () {
+    seedProducts();
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'filters' => [
+            ['column' => 'name', 'mode' => Filter::MODE_ENDS_WITH, 'value' => 'Mouse', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Wireless Mouse');
+});
+
 it('filters with range mode', function () {
     seedProducts();
 
