@@ -421,3 +421,21 @@ it('returns empty result when filter matches nothing', function () {
 
     expect($result)->toHaveCount(0);
 });
+
+// --- Validation ---
+
+it('throws when model class is not an Eloquent model', function () {
+    new EloquentDataSource('stdClass', DataSourcePaginationType::None);
+})->throws(\LogicException::class);
+
+// --- Cursor pagination ---
+
+it('retrieves paginated rows with cursor pagination', function () {
+    seedProducts();
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::Cursor);
+    $result = $source->getData(makeParams(['perPage' => '3']));
+
+    expect($result)->toBeInstanceOf(\Illuminate\Pagination\CursorPaginator::class)
+        ->and($result->items())->toHaveCount(3);
+});
