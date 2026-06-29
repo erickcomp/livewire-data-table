@@ -7,7 +7,6 @@ use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
 use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
 use ErickComp\LivewireDataTable\DataTable\Filter;
-use ErickComp\LivewireDataTable\ServerExecutor;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
@@ -453,6 +452,21 @@ class LwDataTable extends LivewireComponent
                     $isSelectFilter = $filterDefinition->inputType === Filter::TYPE_SELECT;
                     $isMultiSelectFilter = $filterDefinition->inputType === Filter::TYPE_SELECT_MULTIPLE;
 
+                    // Filtros select com custom renderer não recebem a prop 'options', então
+                    // precisamos renderizar o Blade e extrair as options do HTML antes de montar
+                    // os labels dos filtros aplicados. O resultado é cacheado no Filter para que
+                    // a view não precise re-renderizar — basta chamar o mesmo método novamente.
+                    if (
+                        ($isSelectFilter || $isMultiSelectFilter)
+                        && !empty($filterDefinition->customRendererCode)
+                        && empty($filterDefinition->getSelectOptions())
+                    ) {
+                        $filterDefinition->getCustomRendererCodeWithXModel(
+                            'inputFilters',
+                            \array_merge($this->dataTable->allViewData(), ['___lwDataTable' => $this]),
+                        );
+                    }
+
                     // Custom formatting/parsing for date/time filter
                     if (\in_array($filterDefinition->inputType, $datetimeTypes)) {
                         if ($isRangeMode) {
@@ -484,13 +498,14 @@ class LwDataTable extends LivewireComponent
                                 }
 
                                 if ($isSelectFilter) {
-                                    return $string->append((string) $filterDefinition->attributes->get('options')[$filterVal]);
+                                    $label = '"' . ($filterDefinition->getSelectOptions()["$filterVal"] ?? $filterVal) . '"';
+
+                                    return $string->append($label);
                                 }
 
                                 if ($isMultiSelectFilter) {
                                     $labels = [];
                                     foreach ($filterVal as $fv) {
-                                        //$labels[] = '"' . $filterDefinition->attributes->get('options')[$fv] . '"';
                                         $labels[] = '"' . ($filterDefinition->getSelectOptions()[$fv] ?? $fv) . '"';
 
                                     }

@@ -99,6 +99,12 @@ class Filter
 
     public ?string $customRendererCode = null;
 
+    // O HTML final do custom renderer é cacheado aqui após o primeiro render.
+    // Isso permite que processFilters() (que roda ANTES da view) renderize o Blade uma única vez,
+    // extraia as options do <select> para montar os labels dos filtros aplicados,
+    // e depois a view reutilize o HTML já pronto sem re-renderizar.
+    protected ?string $cachedRenderedCustomCode = null;
+
     public function __construct(ComponentAttributeBag $attributes, ?string $customRendererCode = null)
     {
         $this->validateAttributes($attributes);
@@ -115,6 +121,63 @@ class Filter
         $options = $this->attributes->get('options', []);
 
         return \is_array($options) ? $options : [];
+    }
+
+    /**
+     * Extrai as options de elementos <select> presentes no HTML renderizado do custom renderer
+     * e popula o atributo 'options' para que getSelectOptions() funcione corretamente.
+     *
+     * Necessário porque quando um filtro select usa custom renderer (slot), a prop 'options'
+     * não é passada, e sem ela os labels dos filtros aplicados mostram o value bruto
+     * em vez do texto legível (ex: "1" em vez de "Sim").
+     *
+     * @throws \LogicException Se o HTML do custom renderer não contiver um <select>, ou se
+     *                         não houver <option> com value não vazio e a prop 'options'
+     *                         não tiver sido passada explicitamente.
+     */
+    protected function extractSelectOptionsFromRenderedHtml(string $renderedHtml): void
+    {
+        if (!\in_array($this->inputType, [self::TYPE_SELECT, self::TYPE_SELECT_MULTIPLE], true)) {
+            return;
+        }
+
+        $wrapperId = '__dt_opts_' . \bin2hex(\random_bytes(4));
+        $dom = new \Gt\Dom\HTMLDocument("<div id=\"{$wrapperId}\">{$renderedHtml}</div>");
+        $wrapper = $dom->getElementById($wrapperId);
+
+        // Se declarou input-type="select" com custom renderer, o HTML deve conter um <select>.
+        // Sem ele, o filtro não funciona — melhor falhar cedo com mensagem clara.
+        if ($wrapper->querySelectorAll('select')->count() === 0) {
+            throw new \LogicException(
+                "Data table filter [{$this->name}] has input-type=\"{$this->inputType}\" with a custom renderer, "
+                . "but the rendered HTML does not contain a <select> element."
+            );
+        }
+
+        if (!empty($this->getSelectOptions())) {
+            return;
+        }
+
+        $options = [];
+        foreach ($wrapper->querySelectorAll('option') as $option) {
+            $value = $option->getAttribute('value') ?? '';
+            $label = \trim($option->textContent);
+
+            if ($value !== '' || $label !== '') {
+                $options[$value] = $label;
+            }
+        }
+
+        // Se não passou a prop 'options' explicitamente, o HTML é a única fonte de options.
+        // Sem nenhuma <option> com value, os labels dos filtros aplicados ficariam vazios.
+        if (empty($options)) {
+            throw new \LogicException(
+                "Data table filter [{$this->name}] has input-type=\"{$this->inputType}\" with a custom renderer, "
+                . "but no 'options' prop was provided and the rendered HTML contains no <option> elements with a non-empty value."
+            );
+        }
+
+        $this->attributes['options'] = $options;
     }
 
     public function htmlInputType(): ?string
@@ -197,7 +260,18 @@ class Filter
 
     public function getCustomRendererCodeWithXModel(string $filterProperty, array $data = []): string
     {
+        if ($this->cachedRenderedCustomCode !== null) {
+            return $this->cachedRenderedCustomCode;
+        }
+
         $renderedCode = Blade::render($this->customRendererCode, $data + ['___dataTableFilter' => $this]);
+
+        // Para filtros do tipo select com custom renderer, extrai as options do HTML renderizado
+        // e popula o atributo 'options'. Isso é feito aqui (antes das manipulações de DOM abaixo)
+        // para aproveitar o HTML já renderizado pelo Blade e evitar um segundo parse.
+        // Quando processFilters() chama este método antes da view, as options ficam disponíveis
+        // para montar os labels dos filtros aplicados via getSelectOptions().
+        $this->extractSelectOptionsFromRenderedHtml($renderedCode);
 
         $renderedCode = $this->insertAttributeValueIntoHTML(
             $renderedCode,
@@ -216,7 +290,7 @@ class Filter
             false,
         );
 
-        return $this->insertAttributeValueIntoHTML(
+        $this->cachedRenderedCustomCode = $this->insertAttributeValueIntoHTML(
             $renderedCode,
             'input,select',
             'x-model',
@@ -224,6 +298,8 @@ class Filter
             false,
             '.',
         );
+
+        return $this->cachedRenderedCustomCode;
     }
 
     public function inputAttributes(array|string $except = [], ?string $range = null): ComponentAttributeBag
@@ -323,27 +399,21 @@ class Filter
             throw new \DomainException("Invalid value for the \$notationForMultiple parameter: $notationForMultiple. The valid values are: null, \"[]\", \".\"");
         }
 
-        //$dom = \Dom\HTMLDocument::createFromString($html, \LIBXML_HTML_NOIMPLIED | \LIBXML_ERR_NONE);
-        //$dom = new \Gt\Dom\HTMLDocument($html);
+        $wrapperId = '__dt_wrapper_' . \bin2hex(\random_bytes(4));
+        $dom = new \Gt\Dom\HTMLDocument("<div id=\"{$wrapperId}\">{$html}</div>");
+        $wrapper = $dom->getElementById($wrapperId);
 
-        $dom = new \Gt\Dom\HTMLDocument();
-        $dom->loadHTML($html, \LIBXML_HTML_NOIMPLIED | \LIBXML_HTML_NODEFDTD | \LIBXML_ERR_NONE);
-
-        $nodes = $dom->querySelectorAll($selector);
+        $nodes = $wrapper->querySelectorAll($selector);
 
         if ($nodes->count() === 1 && ($force || !$nodes->item(0)->hasAttribute($attribute))) {
             $nodes->item(0)->setAttribute($attribute, $value);
 
-            return $dom->saveHtml();
+            return $wrapper->innerHTML;
         }
 
         $i = 0;
         foreach ($nodes as $node) {
             if ($force || !$node->hasAttribute($attribute)) {
-                $indexedVal = $notationForMultiple === '.'
-                    ? "$value.$i"
-                    : "{$value}[$i]";
-
                 $indexedVal = match ($notationForMultiple) {
                     null => $value,
                     '.' => "$value.$i",
@@ -356,7 +426,7 @@ class Filter
             }
         }
 
-        return $dom->saveHtml();
+        return $wrapper->innerHTML;
     }
 
     protected function getAttributeBagsMappings(): array
