@@ -123,3 +123,50 @@ it('sorts by column on eloquent builder', function () {
     expect($result->first()->name)->toBe('Laptop Pro')
         ->and($result->last()->name)->toBe('Wireless Mouse');
 });
+
+// --- Serialization ---
+
+it('survives serialize and unserialize cycle', function () {
+    seedBuilderProducts();
+
+    $original = new EloquentBuilderDataSource(TestProduct::query(), DataSourcePaginationType::None);
+
+    $serialized = serialize($original);
+    $restored = unserialize($serialized);
+
+    $result = $restored->getData(makeBuilderParams());
+
+    expect($result)->toBeInstanceOf(Collection::class)
+        ->and($result)->toHaveCount(4);
+});
+
+it('preserves filters after serialize and unserialize', function () {
+    seedBuilderProducts();
+
+    $original = new EloquentBuilderDataSource(
+        TestProduct::query()->where('category', 'furniture'),
+        DataSourcePaginationType::None,
+    );
+
+    $serialized = serialize($original);
+    $restored = unserialize($serialized);
+
+    $result = $restored->getData(makeBuilderParams());
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Ergonomic Chair', 'Office Desk']);
+});
+
+it('preserves pagination type after serialize and unserialize', function () {
+    seedBuilderProducts();
+
+    $original = new EloquentBuilderDataSource(TestProduct::query(), DataSourcePaginationType::LengthAware);
+
+    $serialized = serialize($original);
+    $restored = unserialize($serialized);
+
+    $result = $restored->getData(makeBuilderParams(['perPage' => '2']));
+
+    expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
+        ->and($result->total())->toBe(4);
+});
