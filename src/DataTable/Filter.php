@@ -34,6 +34,7 @@ class Filter
     public const INPUT_TYPES = [
         self::TYPE_TEXT,
         self::TYPE_NUMBER,
+        self::TYPE_NUMBER_RANGE,
         self::TYPE_DATE,
         self::TYPE_DATE_PICKER,
         self::TYPE_DATETIME,
@@ -336,6 +337,7 @@ class Filter
                 static::TYPE_TEXT => static::MODE_CONTAINS,
                 static::TYPE_DATE, static::TYPE_DATE_PICKER, static::TYPE_DATETIME, static::TYPE_DATETIME_PICKER => static::MODE_RANGE,
                 static::TYPE_NUMBER => static::MODE_EXACT,
+                static::TYPE_NUMBER_RANGE => static::MODE_RANGE,
                 static::TYPE_SELECT => static::MODE_EXACT,
                 static::TYPE_SELECT_MULTIPLE => static::MODE_IN,
                 default => throw new \RuntimeException('Unknown inputType: ' . \var_export($this->inputType, true))

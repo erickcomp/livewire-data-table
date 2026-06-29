@@ -73,3 +73,24 @@ it('detects select input type correctly', function () {
 
     expect($multiFilter->inputType)->toBe(Filter::TYPE_SELECT_MULTIPLE);
 });
+
+it('accepts number-range input type and defaults to range mode', function () {
+    $filter = new Filter(new ComponentAttributeBag([
+        'data-field' => 'price',
+        'name' => 'price',
+        'input-type' => Filter::TYPE_NUMBER_RANGE,
+        'label' => 'Price',
+    ]));
+
+    expect($filter->inputType)->toBe(Filter::TYPE_NUMBER_RANGE)
+        ->and($filter->mode)->toBe(Filter::MODE_RANGE);
+});
+
+it('rejects unknown input type', function () {
+    new Filter(new ComponentAttributeBag([
+        'data-field' => 'status',
+        'name' => 'status',
+        'input-type' => 'nonexistent',
+        'label' => 'Status',
+    ]));
+})->throws(\InvalidArgumentException::class);
