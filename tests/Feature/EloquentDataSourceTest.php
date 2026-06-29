@@ -269,6 +269,23 @@ it('per-column search with starts_with mode does not match mid-string', function
     expect($result)->toHaveCount(0);
 });
 
+it('applies per-column search respecting ends_with mode from column definition', function () {
+    seedProducts();
+
+    $dataTable = new DataTable();
+    $dataTable->columns->push(new DataColumn('Name', 'name', searchable: Column::SEARCH_MODE_ENDS_WITH));
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+
+    $result = $source->getData(makeParams([
+        'columnsSearch' => ['name' => 'Stand'],
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('Laptop Stand');
+});
+
 // --- Global search ---
 
 it('applies global search across specified fields', function () {
@@ -288,6 +305,66 @@ it('applies global search across specified fields', function () {
     ]));
 
     expect($result)->toHaveCount(2);
+});
+
+it('applies global search with starts_with mode', function () {
+    seedProducts();
+
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_STARTS_WITH],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'search' => 'Laptop',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('applies global search with exact mode', function () {
+    seedProducts();
+
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['category' => Search::SEARCH_MODE_EXACT],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'search' => 'furniture',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Ergonomic Chair', 'Office Desk']);
+});
+
+it('applies global search with ends_with mode', function () {
+    seedProducts();
+
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_ENDS_WITH],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new EloquentDataSource(TestProduct::class, DataSourcePaginationType::None);
+    $result = $source->getData(makeParams([
+        'search' => 'Cable',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->name)->toBe('USB Cable');
 });
 
 // --- Combined operations ---
