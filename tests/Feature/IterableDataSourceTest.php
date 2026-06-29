@@ -88,3 +88,97 @@ it('returns empty result when range matches nothing', function () {
 
     expect($result)->toHaveCount(0);
 });
+
+// --- Case-insensitive text filters ---
+
+it('filters with starts_with mode case-insensitively', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'filters' => [
+            ['column' => 'name', 'mode' => Filter::MODE_STARTS_WITH, 'value' => 'laptop', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('filters with ends_with mode case-insensitively', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'filters' => [
+            ['column' => 'name', 'mode' => Filter::MODE_ENDS_WITH, 'value' => 'PRO', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()['name'])->toBe('Laptop Pro');
+});
+
+it('filters with contains mode case-insensitively', function () {
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'filters' => [
+            ['column' => 'name', 'mode' => Filter::MODE_CONTAINS, 'value' => 'WIRELESS', 'type' => Filter::TYPE_TEXT],
+        ],
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()['name'])->toBe('Wireless Mouse');
+});
+
+// --- Case-insensitive global search ---
+
+it('applies global search with contains mode case-insensitively', function () {
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_CONTAINS],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'search' => 'LAPTOP',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(2)
+        ->and($result->pluck('name')->sort()->values()->all())->toBe(['Laptop Pro', 'Laptop Stand']);
+});
+
+it('applies global search with starts_with mode case-insensitively', function () {
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_STARTS_WITH],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'search' => 'usb',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()['name'])->toBe('USB Cable');
+});
+
+it('applies global search with ends_with mode case-insensitively', function () {
+    $search = new Search(new ComponentAttributeBag([
+        'data-fields' => ['name' => Search::SEARCH_MODE_ENDS_WITH],
+    ]));
+
+    $dataTable = new DataTable();
+    $dataTable->search = $search;
+
+    $source = new IterableDataSource(iterableProducts(), DataSourcePaginationType::None);
+    $result = $source->getData(makeIterableParams([
+        'search' => 'MOUSE',
+        'dataTable' => $dataTable,
+    ]));
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()['name'])->toBe('Wireless Mouse');
+});
