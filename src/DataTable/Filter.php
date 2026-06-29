@@ -47,7 +47,7 @@ class Filter
     public const MODE_CONTAINS = self::TEXT_MODE_CONTAINS; // like %<value>%
     public const MODE_STARTS_WITH = self::TEXT_MODE_STARTS_WITH; // like <value>%
     public const MODE_ENDS_WITH = self::TEXT_MODE_ENDS_WITH; // like %<value>
-    public const MODE_FULLTEXT = self::TEXT_MODE_FULLTEXT; // like %<value>
+    public const MODE_FULLTEXT = self::TEXT_MODE_FULLTEXT; // MATCH() AGAINST()
     public const MODE_RANGE = 'range'; // between
     //public const MODE_EQUALS = 'equals'; // =
     public const MODE_IN = 'IN'; // IN
