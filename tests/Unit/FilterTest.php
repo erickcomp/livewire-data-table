@@ -132,3 +132,61 @@ it('accepts valid filter mode via data-field suffix', function () {
 
     expect($filter->mode)->toBe(Filter::MODE_ENDS_WITH);
 });
+
+it('defaults text filter to contains mode', function () {
+    $filter = new Filter(new ComponentAttributeBag([
+        'data-field' => 'name',
+        'name' => 'name',
+        'input-type' => Filter::TYPE_TEXT,
+    ]));
+
+    expect($filter->mode)->toBe(Filter::MODE_CONTAINS);
+});
+
+it('defaults number filter to exact mode', function () {
+    $filter = new Filter(new ComponentAttributeBag([
+        'data-field' => 'price',
+        'name' => 'price',
+        'input-type' => Filter::TYPE_NUMBER,
+    ]));
+
+    expect($filter->mode)->toBe(Filter::MODE_EXACT);
+});
+
+it('defaults date filter to range mode', function () {
+    $filter = new Filter(new ComponentAttributeBag([
+        'data-field' => 'created_at',
+        'name' => 'created_at',
+        'input-type' => Filter::TYPE_DATE,
+    ]));
+
+    expect($filter->mode)->toBe(Filter::MODE_RANGE);
+});
+
+it('defaults select filter to exact mode', function () {
+    $filter = new Filter(new ComponentAttributeBag([
+        'data-field' => 'status',
+        'name' => 'status',
+        'input-type' => Filter::TYPE_SELECT,
+    ]));
+
+    expect($filter->mode)->toBe(Filter::MODE_EXACT);
+});
+
+it('defaults select-multiple filter to IN mode', function () {
+    $filter = new Filter(new ComponentAttributeBag([
+        'data-field' => 'tags',
+        'name' => 'tags',
+        'input-type' => Filter::TYPE_SELECT_MULTIPLE,
+    ]));
+
+    expect($filter->mode)->toBe(Filter::MODE_IN);
+});
+
+it('throws when mode is set both via data-field suffix and mode attribute', function () {
+    new Filter(new ComponentAttributeBag([
+        'data-field' => 'name:exact',
+        'name' => 'name',
+        'mode' => 'contains',
+    ]));
+})->throws(\LogicException::class);
