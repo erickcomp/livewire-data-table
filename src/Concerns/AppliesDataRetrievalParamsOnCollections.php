@@ -72,11 +72,11 @@ trait AppliesDataRetrievalParamsOnCollections
                 case Filter::MODE_RANGE:
                     $clauses[] = function ($item) use ($filter) {
                         $itemValueIsGreatherThanOrEqualToFilterValue = isset($filter['value']['from'])
-                            ? \data_get($item, $filter['column']) >= $filter['value']
+                            ? \data_get($item, $filter['column']) >= $filter['value']['from']
                             : true;
 
                         $itemValueIsLesserThanOrEqualToFilterValue = isset($filter['value']['to'])
-                            ? \data_get($item, $filter['column']) <= $filter['value']
+                            ? \data_get($item, $filter['column']) <= $filter['value']['to']
                             : true;
 
                         return $itemValueIsGreatherThanOrEqualToFilterValue && $itemValueIsLesserThanOrEqualToFilterValue;
