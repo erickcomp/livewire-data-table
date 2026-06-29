@@ -114,3 +114,23 @@ it('does not produce duplicates when casting MODE_IN values', function () {
     expect($castedValues)->toBe(['active', 'inactive', 'pending'])
         ->and(count(array_unique($castedValues)))->toBe(3);
 });
+
+it('casts date filter values to Carbon instance', function () {
+    $result = ValuesCaster::castValueToFilterType('2024-01-15', Filter::TYPE_DATE);
+
+    expect($result)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
+        ->and($result->format('Y-m-d'))->toBe('2024-01-15');
+});
+
+it('casts datetime filter values to Carbon instance', function () {
+    $result = ValuesCaster::castValueToFilterType('2024-01-15 10:30:00', Filter::TYPE_DATETIME);
+
+    expect($result)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
+        ->and($result->format('Y-m-d H:i:s'))->toBe('2024-01-15 10:30:00');
+});
+
+it('casts number-range filter type same as number', function () {
+    $result = ValuesCaster::castValueToFilterType('42', Filter::TYPE_NUMBER_RANGE);
+
+    expect($result)->toBe(42);
+});
