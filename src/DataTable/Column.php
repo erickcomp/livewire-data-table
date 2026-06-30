@@ -39,6 +39,7 @@ class Column
     public const ATTRIBUTE_SORTABLE = 'sortable';
     public ComponentAttributeBag $tdAttributes;
     public ComponentAttributeBag $thAttributes;
+    public ComponentAttributeBag $thSearchThAttributes;
     public ComponentAttributeBag $thSearchInputAttributes;
     public ?string $dataField = null;
     public string $name;
@@ -143,11 +144,28 @@ class Column
         $this->searchMode = \strtolower($searchable);
     }
 
+    public function buildSearchThAttributes($presetClass, ComponentAttributeBag $dataTableSearchThAttributes): ComponentAttributeBag
+    {
+        $attrs = $dataTableSearchThAttributes->except(['class', 'style'])
+            ->merge($this->thSearchThAttributes->except(['class', 'style'])->all())
+            ->class($dataTableSearchThAttributes['class'] ?? [])
+            ->class($this->thSearchThAttributes['class'] ?? [])
+            ->class($presetClass);
+
+        if (($attrs['style'] ?? '') === ';') {
+            unset($attrs['style']);
+        }
+
+        return $attrs;
+    }
+
     protected function getAttributeBagsMappings(): array
     {
         return [
             0 => 'attributes', //default
             'th-search-input-' => 'thSearchInputAttributes',
+            'th-search-th-' => 'thSearchThAttributes',
+            'thead-search-th-' => 'thSearchThAttributes',
             'th-' => 'thAttributes',
             'td-' => 'tdAttributes',
         ];
