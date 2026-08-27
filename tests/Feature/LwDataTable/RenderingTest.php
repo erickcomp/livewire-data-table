@@ -28,6 +28,7 @@ function renderDataTable(array $data, array $columns, array $options = []): Data
         preset: $options['preset'] ?? 'empty',
         perPage: $options['perPage'] ?? [],
         paginationView: $options['paginationView'] ?? 'bootstrap',
+        disableLoaderOverlay: $options['disableLoaderOverlay'] ?? false,
     );
 
     foreach ($columns as $col) {
@@ -415,6 +416,32 @@ it('renders loading overlay template from preset', function () {
     $component = Livewire::test(LwDataTable::class, ['data-table' => $dataTable]);
 
     $component->assertSeeHtml('wire:loading');
+});
+
+it('does not render loading overlay when disableLoaderOverlay is true', function () {
+    $dataTable = renderDataTable(
+        [['id' => 1, 'name' => 'Product']],
+        [renderColumn('Name', 'name')],
+        ['preset' => 'vanilla', 'disableLoaderOverlay' => true],
+    );
+
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $dataTable]);
+
+    $component->assertDontSeeHtml('wire:loading');
+});
+
+// --- Pagination views ---
+
+it('renders the vanilla preset default pagination view without an explicit pagination-view override', function () {
+    $dataTable = new DataTable(
+        dataSrc: collect([['id' => 1, 'name' => 'Product A'], ['id' => 2, 'name' => 'Product B']]),
+        preset: 'vanilla',
+    );
+    $dataTable->columns->push(renderColumn('Name', 'name'));
+
+    $component = Livewire::test(LwDataTable::class, ['data-table' => $dataTable]);
+
+    $component->assertSeeHtml('lw-dt-pagination-container');
 });
 
 // --- Colspan ---

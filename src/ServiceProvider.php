@@ -211,6 +211,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerFiltersRawComponent();
         $this->registerFilterRawComponent();
         $this->registerAssetRawComponent();
+        $this->registerScriptsRawComponent();
         $this->registerPaginationRawComponent();
         $this->registerFooterRawComponent();
     }
@@ -226,9 +227,9 @@ if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\Dat
 }
 $component->addCustomRenderedColumn(
     $__rawComponentAttributes,
-    <<<'___DATATABLE__RENDERER___'
+    <<<'___DATATABLE_COLUMN_RENDERER___'
 COL_COMPILER_CODE,
-            closingCode: PHP_EOL . '___DATATABLE__RENDERER___); ?>',
+            closingCode: PHP_EOL . '___DATATABLE_COLUMN_RENDERER___); ?>',
             selfClosingCode: <<<'COL_COMPILER_CODE'
 <?php
 if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
@@ -249,10 +250,10 @@ COL_COMPILER_CODE,
 if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
     throw new \LogicException("You can only use the [x-data-table.tr-before-render] as a direct child of the [x-data-table] component");
 }
-$component->setTrAttributesModifierCode(<<<'___DATATABLE__RENDERER___'
+$component->setTrAttributesModifierCode(<<<'___DATATABLE_TR_BEFORE_RENDER___'
 
 COL_TD_COMPILER_CODE,
-            closingCode: PHP_EOL . '___DATATABLE__RENDERER___); ?>',
+            closingCode: PHP_EOL . '___DATATABLE_TR_BEFORE_RENDER___); ?>',
         );
     }
 
@@ -270,9 +271,9 @@ SEARCH_CODE;
             tag: 'x-data-table.search',
             openingCode: <<<SEARCH_CODE
 $searchCode
-\$component->search->customRendererCode = <<<'___DATATABLE__RENDERER___'
+\$component->search->customRendererCode = <<<'___DATATABLE_SEARCH_RENDERER___'
 SEARCH_CODE,
-            closingCode: PHP_EOL . '___DATATABLE__RENDERER___;' . PHP_EOL . '?>',
+            closingCode: PHP_EOL . '___DATATABLE_SEARCH_RENDERER___;' . PHP_EOL . '?>',
             selfClosingCode: <<<SEARCH_CODE
 $searchCode
 ?>
@@ -319,9 +320,9 @@ COL_TD_COMPILER_CODE,
 if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== 'x-data-table.filters') {
     throw new \LogicException("You can only use the [x-data-table.filter] as a direct child of the [x-data-table.filters] component");
 }
-$component->addFilter($__rawComponentAttributes, <<<'___DATATABLE__RENDERER___'
+$component->addFilter($__rawComponentAttributes, <<<'___DATATABLE_FILTER_RENDERER___'
 OPENING_CODE,
-            closingCode: PHP_EOL . '___DATATABLE__RENDERER___);' . PHP_EOL . '?>',
+            closingCode: PHP_EOL . '___DATATABLE_FILTER_RENDERER___);' . PHP_EOL . '?>',
             selfClosingCode: <<<'SELF_CLOSING_CODE'
 <?php
 if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== 'x-data-table.filters') {
@@ -340,11 +341,26 @@ SELF_CLOSING_CODE,
             openingCode: <<<'OPENING_CODE'
 <?php
 if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
-    throw new \LogicException("You can only use the [x-data-table.asset] as a direct child of the [x-data-table] component");
+    throw new \LogicException("You can only use the [x-data-table.assets] as a direct child of the [x-data-table] component");
 }
-$component->assets[] = <<<'___DATATABLE__RENDERER___'
+$component->assets[] = <<<'___DATATABLE_ASSETS_RENDERER___'
 OPENING_CODE,
-            closingCode: PHP_EOL . '___DATATABLE__RENDERER___;' . PHP_EOL . '?>',
+            closingCode: PHP_EOL . '___DATATABLE_ASSETS_RENDERER___;' . PHP_EOL . '?>',
+        );
+    }
+
+    protected function registerScriptsRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.scripts',
+            openingCode: <<<'OPENING_CODE'
+<?php
+if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
+    throw new \LogicException("You can only use the [x-data-table.scripts] as a direct child of the [x-data-table] component");
+}
+$component->scripts[] = <<<'___DATATABLE_SCRIPTS_RENDERER___'
+OPENING_CODE,
+            closingCode: PHP_EOL . '___DATATABLE_SCRIPTS_RENDERER___;' . PHP_EOL . '?>',
         );
     }
 
@@ -357,9 +373,9 @@ OPENING_CODE,
 if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
     throw new \LogicException("You can only use the [x-data-table.pagination] component as a direct child of the [x-data-table] component");
 }
-$component->paginationCode = <<<'___DATATABLE__RENDERER___'
+$component->paginationCode = <<<'___DATATABLE_PAGINATION_RENDERER___'
 PAGINATION_COMPILER_CODE,
-            closingCode: PHP_EOL . '___DATATABLE__RENDERER___;' . PHP_EOL . '?>',
+            closingCode: PHP_EOL . '___DATATABLE_PAGINATION_RENDERER___;' . PHP_EOL . '?>',
         );
     }
 
@@ -374,9 +390,9 @@ if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\Dat
 }
 $component->setFooter(
     $__rawComponentAttributes,
-<<<'___DATATABLE__RENDERER___'
+<<<'___DATATABLE_FOOTER_RENDERER___'
 FOOTER_COMPILER_CODE,
-            closingCode: PHP_EOL . '___DATATABLE__RENDERER___);' . PHP_EOL . '?>',
+            closingCode: PHP_EOL . '___DATATABLE_FOOTER_RENDERER___);' . PHP_EOL . '?>',
         );
     }
 
