@@ -181,6 +181,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         public string $dataIdentityColumn = 'id',
         ?string $loadingDelayModifier = null,
+        public bool $disableLoaderOverlay = false,
 
 
         public array $actions = [],

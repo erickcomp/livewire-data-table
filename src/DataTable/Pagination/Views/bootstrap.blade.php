@@ -1,1 +1,1 @@
-@include (\ErickComp\LivewireDataTable\DataTable::VIEWS_NAMESPACE . '::boostrap4')
+@include (\ErickComp\LivewireDataTable\DataTable::VIEWS_NAMESPACE . '::bootstrap4')

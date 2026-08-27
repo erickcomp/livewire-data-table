@@ -327,6 +327,26 @@ Inject custom CSS or JavaScript alongside the table:
 </x-data-table>
 ```
 
+### Custom Scripts
+
+Inject JavaScript that runs once per component instance, using Livewire's `@script` mechanism:
+
+```blade
+<x-data-table :data-src="$data" preset="vanilla">
+    <x-data-table.scripts>
+        <script>
+            console.log('Table mounted/updated');
+        </script>
+    </x-data-table.scripts>
+
+    <x-data-table.column title="Name" data-field="name" />
+</x-data-table>
+```
+
+**Assets vs. Scripts:**
+- `<x-data-table.assets>` is injected via Livewire's `@assets` directive — deduplicated **page-wide by content**. Use it for CSS `<style>` blocks or one-time global setup.
+- `<x-data-table.scripts>` is injected via Livewire's `@script` directive — scoped **per component instance**, safely re-invoked across Livewire updates without duplicate execution. Use it for JavaScript tied to this specific table instance.
+
 ### Passing Data to Renderers
 
 Custom column renderers, custom filter renderers, footer templates, and custom search templates run inside isolated `Blade::render()` scopes — they don't inherit variables from the parent view. To pass data into these renderers, use **dynamic view data** and/or **static view data**.
@@ -486,6 +506,18 @@ Control when the loading overlay appears using Livewire delay modifiers:
 
 Valid values: `shortest`, `shorter`, `short`, `long`, `longer`, `longest`.
 
+### Disable Loader Overlay
+
+Opt out of the preset's loading spinner overlay for a specific table, without switching presets:
+
+```blade
+<x-data-table :data-src="App\Models\User::class" disable-loader-overlay>
+    ...
+</x-data-table>
+```
+
+Note: the overlay's CSS is still emitted once, page-wide, if any other `<x-data-table>` on the page uses the same preset with the overlay enabled.
+
 ### PHP Memory Limit
 
 For large datasets, you can increase the memory limit per table:
@@ -514,6 +546,7 @@ For large datasets, you can increase the memory limit per table:
 | `columns-search-debounce` | `int` | `250` | Debounce in ms for column search |
 | `pagination-view` | `string` | Preset default | Custom pagination view |
 | `loading-delay-modifier` | `string` | `null` | Livewire loading delay modifier |
+| `disable-loader-overlay` | `bool` | `false` | Disable the preset's loading spinner overlay for this table |
 | `data-identity-column` | `string` | `'id'` | Row identity column |
 | `php-max-memory` | `string` | `null` | PHP memory_limit override |
 | `dynamic-view-data` | `array` | `[]` | Per-user/per-request variables passed to Blade renderers (encrypted, travels over the wire) |
@@ -574,6 +607,14 @@ Supports `from-*` and `to-*` prefixes for range filter input attributes.
 | `row-length` | `int` | `4` | Number of filter items per row |
 
 Supports `button-toggle-*`, `button-apply-*`, and `filter-item-*` prefixes for forwarding attributes.
+
+### `<x-data-table.assets>`
+
+No attributes — accepts arbitrary CSS/JS content as its slot. See [Custom Assets](#custom-assets).
+
+### `<x-data-table.scripts>`
+
+No attributes — accepts arbitrary JavaScript content as its slot. See [Custom Scripts](#custom-scripts).
 
 ## Eloquent Customization Interfaces
 
