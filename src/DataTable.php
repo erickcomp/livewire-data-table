@@ -75,6 +75,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     //protected string $trAttributesModifierCode = '';
 
+    protected string $cacheBaseFilename;
+
     protected string $rowLevelClassCode;
     protected string $rowLevelStyleCode;
     protected string $rowLevelAttributesCode;

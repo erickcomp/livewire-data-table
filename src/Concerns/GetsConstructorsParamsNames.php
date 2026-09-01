@@ -18,7 +18,7 @@ trait GetsConstructorsParamsNames
             $class = $class::class;
         }
 
-        $reflMethod = new \ReflectionMethod("$class::__construct");
+        $reflMethod = new \ReflectionMethod($class, '__construct');
 
         return \array_map(fn(\ReflectionParameter $reflParam) => $reflParam->getName(), $reflMethod->getParameters());
     }

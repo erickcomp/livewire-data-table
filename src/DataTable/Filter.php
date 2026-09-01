@@ -403,7 +403,7 @@ class Filter
 
     protected function insertAttributeValueIntoHTML(string $html, string $selector, string $attribute, string $value, bool $force, ?string $notationForMultiple = null): string
     {
-        if (!\in_array(\trim($notationForMultiple), [null, '[]', '.'])) {
+        if ($notationForMultiple !== null && !\in_array(\trim($notationForMultiple), ['[]', '.'], true)) {
             throw new \DomainException("Invalid value for the \$notationForMultiple parameter: $notationForMultiple. The valid values are: null, \"[]\", \".\"");
         }
 
