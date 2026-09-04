@@ -213,6 +213,25 @@ class LwDataTable extends LivewireComponent
         }
     }
 
+    /**
+     * Keeps columnsSearch free of empty entries (e.g., a frontend x-mask syncing an
+     * empty value during component mounting)—without this, the key remains in the array
+     * and #[Url] causes "cols-search[field]=" to appear in the URL indefinitely,
+     * even when no actual search is applied. 
+     */
+    public function updated(string $property, $value)
+    {
+        if (!\str_starts_with($property, 'columnsSearch.')) {
+            return;
+        }
+
+        $dataField = \substr($property, \strlen('columnsSearch.'));
+
+        if ($value === null || $value === '' || $value === []) {
+            unset($this->columnsSearch[$dataField]);
+        }
+    }
+
     public function withHtmlAttributes(array $attributes): static
     {
         if (\array_key_exists('data-table', $attributes)) {
