@@ -90,6 +90,24 @@ it('throws when select custom renderer has no select element', function () {
     $filter->getCustomRendererCodeWithXModel('inputFilters');
 })->throws(\LogicException::class);
 
+it('binds x-model only to the input that does not declare one, without an index suffix', function () {
+    $filter = new Filter(
+        new ComponentAttributeBag([
+            'data-field' => 'cpf',
+            'name' => 'cpf',
+            'input-type' => Filter::TYPE_TEXT,
+            'label' => 'CPF',
+        ]),
+        customRendererCode: '<div><input type="text" x-model="display"><input type="hidden"></div>',
+    );
+
+    $result = $filter->getCustomRendererCodeWithXModel('inputFilters');
+
+    expect($result)->toContain('x-model="display"')
+        ->and($result)->toContain("x-model=\"dtData()['inputFilters']['cpf']['cpf']\"")
+        ->and($result)->not->toContain('.0');
+});
+
 it('throws when select custom renderer has no options and no explicit options prop', function () {
     $filter = new Filter(
         new ComponentAttributeBag([

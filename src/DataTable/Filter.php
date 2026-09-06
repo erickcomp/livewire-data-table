@@ -413,25 +413,33 @@ class Filter
 
         $nodes = $wrapper->querySelectorAll($selector);
 
-        if ($nodes->count() === 1 && ($force || !$nodes->item(0)->hasAttribute($attribute))) {
-            $nodes->item(0)->setAttribute($attribute, $value);
+        // A decisão entre valor único e indexado (".0", "[0]"...) é sobre os nós que realmente vão
+        // ganhar o atributo, não sobre todos os nós que casam com o seletor — um <input> que já
+        // carrega x-model próprio (ex.: um segundo input só de exibição, mascarado, ao lado do que
+        // recebe o bind de verdade) não deve inflar essa contagem e forçar um sufixo indevido no único
+        // nó elegível.
+        $nosElegiveis = [];
+
+        foreach ($nodes as $node) {
+            if ($force || !$node->hasAttribute($attribute)) {
+                $nosElegiveis[] = $node;
+            }
+        }
+
+        if (\count($nosElegiveis) === 1) {
+            $nosElegiveis[0]->setAttribute($attribute, $value);
 
             return $wrapper->innerHTML;
         }
 
-        $i = 0;
-        foreach ($nodes as $node) {
-            if ($force || !$node->hasAttribute($attribute)) {
-                $indexedVal = match ($notationForMultiple) {
-                    null => $value,
-                    '.' => "$value.$i",
-                    '[]' => "{$value}[$i]"
-                };
+        foreach ($nosElegiveis as $i => $node) {
+            $indexedVal = match ($notationForMultiple) {
+                null => $value,
+                '.' => "$value.$i",
+                '[]' => "{$value}[$i]"
+            };
 
-                $node->setAttribute($attribute, $indexedVal);
-
-                $i++;
-            }
+            $node->setAttribute($attribute, $indexedVal);
         }
 
         return $wrapper->innerHTML;
