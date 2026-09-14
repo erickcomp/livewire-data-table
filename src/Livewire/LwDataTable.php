@@ -4,21 +4,18 @@ namespace ErickComp\LivewireDataTable\Livewire;
 
 use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable;
-use ErickComp\LivewireDataTable\DataTable\Data\BuildsDataTableQuery;
-use ErickComp\LivewireDataTable\DataTable\Data\ProvidesDataTableData;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
 use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
-use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\LazyCollection;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
@@ -604,38 +601,6 @@ class LwDataTable extends LivewireComponent
             ->all();
 
         return \array_intersect_key($columnsSearch, \array_flip($searchableFields));
-    }
-
-    protected function dataProviderProvidesDataTableData(): bool
-    {
-        return \is_a($this->dataTable->dataSrc, ProvidesDataTableData::class, true);
-    }
-
-    protected function dataProviderBuildsDataTableQuery(): bool
-    {
-        return \is_a($this->dataTable->dataSrc, BuildsDataTableQuery::class, true);
-    }
-
-    protected function dataProviderIsEloquentModel(): bool
-    {
-        return \is_a($this->dataTable->dataSrc, EloquentModel::class, true);
-    }
-
-    protected function dataProviderIsClass(): bool
-    {
-        return \class_exists($this->dataTable->dataSrc);
-    }
-
-    protected function dataProviderIsCallable(): bool
-    {
-        if (\is_callable($this->dataTable->dataSrc)) {
-            return true;
-        }
-
-        $callable = Str::parseCallback($this->dataTable->dataSrc);
-
-        return \is_callable([$callable[0], $callable[1]])
-            || \is_callable([app()->make($callable[0]), $callable[1]]);
     }
 
     protected function queryString()

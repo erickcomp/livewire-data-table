@@ -382,11 +382,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             @elseif ($column instanceof DataColumn)
                                 <td {{ $tdAttributes }}>
                                     @php
-                                    $cellContent = \data_get($row, $column->dataField, $noData);
-                                    
-                                    if($cellContent === $noData) {
-                                        throw new \LogicException("Cannot get data for column [{$column->dataField}] on row #{$loop->iteration}");
-                                    }
+                                    $cellContent = $column->getCellData($row, $loop->iteration);
                                     @endphp
                                     
                                     {{ $cellContent }}

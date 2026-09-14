@@ -403,32 +403,8 @@ parameters:
 			path: src/Livewire/LwDataRetrievalParams.php
 
 		-
-			message: '#^Call to function class_exists\(\) with ErickComp\\LivewireDataTable\\Data\\DataSource will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 1
-			path: src/Livewire/LwDataTable.php
-
-		-
-			message: '#^Call to static method parse\(\) on an unknown class ErickComp\\LivewireDataTable\\Livewire\\Date\.$#'
-			identifier: class.notFound
-			count: 2
-			path: src/Livewire/LwDataTable.php
-
-		-
 			message: '#^Cannot unset property ErickComp\\LivewireDataTable\\Livewire\\LwDataTable\:\:\$sd because it might have hooks in a subclass\.$#'
 			identifier: unset.possiblyHookedProperty
-			count: 1
-			path: src/Livewire/LwDataTable.php
-
-		-
-			message: '#^Class ErickComp\\LivewireDataTable\\DataTable\\Data\\BuildsDataTableQuery not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Livewire/LwDataTable.php
-
-		-
-			message: '#^Class ErickComp\\LivewireDataTable\\DataTable\\Data\\ProvidesDataTableData not found\.$#'
-			identifier: class.notFound
 			count: 1
 			path: src/Livewire/LwDataTable.php
 
@@ -453,18 +429,6 @@ parameters:
 		-
 			message: '#^Negated boolean expression is always false\.$#'
 			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: src/Livewire/LwDataTable.php
-
-		-
-			message: '#^Parameter \#1 \$callback of static method Illuminate\\Support\\Str\:\:parseCallback\(\) expects string, ErickComp\\LivewireDataTable\\Data\\DataSource given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Livewire/LwDataTable.php
-
-		-
-			message: '#^Parameter \#1 \$class of function class_exists expects string, ErickComp\\LivewireDataTable\\Data\\DataSource given\.$#'
-			identifier: argument.type
 			count: 1
 			path: src/Livewire/LwDataTable.php
 
