@@ -341,9 +341,15 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                         @foreach ($this->dataTable->columns as $column)
                             <th {{ $column->buildSearchThAttributes($this->preset()->get('table.thead.tr.search.th.class'), $this->dataTable->theadSearchThAttributes) }}>
                                 @if ($column->isSearchable())
+                                    {{-- Local Alpine state instead of wire:model: Alpine plugins that write to the
+                                         model while the input mounts (e.g. x-mask syncing an empty value) stay in the
+                                         browser, so opening the page never fires a spurious request. Only real input
+                                         reaches the server. --}}
                                     <input
                                         type="text"
-                                        wire:model.live.debounce.{{ $this->preset()->get('table.thead.tr.search.columns-search-debounce-ms', 200) }}ms="columnsSearch.{{ $column->dataField }}"
+                                        x-data="{ value: @js((string) Arr::get($this->columnsSearch, $column->dataField, '')) }"
+                                        x-model="value"
+                                        x-on:input.debounce.{{ $this->dataTable->columnsSearchDebounce }}ms="$wire.$set('columnsSearch.{{ $column->dataField }}', value)"
                                         {{ $column->thSearchInputAttributes->class($this->preset()->get('table.thead.tr.search.th.input.class')) }}
                                         value="{{ Arr::get($this->columnsSearch, $column->dataField, '') }}"
                                         />

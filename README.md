@@ -181,6 +181,16 @@ Add `searchable` to column definitions to enable per-column search inputs:
 
 The `searchable` attribute accepts `true` (defaults to `contains` mode) or a specific mode string.
 
+Attributes prefixed with `th-search-input-` go to the column's search input, so Alpine plugins work there:
+
+```blade
+<x-data-table.column title="CPF" data-field="cpf" searchable th-search-input-x-mask="999.999.999-99" />
+```
+
+The search input keeps its value in local Alpine state and sends it to the server only on real input,
+debounced by the data table's `columns-search-debounce`. A plugin that writes to the model while the input
+mounts (like `x-mask`) doesn't fire a request when the page opens.
+
 ### Filters
 
 ```blade

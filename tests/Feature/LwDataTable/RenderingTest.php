@@ -137,8 +137,8 @@ it('renders column search inputs for searchable columns', function () {
 
     $component = Livewire::test(LwDataTable::class, ['data-table' => $dataTable]);
 
-    $component->assertSeeHtml('wire:model.live.debounce')
-        ->assertSeeHtml('columnsSearch.name');
+    $component->assertSeeHtml('x-on:input.debounce')
+        ->assertSeeHtml("\$wire.\$set('columnsSearch.name', value)");
 });
 
 // --- Per-page selector ---
