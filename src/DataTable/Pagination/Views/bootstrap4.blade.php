@@ -19,7 +19,7 @@
                     {{-- Previous Page Link --}}
                     @if ($paginator->onFirstPage())
                         <li class="page-item disabled" aria-disabled="true">
-                            <span class="page-link">@lang('erickcomp_lw_data_table::pagination.previous')</span>
+                            <span class="page-link">{{ __('erickcomp_lw_data_table::messages.pagination.previous') }}</span>
                         </li>
                     @else
                         <li class="page-item">
@@ -27,7 +27,7 @@
                                 dusk="previousPage{{ $paginator->getPageName() == 'page' ? '' : '.' . $paginator->getPageName() }}"
                                 class="page-link" wire:click="previousPage('{{ $paginator->getPageName() }}')"
                                 x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                                wire:loading.attr="disabled">@lang('erickcomp_lw_data_table::pagination.previous')</button>
+                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::messages.pagination.previous') }}</button>
                         </li>
                     @endif
 
@@ -38,11 +38,11 @@
                                 dusk="nextPage{{ $paginator->getPageName() == 'page' ? '' : '.' . $paginator->getPageName() }}"
                                 class="page-link" wire:click="nextPage('{{ $paginator->getPageName() }}')"
                                 x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                                wire:loading.attr="disabled">@lang('erickcomp_lw_data_table::pagination.next')</button>
+                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::messages.pagination.next') }}</button>
                         </li>
                     @else
                         <li class="page-item disabled" aria-disabled="true">
-                            <span class="page-link" aria-hidden="true">@lang('erickcomp_lw_data_table::pagination.next')</span>
+                            <span class="page-link" aria-hidden="true">{{ __('erickcomp_lw_data_table::messages.pagination.next') }}</span>
                         </li>
                     @endif
                 </ul>
@@ -67,7 +67,7 @@
                         {{-- Previous Page Link --}}
                         @if ($paginator->onFirstPage())
                             <li class="page-item disabled" aria-disabled="true"
-                                aria-label="@lang('erickcomp_lw_data_table::pagination.previous')">
+                                aria-label="{{ __('erickcomp_lw_data_table::messages.pagination.previous') }}">
                                 <span class="page-link" aria-hidden="true">&lsaquo;</span>
                             </li>
                         @else
@@ -76,7 +76,7 @@
                                     dusk="previousPage{{ $paginator->getPageName() == 'page' ? '' : '.' . $paginator->getPageName() }}"
                                     class="page-link" wire:click="previousPage('{{ $paginator->getPageName() }}')"
                                     x-on:click="{{ $scrollIntoViewJsSnippet }}" wire:loading.attr="disabled"
-                                    aria-label="@lang('erickcomp_lw_data_table::pagination.previous')">&lsaquo;</button>
+                                    aria-label="{{ __('erickcomp_lw_data_table::messages.pagination.previous') }}">&lsaquo;</button>
                             </li>
                         @endif
 
@@ -111,11 +111,11 @@
                                     dusk="nextPage{{ $paginator->getPageName() == 'page' ? '' : '.' . $paginator->getPageName() }}"
                                     class="page-link" wire:click="nextPage('{{ $paginator->getPageName() }}')"
                                     x-on:click="{{ $scrollIntoViewJsSnippet }}" wire:loading.attr="disabled"
-                                    aria-label="@lang('erickcomp_lw_data_table::pagination.next')">&rsaquo;</button>
+                                    aria-label="{{ __('erickcomp_lw_data_table::messages.pagination.next') }}">&rsaquo;</button>
                             </li>
                         @else
                             <li class="page-item disabled" aria-disabled="true"
-                                aria-label="@lang('erickcomp_lw_data_table::pagination.next')">
+                                aria-label="{{ __('erickcomp_lw_data_table::messages.pagination.next') }}">
                                 <span class="page-link" aria-hidden="true">&rsaquo;</span>
                             </li>
                         @endif
