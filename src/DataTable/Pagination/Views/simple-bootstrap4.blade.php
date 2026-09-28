@@ -17,7 +17,7 @@
                 {{-- Previous Page Link --}}
                 @if ($paginator->onFirstPage())
                     <li class="page-item disabled" aria-disabled="true">
-                        <span class="page-link">{{ __('erickcomp_lw_data_table::pagination.previous') }}</span>
+                        <span class="page-link">{{ __('erickcomp_lw_data_table::messages.pagination.previous') }}</span>
                     </li>
                 @else
                     @if(method_exists($paginator, 'getCursorName'))
@@ -26,7 +26,7 @@
                                 wire:key="cursor-{{ $paginator->getCursorName() }}-{{ $paginator->previousCursor()->encode() }}"
                                 wire:click="setPage('{{$paginator->previousCursor()->encode()}}','{{ $paginator->getCursorName() }}')"
                                 x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::pagination.previous') }}</button>
+                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::messages.pagination.previous') }}</button>
                         </li>
                     @else
                         <li class="page-item">
@@ -34,7 +34,7 @@
                                 dusk="previousPage{{ $paginator->getPageName() == 'page' ? '' : '.' . $paginator->getPageName() }}"
                                 class="page-link" wire:click="previousPage('{{ $paginator->getPageName() }}')"
                                 x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::pagination.previous') }}</button>
+                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::messages.pagination.previous') }}</button>
                         </li>
                     @endif
                 @endif
@@ -47,7 +47,7 @@
                                 wire:key="cursor-{{ $paginator->getCursorName() }}-{{ $paginator->nextCursor()->encode() }}"
                                 wire:click="setPage('{{$paginator->nextCursor()->encode()}}','{{ $paginator->getCursorName() }}')"
                                 x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::pagination.next') }}</button>
+                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::messages.pagination.next') }}</button>
                         </li>
                     @else
                         <li class="page-item">
@@ -55,12 +55,12 @@
                                 dusk="nextPage{{ $paginator->getPageName() == 'page' ? '' : '.' . $paginator->getPageName() }}"
                                 class="page-link" wire:click="nextPage('{{ $paginator->getPageName() }}')"
                                 x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::pagination.next') }}</button>
+                                wire:loading.attr="disabled">{{ __('erickcomp_lw_data_table::messages.pagination.next') }}</button>
                         </li>
                     @endif
                 @else
                     <li class="page-item disabled" aria-disabled="true">
-                        <span class="page-link">{{ __('erickcomp_lw_data_table::pagination.next') }}</span>
+                        <span class="page-link">{{ __('erickcomp_lw_data_table::messages.pagination.next') }}</span>
                     </li>
                 @endif
             </ul>
