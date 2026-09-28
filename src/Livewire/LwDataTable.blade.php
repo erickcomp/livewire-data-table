@@ -362,12 +362,21 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
             <tbody {{$this->dataTable->tbodyAttributes->class($this->preset()->get('table.tbody.class')) }}>
                 @php
                     $noData = new \stdClass();
+
+                    // A column's <td> attributes depend only on the column and on the preset, so they are
+                    // built once per column (on the first row) instead of once per cell. They are kept here,
+                    // in the view, and not memoized in the Column: the columns go into the DataTable file
+                    // cache, whose name is the md5 of the serialized DataTable.
+                    $tdPresetClass = $this->preset()->get('table.tbody.tr.td.class');
+                    $columnsTdAttributes = [];
                 @endphp
                 @forelse ($rows as $row)
                     <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}">
-                        @foreach ($this->dataTable->columns as $column)
+                        @foreach ($this->dataTable->columns as $columnKey => $column)
                             @php
-                                $tdAttributes = $column->buildTdAttributes($this->preset()->get('table.tbody.tr.td.class'));
+                                // Each cell gets its own copy: a custom renderer receives the bag as $attributes
+                                // and may change it ($attributes['x'] = ...), which must not reach the next rows
+                                $tdAttributes = clone ($columnsTdAttributes[$columnKey] ??= $column->buildTdAttributes($tdPresetClass));
                             @endphp
                             
                             @if($column instanceof CustomRenderedColumn)
