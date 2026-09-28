@@ -138,13 +138,24 @@ class Filter
      */
     protected function extractSelectOptionsFromRenderedHtml(string $renderedHtml): void
     {
-        if (!\in_array($this->inputType, [self::TYPE_SELECT, self::TYPE_SELECT_MULTIPLE], true)) {
+        if (!$this->isSelect()) {
             return;
         }
 
-        $wrapperId = '__dt_opts_' . \bin2hex(\random_bytes(4));
-        $dom = new \Gt\Dom\HTMLDocument("<div id=\"{$wrapperId}\">{$renderedHtml}</div>");
-        $wrapper = $dom->getElementById($wrapperId);
+        $this->extractSelectOptionsFromElement($this->parseHtmlIntoWrapper($renderedHtml));
+    }
+
+    /**
+     * O mesmo que extractSelectOptionsFromRenderedHtml(), sobre um HTML já parseado: $wrapper é o
+     * elemento cujo conteúdo é o HTML renderizado.
+     *
+     * @throws \LogicException Nos mesmos casos de extractSelectOptionsFromRenderedHtml().
+     */
+    protected function extractSelectOptionsFromElement(\GT\Dom\Element $wrapper): void
+    {
+        if (!$this->isSelect()) {
+            return;
+        }
 
         // Se declarou input-type="select" com custom renderer, o HTML deve conter um <select>.
         // Sem ele, o filtro não funciona — melhor falhar cedo com mensagem clara.
@@ -179,6 +190,11 @@ class Filter
         }
 
         $this->attributes['options'] = $options;
+    }
+
+    protected function isSelect(): bool
+    {
+        return \in_array($this->inputType, [self::TYPE_SELECT, self::TYPE_SELECT_MULTIPLE], true);
     }
 
     public function htmlInputType(): ?string
@@ -267,15 +283,19 @@ class Filter
 
         $renderedCode = Blade::render($this->customRendererCode, $data + ['___dataTableFilter' => $this]);
 
+        // Um único parse do HTML renderizado: a extração das options e as três inserções de atributos
+        // abaixo trabalham sobre o mesmo elemento-invólucro, serializado uma vez só, no fim.
+        $wrapper = $this->parseHtmlIntoWrapper($renderedCode);
+
         // Para filtros do tipo select com custom renderer, extrai as options do HTML renderizado
         // e popula o atributo 'options'. Isso é feito aqui (antes das manipulações de DOM abaixo)
-        // para aproveitar o HTML já renderizado pelo Blade e evitar um segundo parse.
+        // para aproveitar o HTML já renderizado pelo Blade.
         // Quando processFilters() chama este método antes da view, as options ficam disponíveis
         // para montar os labels dos filtros aplicados via getSelectOptions().
-        $this->extractSelectOptionsFromRenderedHtml($renderedCode);
+        $this->extractSelectOptionsFromElement($wrapper);
 
-        $renderedCode = $this->insertAttributeValueIntoHTML(
-            $renderedCode,
+        $this->insertAttributeValueIntoElement(
+            $wrapper,
             'input,select',
             'name',
             $this->buildInputNameAttribute($filterProperty),
@@ -283,22 +303,24 @@ class Filter
             '[]',
         );
 
-        $renderedCode = $this->insertAttributeValueIntoHTML(
-            $renderedCode,
+        $this->insertAttributeValueIntoElement(
+            $wrapper,
             'input',
             'x-on:keydown.enter',
             'applyFilters()',
             false,
         );
 
-        $this->cachedRenderedCustomCode = $this->insertAttributeValueIntoHTML(
-            $renderedCode,
+        $this->insertAttributeValueIntoElement(
+            $wrapper,
             'input,select',
             'x-model',
             $this->buildXModelAttribute('inputFilters'),
             false,
             '.',
         );
+
+        $this->cachedRenderedCustomCode = $wrapper->innerHTML;
 
         return $this->cachedRenderedCustomCode;
     }
@@ -403,13 +425,20 @@ class Filter
 
     protected function insertAttributeValueIntoHTML(string $html, string $selector, string $attribute, string $value, bool $force, ?string $notationForMultiple = null): string
     {
-        if ($notationForMultiple !== null && !\in_array(\trim($notationForMultiple), ['[]', '.'], true)) {
-            throw new \DomainException("Invalid value for the \$notationForMultiple parameter: $notationForMultiple. The valid values are: null, \"[]\", \".\"");
-        }
+        $wrapper = $this->parseHtmlIntoWrapper($html);
 
-        $wrapperId = '__dt_wrapper_' . \bin2hex(\random_bytes(4));
-        $dom = new \Gt\Dom\HTMLDocument("<div id=\"{$wrapperId}\">{$html}</div>");
-        $wrapper = $dom->getElementById($wrapperId);
+        $this->insertAttributeValueIntoElement($wrapper, $selector, $attribute, $value, $force, $notationForMultiple);
+
+        return $wrapper->innerHTML;
+    }
+
+    /**
+     * O mesmo que insertAttributeValueIntoHTML(), alterando no lugar os nós dentro de $wrapper, sem
+     * parsear nem serializar HTML.
+     */
+    protected function insertAttributeValueIntoElement(\GT\Dom\Element $wrapper, string $selector, string $attribute, string $value, bool $force, ?string $notationForMultiple = null): void
+    {
+        $this->validateNotationForMultiple($notationForMultiple);
 
         $nodes = $wrapper->querySelectorAll($selector);
 
@@ -429,7 +458,7 @@ class Filter
         if (\count($nosElegiveis) === 1) {
             $nosElegiveis[0]->setAttribute($attribute, $value);
 
-            return $wrapper->innerHTML;
+            return;
         }
 
         foreach ($nosElegiveis as $i => $node) {
@@ -441,8 +470,25 @@ class Filter
 
             $node->setAttribute($attribute, $indexedVal);
         }
+    }
 
-        return $wrapper->innerHTML;
+    protected function validateNotationForMultiple(?string $notationForMultiple): void
+    {
+        if ($notationForMultiple !== null && !\in_array(\trim($notationForMultiple), ['[]', '.'], true)) {
+            throw new \DomainException("Invalid value for the \$notationForMultiple parameter: $notationForMultiple. The valid values are: null, \"[]\", \".\"");
+        }
+    }
+
+    /**
+     * Parseia o HTML dentro de uma <div> de id aleatório e devolve essa <div>: o innerHTML dela é o HTML
+     * dado, com as alterações feitas nos nós de dentro.
+     */
+    protected function parseHtmlIntoWrapper(string $html): \GT\Dom\Element
+    {
+        $wrapperId = '__dt_wrapper_' . \bin2hex(\random_bytes(4));
+        $dom = new \GT\Dom\HTMLDocument("<div id=\"{$wrapperId}\">{$html}</div>");
+
+        return $dom->getElementById($wrapperId);
     }
 
     protected function getAttributeBagsMappings(): array
