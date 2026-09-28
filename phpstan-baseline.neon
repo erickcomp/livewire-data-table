@@ -289,12 +289,6 @@ parameters:
 			path: src/DataTable/BaseDataTableComponent.php
 
 		-
-			message: '#^Class GT\\Dom\\HTMLDocument referenced with incorrect case\: Gt\\Dom\\HTMLDocument\.$#'
-			identifier: class.nameCase
-			count: 2
-			path: src/DataTable/Filter.php
-
-		-
 			message: '#^Match expression does not handle remaining value\: string$#'
 			identifier: match.unhandled
 			count: 1

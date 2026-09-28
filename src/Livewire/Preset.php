@@ -24,6 +24,25 @@ class Preset
     protected static array $presetCache = [];
 
     /**
+     * Memo of get(): values already resolved (here or up the parent chain), by key. A key may resolve to
+     * null, so it is looked up with array_key_exists().
+     *
+     * @var array<string, mixed>
+     */
+    protected array $resolvedValues = [];
+
+    /**
+     * Memo of get(): keys found neither here nor up the parent chain. The default is per call, so only
+     * the absence is kept.
+     *
+     * @var array<string, true>
+     */
+    protected array $missingKeys = [];
+
+    protected ?Preset $loadedParent = null;
+    protected bool $isParentLoaded = false;
+
+    /**
      * @param array {
      *     extends: ?string,
      *     main-container-class: array<int, string>|array<string, bool>,
@@ -84,8 +103,7 @@ class Preset
     public function __get(string $key): mixed
     {
         if ($key === 'parent') {
-            $parentName = $this->get('extends', '');
-            return empty($parentName) ? null : static::loadFromName($parentName);
+            return $this->loadParent();
         }
 
         throw new \BadMethodCallException("Undefined property: " . static::class . "::$key for preset [{$this->name}]");
@@ -97,15 +115,70 @@ class Preset
             return $this->presetInfo;
         }
 
+        if (\array_key_exists($key, $this->resolvedValues)) {
+            return $this->resolvedValues[$key];
+        }
+
+        if (isset($this->missingKeys[$key])) {
+            return $default;
+        }
+
         $val = Arr::get($this->presetInfo, $key, static::noDataFound());
 
         if ($val === static::noDataFound()) {
-            return $this->parent instanceof static
-                ? $this->parent->get($key, $default)
-                : $default;
+            $parent = $this->loadParent();
+
+            // The sentinel only goes to the parent as its default and is never memoized: it is an instance
+            // of an anonymous class, which cannot be serialized
+            $val = $parent instanceof static
+                ? $parent->get($key, static::noDataFound())
+                : static::noDataFound();
         }
 
-        return $val;
+        if ($val === static::noDataFound()) {
+            $this->missingKeys[$key] = true;
+
+            return $default;
+        }
+
+        return $this->resolvedValues[$key] = $val;
+    }
+
+    /**
+     * Only the name and the preset info are serialized, under the very keys PHP uses by default for these
+     * two protected properties: the serialized form is the same as before the memo existed and does not
+     * depend on what get() has resolved. DataTable keeps its preset, and the DataTable file cache is named
+     * after the md5 of the serialized DataTable.
+     */
+    public function __serialize(): array
+    {
+        return [
+            "\0*\0name" => $this->name,
+            "\0*\0presetInfo" => $this->presetInfo,
+        ];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->name = $data["\0*\0name"];
+        $this->presetInfo = $data["\0*\0presetInfo"];
+    }
+
+    /**
+     * The preset named by "extends", loaded once.
+     *
+     * "extends" is read from this preset's own info: looking it up with get() would climb to the parent
+     * when missing, which requires the parent in the first place.
+     */
+    protected function loadParent(): ?Preset
+    {
+        if (!$this->isParentLoaded) {
+            $parentName = $this->presetInfo['extends'] ?? '';
+            $this->loadedParent = empty($parentName) ? null : static::loadFromName($parentName);
+            $this->isParentLoaded = true;
+        }
+
+        return $this->loadedParent;
     }
 
     public static function loadFromName(string $name): static
