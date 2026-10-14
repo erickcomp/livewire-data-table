@@ -726,9 +726,11 @@ class DataTable extends BaseDataTableComponent //implements Wireable
                 'rowLevelAttributesCodePath',
             ];
 
+            $excludedValues = [];
+
             foreach ($varsToExcludeFromSerializationHash as $var) {
                 if (isset($this->$var)) {
-                    $$var = $this->$var;
+                    $excludedValues[$var] = $this->$var;
 
                     unset($this->$var);
                 }
@@ -737,10 +739,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             $serialized = \serialize($this);
             $this->cacheBaseFilename = "x-{$this->componentName}___" . \md5($serialized);
 
-            foreach ($varsToExcludeFromSerializationHash as $var) {
-                if (isset($$var)) {
-                    $this->$var = $$var;
-                }
+            foreach ($excludedValues as $var => $value) {
+                $this->$var = $value;
             }
         }
 

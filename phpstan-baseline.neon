@@ -241,48 +241,6 @@ parameters:
 			path: src/DataTable.php
 
 		-
-			message: '#^Undefined variable\: \$dynamicViewData$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/DataTable.php
-
-		-
-			message: '#^Undefined variable\: \$rowLevelAttributesCode$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/DataTable.php
-
-		-
-			message: '#^Undefined variable\: \$rowLevelAttributesCodePath$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/DataTable.php
-
-		-
-			message: '#^Undefined variable\: \$rowLevelClassCode$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/DataTable.php
-
-		-
-			message: '#^Undefined variable\: \$rowLevelClassCodePath$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/DataTable.php
-
-		-
-			message: '#^Undefined variable\: \$rowLevelStyleCode$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/DataTable.php
-
-		-
-			message: '#^Undefined variable\: \$rowLevelStyleCodePath$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/DataTable.php
-
-		-
 			message: '#^Method ErickComp\\LivewireDataTable\\DataTable\\BaseDataTableComponent\:\:makeViewObject\(\) should return Illuminate\\View\\View but returns Illuminate\\Contracts\\View\\View\.$#'
 			identifier: return.type
 			count: 1
