@@ -55,6 +55,12 @@ jobs:
       - name: Run tests
         run: vendor/bin/pest --colors=always
 
+      # Production deploys often dump the autoloader this way, which only finds classes by their declared name
+      - name: Run tests (classmap-authoritative autoloader)
+        run: |
+          composer dump-autoload --classmap-authoritative --no-interaction
+          vendor/bin/pest --colors=always
+
   static-analysis:
     runs-on: ubuntu-latest
     name: PHPStan
