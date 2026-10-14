@@ -34,7 +34,13 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 | Laravel | `^12.60` or `^13.10` |
 | Livewire | `^3.6` or `^4.0` |
 | [erickcomp/laravel-raw-blade-components](https://github.com/erickcomp/laravel-raw-blade-components) | `2.0` (installed automatically) |
-| [phpgt/dom](https://github.com/PhpGt/Dom) | `^4.1` (installed automatically) |
+| [phpgt/dom](https://github.com/PhpGt/Dom) | `^4.2` (installed automatically) |
+
+> **Note:** besides requiring phpgt/dom `^4.2`, the package declares `"conflict": {"phpgt/cssxpath": "<1.1.2 || >=1.6.0"}`:
+>
+> - **phpgt/dom `^4.2`**: the package references phpgt/dom classes as `GT\Dom\…`, the namespace declared from 4.2.0 on.
+> - **phpgt/cssxpath `>=1.6.0`**: 1.6.0 declares its classes as `GT\CssXPath\…`, but phpgt/dom (up to 4.2.2) still imports `Gt\CssXPath\Translator`. PHP class names are case-insensitive and the PSR-4 autoloader still finds the file, but Composer's classmap lookup is case-sensitive, so in applications whose autoloader is dumped with `--classmap-authoritative`, rendering a filter with a custom renderer fails with `Class "Gt\CssXPath\Translator" not found`. This upper bound will be lifted once a phpgt/dom release imports `GT\CssXPath`.
+> - **phpgt/cssxpath `<1.1.2`**: 1.1.0 and 1.1.1 use `continue` inside a `switch`, which PHP reports as a compile warning (`"continue" targeting switch is equivalent to "break"`) that Laravel turns into an exception.
 
 ### Optional
 
