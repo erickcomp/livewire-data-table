@@ -16,7 +16,10 @@
         "laravel/framework": "^12.60|^13.10",
         "livewire/livewire": "^3.6|^4.0",
         "erickcomp/laravel-raw-blade-components": "^3.0",
-        "phpgt/dom": "^4.1"
+        "phpgt/dom": "^4.2"
+    },
+    "conflict": {
+        "phpgt/cssxpath": "<1.1.2 || >=1.6.0"
     },
     "autoload": {
         "psr-4": {
