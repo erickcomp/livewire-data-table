@@ -3,6 +3,7 @@
 use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
+use ErickComp\LivewireDataTable\DataTable\RowActionsColumn;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -421,6 +422,8 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                     $tdPresetClass = $this->preset()->get('table.tbody.tr.td.class');
                     $columnsTdAttributes = [];
 
+                    $hasRowActionsOrClick = $this->dataTable->hasRowActions() || $this->dataTable->hasRowClick();
+
                     if ($isSelectable) {
                         $selectionTdAttributes = $this->dataTable->selectionTdAttributes
                             ->class($tdPresetClass ?? [])
@@ -432,9 +435,11 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 @endphp
                 @forelse ($rows as $row)
                     @php
-                        $rowSelectionId = $isSelectable ? $this->rowSelectionId($row) : null;
+                        $rowSelectionId = $isSelectable || $hasRowActionsOrClick ? $this->rowSelectionId($row) : null;
+                        $visibleRowActions = $this->visibleRowActions($row);
+                        $rowClickAttributes = $hasRowActionsOrClick ? $this->rowClickAttributes($row, $rowSelectionId, $visibleRowActions) : [];
                     @endphp
-                    <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}"
+                    <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop)->merge($rowClickAttributes) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}"
                         @if ($isSelectable && $selectedRowClass !== '') x-bind:class="{ {{ Js::from($selectedRowClass) }}: isRowSelected({{ Js::from($rowSelectionId) }}) }" @endif>
                         @if ($isSelectable)
                             <td {{ $selectionTdAttributes }}>
@@ -467,6 +472,13 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                 @endif
 
                                 @continue
+                            @elseif ($column instanceof RowActionsColumn)
+                                @include('erickcomp_lw_data_table::row-actions', [
+                                    'column' => $column,
+                                    'actions' => $visibleRowActions,
+                                    'rowId' => $rowSelectionId,
+                                    'preset' => $this->preset(),
+                                ])
                             @elseif ($column instanceof DataColumn)
                                 <td {{ $tdAttributes }}>
                                     @php

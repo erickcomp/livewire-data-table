@@ -17,6 +17,8 @@ use ErickComp\LivewireDataTable\DataTable\DataColumn;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\DataTable\Footer;
+use ErickComp\LivewireDataTable\DataTable\RowAction;
+use ErickComp\LivewireDataTable\DataTable\RowActionsColumn;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\LivewireDataTable\Livewire\Preset;
@@ -130,6 +132,15 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     //public iterable $rows = [];
     public ?Filters $filters = null;
     public ?BulkActions $bulkActions = null;
+
+    /** The row actions column, also among the columns */
+    public ?RowActionsColumn $rowActions = null;
+
+    /** The row action run when a row is clicked ("row-click") */
+    public ?string $rowClick = null;
+
+    /** Where a click on a row leads ("row-click-url"), with "{field}" placeholders like a row action's url */
+    public ?string $rowClickUrl = null;
     public ?Footer $footer = null;
 
     public int $collectionSortingFlags;
@@ -209,6 +220,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         bool|string $selectable = false,
         bool|string $preserveSelectionOnFilter = false,
         bool|string|null $recordsCount = null,
+        ?string $rowClick = null,
+        ?string $rowClickUrl = null,
 
 
         public array $actions = [],
@@ -296,6 +309,17 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         $this->preserveSelectionOnFilter = static::parseBooleanAttribute('preserve-selection-on-filter', $preserveSelectionOnFilter);
         $this->recordsCountAttribute = $recordsCount === null ? null : static::parseBooleanAttribute('records-count', $recordsCount);
         $this->showRecordsCount = $this->recordsCountAttribute ?? $this->selectable;
+
+        $this->rowClick = \trim($rowClick ?? '') !== '' ? \trim($rowClick) : null;
+        $this->rowClickUrl = \trim($rowClickUrl ?? '') !== '' ? \trim($rowClickUrl) : null;
+
+        if ($this->rowClick !== null && $this->rowClickUrl !== null) {
+            throw new \InvalidArgumentException('A table can have either a [row-click] or a [row-click-url] attribute, not both');
+        }
+
+        if ($this->rowClickUrl !== null) {
+            RowAction::validateUrl($this->rowClickUrl, 'the [row-click-url] of the table');
+        }
 
         // $this->searchable = match (true) {
         //     $searchable === false => [],
@@ -562,6 +586,59 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             $this->initFilters(new ComponentAttributeBag());
         }
         $this->filters->filtersItems[] = new Filter($filterAttributes, $customRendererCode);
+    }
+
+    /**
+     * Adds the row actions column, among the columns, where it is declared
+     */
+    public function initRowActions(ComponentAttributeBag $rowActionsAttributes)
+    {
+        $this->rowActions = RowActionsColumn::fromComponentAttributeBag($rowActionsAttributes);
+        $this->columns->push($this->rowActions);
+    }
+
+    public function initializedRowActions(): bool
+    {
+        return $this->rowActions !== null;
+    }
+
+    public function addRowAction(ComponentAttributeBag $rowActionAttributes)
+    {
+        if (!$this->initializedRowActions()) {
+            $this->initRowActions(new ComponentAttributeBag());
+        }
+
+        $this->rowActions->add(RowAction::fromComponentAttributeBag($rowActionAttributes));
+    }
+
+    public function hasRowActions(): bool
+    {
+        return $this->initializedRowActions() && !empty($this->rowActions->actions);
+    }
+
+    public function findRowAction(string $name): ?RowAction
+    {
+        return $this->rowActions?->find($name);
+    }
+
+    public function hasRowClick(): bool
+    {
+        return $this->rowClick !== null || $this->rowClickUrl !== null;
+    }
+
+    /**
+     * The row action named by "row-click", if any
+     *
+     * @throws \LogicException when there is no row action with that name
+     */
+    public function rowClickAction(): ?RowAction
+    {
+        if ($this->rowClick === null) {
+            return null;
+        }
+
+        return $this->findRowAction($this->rowClick)
+            ?? throw new \LogicException("The [row-click] attribute of the table names the row action [{$this->rowClick}], but there is no row action with that name");
     }
 
     public function initBulkActions(ComponentAttributeBag $bulkActionsAttributes)

@@ -246,6 +246,9 @@ return [
                         'selected' => [
                             'class' => ['lw-dt-selected-row'],
                         ],
+                        'clickable' => [
+                            'class' => ['lw-dt-clickable-row'],
+                        ],
                     ],
                 ],
                 'selection' => [
@@ -255,6 +258,18 @@ return [
                     'menu-container' => ['class' => ['lw-dt-selection-menu-container']],
                     'menu-button' => [
                         'class' => ['lw-dt-selection-menu-button'],
+                        'icon' => '&#9662;',
+                    ],
+                    'menu' => ['class' => ['lw-dt-selection-menu']],
+                    'menu-item' => ['class' => ['lw-dt-selection-menu-item']],
+                ],
+                'row-actions' => [
+                    'links' => ['class' => ['lw-dt-row-actions']],
+                    'link' => ['class' => ['lw-dt-row-action']],
+                    'form' => ['class' => ['lw-dt-row-action-form']],
+                    'menu-container' => ['class' => ['lw-dt-row-actions-menu-container']],
+                    'menu-button' => [
+                        'class' => ['lw-dt-row-actions-menu-button'],
                         'icon' => '&#9662;',
                     ],
                     'menu' => ['class' => ['lw-dt-selection-menu']],
@@ -616,6 +631,50 @@ return [
                         background: #eef4ff;
                     }
 
+                    .lw-dt tr.lw-dt-clickable-row {
+                        cursor: pointer;
+                    }
+
+                    .lw-dt tr.lw-dt-clickable-row:hover {
+                        background: #f5f5f5;
+                    }
+
+                    .lw-dt .lw-dt-row-actions {
+                        display: inline-flex;
+                        flex-wrap: wrap;
+                        gap: 0.75rem;
+                        white-space: nowrap;
+                    }
+
+                    .lw-dt .lw-dt-row-action {
+                        padding: 0;
+                        border: none;
+                        background: none;
+                        color: #0645ad;
+                        font: inherit;
+                        text-decoration: underline;
+                        cursor: pointer;
+                    }
+
+                    .lw-dt .lw-dt-row-action-form {
+                        display: contents;
+                    }
+
+                    .lw-dt .lw-dt-row-actions-menu-button {
+                        padding: 0.125rem 0.5rem;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        background: #fff;
+                        font: inherit;
+                        white-space: nowrap;
+                        cursor: pointer;
+                    }
+
+                    .lw-dt a.lw-dt-selection-menu-item {
+                        color: inherit;
+                        text-decoration: none;
+                    }
+
                     .lw-dt .lw-dt-bulk-actions-select {
                         min-width: 10rem;
                     }
@@ -919,6 +978,9 @@ return [
                         'selected' => [
                             'class' => ['table-active'],
                         ],
+                        'clickable' => [
+                            'class' => ['lw-dt-clickable-row'],
+                        ],
                     ],
                 ],
                 'selection' => [
@@ -931,6 +993,18 @@ return [
                         'icon' => '',
                     ],
                     'menu' => ['class' => ['dropdown-menu', 'show', 'font-weight-normal']],
+                    'menu-item' => ['class' => ['dropdown-item']],
+                ],
+                'row-actions' => [
+                    'links' => ['class' => ['text-nowrap']],
+                    'link' => ['class' => ['btn', 'btn-link', 'btn-sm', 'p-0', 'mr-2', 'align-baseline']],
+                    'form' => ['class' => ['d-inline']],
+                    'menu-container' => ['class' => ['dropdown', 'd-inline-block']],
+                    'menu-button' => [
+                        'class' => ['btn', 'btn-outline-secondary', 'btn-sm', 'dropdown-toggle'],
+                        'icon' => '',
+                    ],
+                    'menu' => ['class' => ['dropdown-menu', 'show']],
                     'menu-item' => ['class' => ['dropdown-item']],
                 ],
                 'tfoot' => [
@@ -1018,6 +1092,10 @@ return [
                     :root {
                         --lw-dt-filters-container-bg-color: #fff;
                         --lw-dt-filters-toggle-button-color: #fff;
+                    }
+
+                    .lw-dt tr.lw-dt-clickable-row {
+                        cursor: pointer;
                     }
 
                     /*
@@ -1430,6 +1508,7 @@ return [
                         'td' => ['class' => ['px-3', 'py-2', 'dark:text-gray-200']],
                         'nodatafound' => ['class' => ['text-center', 'font-semibold', 'text-gray-500', 'dark:text-gray-400', 'py-4']],
                         'selected' => ['class' => ['bg-indigo-50', 'dark:bg-gray-700']],
+                        'clickable' => ['class' => ['cursor-pointer', 'hover:bg-gray-50', 'dark:hover:bg-gray-800']],
                     ],
                 ],
                 'selection' => [
@@ -1442,6 +1521,18 @@ return [
                         'icon' => '&#9662;',
                     ],
                     'menu' => ['class' => ['mt-1', 'w-56', 'py-1', 'rounded-md', 'bg-white', 'dark:bg-gray-800', 'shadow-lg', 'ring-1', 'ring-black/5', 'text-left', 'font-normal']],
+                    'menu-item' => ['class' => ['block', 'w-full', 'px-4', 'py-2', 'text-left', 'text-sm', 'text-gray-700', 'dark:text-gray-200', 'hover:bg-gray-100', 'dark:hover:bg-gray-700']],
+                ],
+                'row-actions' => [
+                    'links' => ['class' => ['inline-flex', 'flex-wrap', 'gap-3', 'whitespace-nowrap']],
+                    'link' => ['class' => ['text-indigo-600', 'hover:underline', 'dark:text-indigo-400']],
+                    'form' => ['class' => ['contents']],
+                    'menu-container' => ['class' => ['inline-block']],
+                    'menu-button' => [
+                        'class' => ['inline-flex', 'items-center', 'gap-1', 'px-2', 'py-1', 'text-sm', 'rounded-md', 'border', 'border-gray-300', 'text-gray-700', 'hover:bg-gray-50', 'dark:border-gray-600', 'dark:text-gray-200', 'dark:hover:bg-gray-700'],
+                        'icon' => '&#9662;',
+                    ],
+                    'menu' => ['class' => ['mt-1', 'w-48', 'py-1', 'rounded-md', 'bg-white', 'dark:bg-gray-800', 'shadow-lg', 'ring-1', 'ring-black/5', 'text-left', 'font-normal']],
                     'menu-item' => ['class' => ['block', 'w-full', 'px-4', 'py-2', 'text-left', 'text-sm', 'text-gray-700', 'dark:text-gray-200', 'hover:bg-gray-100', 'dark:hover:bg-gray-700']],
                 ],
                 'tfoot' => [

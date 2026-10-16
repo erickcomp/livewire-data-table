@@ -19,6 +19,7 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 - **Per-page selector** — configurable options with `max` and `all` special values
 - **Row selection** — a checkbox per row, a page checkbox, a "select all matching rows" menu and a records counter, à la Magento's admin grid
 - **Bulk actions** — an "Actions" dropdown that runs PHP handlers (or dispatches Livewire events) on the selected rows, with sub-actions, confirmation, gate checks and result messages
+- **Row actions** — a column of per-row actions (links, routes, forms with any HTTP method, PHP handlers or events) shown side by side or in a dropdown, with per-row gate checks, and rows that react to clicks
 - **Loading overlay** — built-in spinner overlay with Livewire loading states
 - **Custom column rendering** — use Blade content inside column definitions for full control
 - **Row-level customization** — dynamic `@rowClass`, `@rowStyle`, and `@rowAttributes` directives
@@ -593,6 +594,41 @@ Other details:
 ],
 ```
 
+### Row Actions
+
+A column with each row's actions, placed among the columns where it is declared (Magento's actions column):
+
+```blade
+<x-data-table :data-src="App\Models\User::class" preset="tailwind3v1" row-click="edit">
+    <x-data-table.column title="Name" data-field="name" />
+
+    <x-data-table.row-actions title="Actions" display="dropdown">
+        <x-data-table.row-action name="edit" label="Edit" url="/users/{id}/edit" />
+        <x-data-table.row-action name="show" label="View" route="users.show" :route-params="['user' => 'id']" target="_blank" />
+        <x-data-table.row-action name="archive" label="Archive" route="users.archive" :route-params="['user' => 'id']" method="post" confirm />
+        <x-data-table.row-action name="delete" label="Delete" handler="App\DataTable\Users\DeleteUser"
+            confirm="Delete {name}?" can="delete" />
+        <x-data-table.row-action name="notify" label="Notify" event="user-notify" />
+    </x-data-table.row-actions>
+</x-data-table>
+```
+
+Each action has one destination:
+
+- **`url`** — `{field}` placeholders are filled with the row's values, URL-encoded (`{owner.id}` reaches into relations). Only `http(s)` and relative URLs are accepted;
+- **`route`** — with `route-params` mapping each route parameter to a field of the row;
+- **`handler`** — a PHP handler, referenced like a [bulk action's](#bulk-actions). It gets `$row` (or the row's class, e.g. `User $user`), `string $id`, `Selection $selection` (just this row) and `RowAction $action`, and returns what a bulk action handler returns: a message, a redirect or a download;
+- **`event`** — a Livewire event dispatched with `action` and `id`.
+
+A `url` or `route` action is a link, unless it has another `method` than GET (`post`, `put`, `patch` or `delete`): it then submits a form, with the CSRF token and the `_method` field. `target` applies to both.
+
+- `confirm` asks for confirmation first, as bulk actions do: a bare `confirm` asks "Are you sure?", and a text is the question itself, with the row's values in its `{field}` placeholders.
+- `can` is a gate ability checked with the row (`Gate::allows('delete', $user)`, so policies work): the action only shows on the rows where the user passes it, and a handler or event action checks it again on the server.
+- The browser only sends the action's name and the row's id. The row must still be among the table's rows (with the current search and filters) when the action runs.
+- `display="dropdown"` (the default) shows the actions in a dropdown, `display="links"` side by side. A row with a single action available shows it as a link either way.
+
+**Clicking a row:** `row-click="edit"` on the table runs that row action when the row is clicked (on the rows where the action is available), and `row-click-url="/users/{id}/edit"` leads to that URL instead (Ctrl/Cmd+click opens a new tab). Clicks on links, buttons, form fields, labels and elements marked with `data-lw-dt-no-row-click` keep doing what they do.
+
 ### Refreshing the Table
 
 The rows are fetched again on every request the table makes. When they change elsewhere on the page (a form in a modal, another component), dispatch the `lw-dt-refresh` event to show the change right away:
@@ -690,6 +726,8 @@ For large datasets, you can increase the memory limit per table:
 | `selectable` | `bool` | `false` | Adds row selection: a column of checkboxes and the selection menu |
 | `preserve-selection-on-filter` | `bool` | `false` | Keep the rows checked one by one when the search or the filters change |
 | `records-count` | `bool` | Same as `selectable` | Show the "N records found (M selected)" counter |
+| `row-click` | `string` | `null` | Name of the row action run when a row is clicked |
+| `row-click-url` | `string` | `null` | URL a click on a row leads to, with `{field}` placeholders |
 | `data-identity-column` | `string` | `'id'` | Row identity column |
 | `php-max-memory` | `string` | `null` | PHP memory_limit override |
 | `dynamic-view-data` | `array` | `[]` | Per-user/per-request variables passed to Blade renderers (encrypted, travels over the wire) |
@@ -781,6 +819,38 @@ A self-closing direct child of `<x-data-table.bulk-actions>`.
 | `keep-selection` | `bool` | `false` | Keep the rows selected after the action runs |
 
 Other attributes go to the `<option>` (or `<optgroup>`).
+
+### `<x-data-table.row-actions>`
+
+A direct child of `<x-data-table>`, at most one per table, placed among the columns. See [Row Actions](#row-actions).
+
+| Attribute | Type | Default | Description |
+|---|---|---|---|
+| `title` | `string` | "Actions" (translated) | Column header text |
+| `display` | `string` | `'dropdown'` | `dropdown` or `links` |
+
+Supports the `th-*` and `td-*` prefixes, like a column.
+
+### `<x-data-table.row-action>`
+
+A self-closing direct child of `<x-data-table.row-actions>`.
+
+| Attribute | Type | Default | Description |
+|---|---|---|---|
+| `name` | `string` | **required** | Unique name, sent by the browser to run the action |
+| `label` | `string` | From `name` | Text of the link or button |
+| `url` | `string` | — | URL with `{field}` placeholders. Use one of `url`, `route`, `handler` and `event` |
+| `route` | `string` | — | Route name |
+| `route-params` | `array` | `[]` | Route parameter => row field |
+| `handler` | `string\|array` | — | PHP handler run on the server |
+| `event` | `string` | — | Livewire event dispatched with `action` and `id` |
+| `method` | `string` | `'get'` | HTTP method of a `url` or `route` action: anything but `get` submits a form |
+| `target` | `string` | `null` | Target of a `url` or `route` action, e.g. `_blank` |
+| `confirm` | `bool\|string` | `false` | Ask for confirmation first: `true` for the default question, or the question (`{field}` is replaced) |
+| `confirm-title` | `string` | "Confirm" (translated) | Title handed over to the preset's `confirm-dialog` function |
+| `can` | `string` | `null` | Gate ability checked with the row |
+
+Other attributes go to the link or button.
 
 ### `<x-data-table.assets>`
 
@@ -958,7 +1028,7 @@ Each preset can configure:
 - `search` — search input and button styling (with icon configuration)
 - `filters` — filter container, toggle button, apply button, individual filter items, and input styling per type
 - `applied-filters` — active filter badges, removal buttons and the "Clear all" button (`button-clear-all`)
-- `table` — wrapper, thead, tbody (including the selected row class), tfoot, th sorting indicators, and the selection column, checkboxes and menu (`table.selection`)
+- `table` — wrapper, thead, tbody (including the selected and clickable row classes), tfoot, th sorting indicators, the selection column, checkboxes and menu (`table.selection`), and the row actions links, forms and dropdown (`table.row-actions`)
 - `loader-overlay` — loading spinner template and CSS
 - `pagination` — views, container classes, per-page defaults
 - `messages` — the messages shown above the table (`container`, `success`, `error`, `info`, `button-dismiss`)

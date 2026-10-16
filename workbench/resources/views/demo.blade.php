@@ -32,7 +32,7 @@
     </nav>
 
     <main style="padding: 1rem;">
-        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" :data-src-pagination="$pagination" per-page="15,30,60" id="products" selectable>
+        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" :data-src-pagination="$pagination" per-page="15,30,60" id="products" selectable row-click="view">
             <x-data-table.search data-fields="name,category" />
 
             <x-data-table.bulk-actions>
@@ -54,6 +54,12 @@
             <x-data-table.column title="Name" data-field="name" sortable searchable />
             <x-data-table.column title="Category" data-field="category" sortable searchable />
             <x-data-table.column title="Price" data-field="price" sortable />
+
+            <x-data-table.row-actions>
+                <x-data-table.row-action name="view" label="View" route="demo.products.show" :route-params="['product' => 'id']" />
+                <x-data-table.row-action name="delete" label="Delete" handler="Workbench\App\DataTable\Products\DeleteProduct" confirm="Delete {name}?" />
+                <x-data-table.row-action name="discard" label="Discard" route="demo.products.destroy" :route-params="['product' => 'id']" method="delete" confirm />
+            </x-data-table.row-actions>
         </x-data-table>
     </main>
 

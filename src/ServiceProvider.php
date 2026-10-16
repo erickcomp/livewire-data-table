@@ -213,6 +213,8 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerFilterRawComponent();
         $this->registerBulkActionsRawComponent();
         $this->registerBulkActionRawComponent();
+        $this->registerRowActionsRawComponent();
+        $this->registerRowActionRawComponent();
         $this->registerAssetRawComponent();
         $this->registerScriptsRawComponent();
         $this->registerPaginationRawComponent();
@@ -375,6 +377,49 @@ if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\Dat
     throw new \LogicException("You can only use the [x-data-table.bulk-action] as a direct child of the [x-data-table.bulk-actions] component");
 }
 $component->addBulkAction($__rawComponentAttributes);
+?>
+SELF_CLOSING_CODE,
+        );
+    }
+
+    protected function registerRowActionsRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.row-actions',
+            openingCode: <<<'OPENING_CODE'
+<?php
+if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
+    throw new \LogicException("You can only use the [x-data-table.row-actions] as a direct child of the [x-data-table] component");
+}
+
+if ($component->initializedRowActions()) {
+    throw new \LogicException("You can only have one [x-data-table.row-actions] component per [x-data-table] component");
+}
+
+$component->initRowActions($__rawComponentAttributes);
+?>
+OPENING_CODE,
+            closingCode: '',
+        );
+    }
+
+    protected function registerRowActionRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.row-action',
+            openingCode: <<<'OPENING_CODE'
+<?php
+// No tag in the message: Blade would compile it as a component
+throw new \LogicException("The [x-data-table.row-action] component must be self-closing (ending with \"/>\") and have no content");
+?>
+OPENING_CODE,
+            closingCode: '',
+            selfClosingCode: <<<'SELF_CLOSING_CODE'
+<?php
+if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== 'x-data-table.row-actions') {
+    throw new \LogicException("You can only use the [x-data-table.row-action] as a direct child of the [x-data-table.row-actions] component");
+}
+$component->addRowAction($__rawComponentAttributes);
 ?>
 SELF_CLOSING_CODE,
         );

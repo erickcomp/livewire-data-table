@@ -8,6 +8,7 @@ use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\BulkAction;
 use ErickComp\LivewireDataTable\DataTable\Filter;
+use ErickComp\LivewireDataTable\DataTable\RowAction;
 use ErickComp\LivewireDataTable\Selection\Selection;
 use ErickComp\LivewireDataTable\Support\ActionResult;
 use ErickComp\LivewireDataTable\Support\ActionResultHandler;
@@ -240,7 +241,7 @@ class LwDataTable extends LivewireComponent
 
             toggleFiltersContainer(event) {
                 this.dtData().toggleFiltersContainer(\$wire);
-            }{$this->selectionXData()}{$this->bulkActionsXData()}
+            }{$this->selectionXData()}{$this->bulkActionsXData()}{$this->rowActionsXData()}
         };";
 
         return $xData;
@@ -359,6 +360,77 @@ class LwDataTable extends LivewireComponent
     }
 
     /**
+     * The Alpine methods behind the row actions and the row click, added to xData() when the table has them. The
+     * actions are elements with data-lw-dt-* attributes: a link, a form (any other method than GET) or a button that
+     * runs the action on the server.
+     */
+    protected function rowActionsXData(): string
+    {
+        if (!$this->dataTable->hasRowActions() && !$this->dataTable->hasRowClick()) {
+            return '';
+        }
+
+        $confirmFunction = $this->confirmDialogConfig()['function-name'];
+
+        return ",
+
+            async confirmRowAction(el) {
+                if (el.dataset.lwDtConfirm === undefined) {
+                    return true;
+                }
+
+                return await {$confirmFunction}(el.dataset.lwDtConfirm, el.dataset.lwDtConfirmTitle);
+            },
+
+            async followRowLink(link) {
+                if (!(await this.confirmRowAction(link))) {
+                    return;
+                }
+
+                if (link.target && link.target !== '_self') {
+                    window.open(link.href, link.target, 'noopener');
+                } else {
+                    window.location.href = link.href;
+                }
+            },
+
+            async submitRowActionForm(form) {
+                if (await this.confirmRowAction(form)) {
+                    form.submit();
+                }
+            },
+
+            async runRowAction(button) {
+                if (await this.confirmRowAction(button)) {
+                    await \$wire.executeRowAction(button.dataset.lwDtRowAction, button.dataset.lwDtRowId);
+                }
+            },
+
+            /* A click on a row runs its row-click action (by clicking the action's own element) or follows its
+               row-click-url. Clicks on links, buttons, inputs and the like do what they do instead. */
+            onRowClick(event) {
+                const row = event.currentTarget;
+                const ignored = event.target.closest('a, button, input, select, textarea, label, summary, [data-lw-dt-no-row-click]');
+
+                if ((ignored && row.contains(ignored)) || window.getSelection().toString() !== '') {
+                    return;
+                }
+
+                if (row.dataset.lwDtRowClickUrl !== undefined) {
+                    if (event.ctrlKey || event.metaKey) {
+                        window.open(row.dataset.lwDtRowClickUrl, '_blank', 'noopener');
+                    } else {
+                        window.location.href = row.dataset.lwDtRowClickUrl;
+                    }
+
+                    return;
+                }
+
+                row.querySelector(`[data-lw-dt-row-action='\${CSS.escape(row.dataset.lwDtRowClickAction)}']`)?.click();
+            }";
+    }
+
+    /**
      * The preset's "confirm-dialog": the JS function asked to confirm an action, by default window.confirm()
      *
      * @return array{function-name: string, function-code: ?string}
@@ -428,7 +500,7 @@ class LwDataTable extends LivewireComponent
         $action = $this->dataTable->bulkActions?->find($name);
 
         if ($action === null || ($action->hasOptions() ? !$action->hasOption($option) : $option !== null)) {
-            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.bulk_action_invalid')));
+            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.action_unavailable')));
 
             return null;
         }
@@ -476,6 +548,69 @@ class LwDataTable extends LivewireComponent
 
         if (!$result->failed() && !$action->keepSelection) {
             $this->deselectAll();
+        }
+
+        return $result->response;
+    }
+
+    /**
+     * Runs a row action (<x-data-table.row-action>) with a handler or an event on a row. The browser only sends the
+     * action's name and the row's id: the row must be among the table's rows (with the current search and filters),
+     * and the user must pass the action's gate with it.
+     */
+    public function executeRowAction(string $name, string $rowId): mixed
+    {
+        $action = $this->dataTable->findRowAction($name);
+
+        if ($action === null || $action->isLink()) {
+            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.action_unavailable')));
+
+            return null;
+        }
+
+        $selection = $this->makeSelection(Selection::MODE_IDS, [$rowId]);
+        $row = $selection->rows()->first();
+
+        if ($row === null) {
+            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.row_not_found')));
+
+            return null;
+        }
+
+        if ($action->can !== null) {
+            // Wrapped: an array row would be taken for a list of arguments
+            Gate::authorize($action->can, [$row]);
+        }
+
+        if ($action->event !== null) {
+            $this->dispatch($action->event, action: $action->name, id: $rowId);
+
+            return null;
+        }
+
+        $parameters = [
+            'row' => $row,
+            'id' => $rowId,
+            'selection' => $selection,
+            Selection::class => $selection,
+            'action' => $action,
+            RowAction::class => $action,
+        ];
+
+        // A model (or any object) row can also be asked for by its class, e.g. "User $user"
+        if (\is_object($row)) {
+            $parameters[$row::class] = $row;
+        }
+
+        $result = ActionResultHandler::run(
+            $action->handler,
+            $parameters,
+            $this,
+            __('erickcomp_lw_data_table::messages.row_action_done'),
+        );
+
+        if ($result->message !== null) {
+            $this->flashMessage($result->message);
         }
 
         return $result->response;
@@ -706,6 +841,9 @@ class LwDataTable extends LivewireComponent
         if (!empty($dataTable->dynamicViewData)) {
             $this->vd = \encrypt(\serialize($dataTable->dynamicViewData));
         }
+
+        // Fails early (and loudly) on a row-click naming a row action that does not exist
+        $dataTable->rowClickAction();
 
         $this->dataTable = $dataTable;
 
@@ -998,6 +1136,51 @@ class LwDataTable extends LivewireComponent
             $this->dataTable->bulkActions->actions,
             fn(BulkAction $action) => $action->can === null || Gate::allows($action->can),
         );
+    }
+
+    /**
+     * The row actions the current user may run on the row: the ones whose gate denies it are left out
+     *
+     * @return RowAction[]
+     */
+    protected function visibleRowActions(mixed $row): array
+    {
+        if (!$this->dataTable->hasRowActions()) {
+            return [];
+        }
+
+        return \array_filter(
+            $this->dataTable->rowActions->actions,
+            // Wrapped: an array row would be taken for a list of arguments
+            fn(RowAction $action) => $action->can === null || Gate::allows($action->can, [$row]),
+        );
+    }
+
+    /**
+     * What makes a row clickable (row-click or row-click-url), or nothing when it is not: a row-click action must be
+     * among the row's visible actions
+     *
+     * @param RowAction[] $visibleRowActions
+     * @return array<string, string>
+     */
+    protected function rowClickAttributes(mixed $row, string $rowId, array $visibleRowActions): array
+    {
+        if ($this->dataTable->rowClickUrl !== null) {
+            $target = ['data-lw-dt-row-click-url' => RowAction::fillUrl($this->dataTable->rowClickUrl, $row, 'the [row-click-url] of the table')];
+        } elseif ($this->dataTable->rowClick !== null && isset($visibleRowActions[$this->dataTable->rowClick])) {
+            $target = ['data-lw-dt-row-click-action' => $this->dataTable->rowClick];
+        } else {
+            return [];
+        }
+
+        $clickableClass = Arr::toCssClasses($this->preset()->get('table.tbody.tr.clickable.class', []));
+
+        return \array_filter([
+            'data-lw-dt-row-id' => $rowId,
+            ...$target,
+            'x-on:click' => 'onRowClick($event)',
+            'class' => $clickableClass === '' ? null : $clickableClass,
+        ], fn(?string $value) => $value !== null);
     }
 
     protected function selectedCount(): int
