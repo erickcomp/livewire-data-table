@@ -33,7 +33,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 
 | Tarefa | Depende de | Integra com (se já existir) | Status |
 |---|---|---|---|
-| T0 Infra: workbench + testes de navegador | — | — | ☐ |
+| T0 Infra: workbench + testes de navegador | — | — | ☑ |
 | T1 Seleção no servidor (`Selection` + dados não paginados) | — | — | ☐ |
 | T2 Seleção de linhas na UI + contador | T1 | T0 | ☐ |
 | T3 Bulk actions | T1, T2 | T0 | ☐ |
@@ -42,6 +42,14 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | T6 Estado na URL (`perPage`) + lembrar o estado na sessão | — | T2 | ☐ |
 | T7 Exportação (adapters OpenSpout / PhpSpreadsheet) | T1 | T2 | ☐ |
 | T8 Edição inline (uma linha) | T1, T3 | T5 | ☐ |
+
+**Notas de execução**
+
+- **T0:**
+  - A suíte `Browser` ficou fora das suítes padrão (`defaultTestSuite="Unit,Feature"` no `phpunit.xml`). Por isso `composer test`/`vendor/bin/pest` seguem sem Node, e os testes de navegador rodam com `composer test:browser`.
+  - O `pestphp/pest-plugin-browser` 4.3 exige Playwright ≥ 1.59.1 (`package.json` + `package-lock.json`).
+  - Achado 1: com **Livewire 3** (3.8.10), 46 testes Feature já falham no código do `master` e a tabela da demo renderiza vazia ("No data found"). O passo "testar também com Livewire 3" do protocolo só vai funcionar depois que isso for corrigido; sugerido como tarefa à parte antes da T2.
+  - Achado 2 (é o problema do `perPage` da T6, confirmado no navegador): com `per-page="10,25,50"` o select mostra 10, mas a tabela traz 15 linhas. A demo usa `per-page="15,30,60"` para não depender disso; a T6 deve trocar para valores que exponham o problema e cobri-lo com um teste de navegador.
 
 Ordem recomendada: T0 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
@@ -64,6 +72,28 @@ Ordem recomendada: T0 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. E
 5. **Testes:** Pest em `tests/Feature/...` com `Livewire::test(LwDataTable::class, ['data-table' => $dataTable])` (ver o helper `renderDataTable()` em `tests/Feature/LwDataTable/RenderingTest.php`), com Eloquent (`tests/Fixtures/TestProduct.php` + migration sqlite em memória) e coleções; componentes raw via `Blade::render(..., deleteCachedView: true)` (padrão em `tests/Feature/ScriptsRawComponentTest.php`); testes de navegador em `tests/Browser` se a T0 já existir.
 6. **Validação final:** `vendor/bin/pest` + PHPStan sem novas entradas no baseline. Reler o diff procurando regressões.
 7. **Fechamento:** marcar a tarefa como ☑ na tabela de status de `docs/plans/magento-grid-parity.md`, com notas curtas sobre qualquer API que tenha divergido do plano; commitar e `git push -u origin feat-bulk-actions` (em erro de rede, tentar de novo com backoff de 2s/4s/8s/16s). Não abrir PR sem pedido.
+
+### Notas de ambiente (sessões na nuvem do Claude Code)
+
+- **Composer:** a proxy bloqueia os zips do GitHub (403), mas `git clone` funciona. Use `composer install --prefer-source`. O único pacote sem fonte git é o `phpstan/phpstan`. Para ele, gere o zip a partir do git e coloque no cache do Composer:
+  ```bash
+  REF=$(php -r '$l=json_decode(file_get_contents("composer.lock"),true); foreach(array_merge($l["packages"],$l["packages-dev"]) as $p){ if($p["name"]==="phpstan/phpstan"){ echo $p["dist"]["reference"]; } }')
+  D=$(mktemp -d) && git -C $D init -q && git -C $D fetch -q --depth 1 https://github.com/phpstan/phpstan.git $REF
+  KEY=$(php -r "echo sha1('https://api.github.com/repos/phpstan/phpstan/zipball/$REF');")
+  mkdir -p ~/.cache/composer/files/phpstan/phpstan && git -C $D archive --format=zip --prefix=phpstan/ -o ~/.cache/composer/files/phpstan/phpstan/$KEY.zip FETCH_HEAD
+  ```
+- **Plugins do Composer:** rodando como root, os plugins ficam desativados, e sem eles o Pest não registra o plugin de browser (`vendor/pest-plugins.json`). Rode `COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload` (e use `COMPOSER_ALLOW_SUPERUSER=1` nos scripts `composer …`).
+- **Playwright:** não rode `playwright install`. O Chromium do ambiente (`/opt/pw-browsers/chromium*-1194`) funciona com o Playwright 1.59 apontado pelos nomes que ele espera:
+  ```bash
+  B=$(mktemp -d); H=$B/chromium_headless_shell-1217/chrome-headless-shell-linux64
+  mkdir -p $B/chromium-1217 $H && ln -s /opt/pw-browsers/chromium-1194/chrome-linux $B/chromium-1217/chrome-linux64
+  ln -s /opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/* $H/ && ln -s headless_shell $H/chrome-headless-shell
+  touch $B/chromium-1217/INSTALLATION_COMPLETE $B/chromium_headless_shell-1217/INSTALLATION_COMPLETE
+  npm install && PLAYWRIGHT_BROWSERS_PATH=$B vendor/bin/pest --testsuite=Browser
+  ```
+  (confira a revisão esperada em `node_modules/playwright-core/browsers.json`).
+- **PHPStan:** o baseline foi gerado no PHP 8.4 (como no CI). No PHP 8.3 local aparecem 2 "ignored error pattern … was not matched". Rode com um neon que inclua o `phpstan.neon` e defina `parameters: phpVersion: 80400`.
+- CDNs (jsDelivr, Tailwind) ficam bloqueados no sandbox, então as páginas `bootstrap4v1`/`tailwind3v1` da demo aparecem sem CSS. Os testes usam o preset `vanilla`.
 
 ## Princípios de arquitetura (transversais)
 
