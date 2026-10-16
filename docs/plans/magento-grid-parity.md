@@ -36,7 +36,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | T0 Infra: workbench + testes de navegador | — | — | ☑ |
 | T0.1 Correção: montagem da tabela no Livewire 3 | — | T0 | ☑ |
 | T1 Seleção no servidor (`Selection` + dados não paginados) | — | — | ☑ |
-| T2 Seleção de linhas na UI + contador | T1 | T0 | ☐ |
+| T2 Seleção de linhas na UI + contador | T1 | T0 | ☑ |
 | T3 Bulk actions | T1, T2 | T0 | ☐ |
 | T4 "Limpar tudo" + evento de recarga | — | T2 | ☐ |
 | T5 Ações por linha + clique na linha | T1, T3 | T0 | ☐ |
@@ -68,6 +68,16 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
     - Quando a identidade é a chave inteira de um model Eloquent, ids não inteiros são descartados (no PostgreSQL eles derrubariam a query).
   - `LwDataRetrievalParams::paginate()` passou a aceitar `QueryBuilder`; antes, `applyAndPaginate(DB::table(...))` dava `TypeError`. Callables que paginam por conta própria podem checar `$params->isPaginationDisabled()` (documentado no README).
   - O baseline do PHPStan foi regenerado sem entradas novas: 2 entradas citam classes anônimas pelo número da linha (que mudou), 1 saiu porque o erro foi corrigido e 1 mensagem mudou de texto. Achado para depois: `resolvedModelInstance` (trait `AppliesDataRetrievalParamsOnEloquentBuilder`) não é declarada em lugar nenhum, então vira propriedade dinâmica, o que gera deprecation no PHP 8.2+.
+- **T2:**
+  - Estado no `LwDataTable`: `selectedIds` (público; o navegador escreve direto em `$wire.selectedIds`, que é deferido e vai no próximo request), `selectionMode` (`ids`|`all`, `#[Locked]`, no lugar do `bool $selectAllMatching` do plano: um método e uma propriedade com o mesmo nome colidiriam no `$wire`) e `matchingTotal` (`#[Locked]`, atualizado no render quando os dados informam o total).
+  - Sem `$wire.$entangle`: os métodos Alpine leem e escrevem `$wire.selectedIds`; em Livewire 3 e 4 a escrita direta é deferida.
+  - A normalização e o limite (`max-selected-ids`) acontecem no `dehydrate()` e ao montar a `Selection`, não no `updatedSelectedIds()`: o Livewire manda mudanças por índice (`selectedIds.2`), e reindexar no meio dos updates corromperia os seguintes.
+  - O reset da seleção ao mudar busca/filtros fica **pendente** até todos os updates do request entrarem (aplicado no `render()`, em `selection()`, `selectAllMatching()` e `dehydrate()`): no Livewire 3, o update de `selectedIds` chegava depois do `search` e desfazia o reset.
+  - `selection()` e `selectedCount()` são protegidos; `selectAllMatching()` e `deselectAll()` são as ações públicas.
+  - O menu fica com `position: fixed`, calculada a partir do botão, porque o wrapper da tabela pode cortar conteúdo (`overflow-hidden` no Tailwind). O `x-anchor` existe no Livewire 4, mas não dá para contar com ele no 3.
+  - A chave de preset do contador é `actions.bulk-actions-and-per-page.records-count.class`, no lugar de `actions.records-count`: ele fica na mesma linha do per-page. Novas chaves: `table.selection.{th,td,checkbox,menu-container,menu-button(+icon),menu,menu-item}` e `table.tbody.tr.selected.class`. Os partials ficam em `src/Livewire/Partials` (namespace `erickcomp_lw_data_table`).
+  - A demo do workbench ficou `selectable`; `tests/Browser/SelectionTest.php` cobre marcar, paginar, a página inteira, o menu, as exclusões e o reset ao buscar.
+  - Achado (fica para depois): o atributo `data-src-pagination` é ignorado. O construtor do `DataTable` recebe `$dataSrcPagination`, mas passa `$this->dataSrcPaginationType` (sempre o padrão) para a factory. O README documenta o atributo.
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
