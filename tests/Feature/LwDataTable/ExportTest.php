@@ -18,6 +18,7 @@ use Illuminate\Testing\TestResponse;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\Livewire;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Tests\Fixtures\TestExportWriter;
 use Tests\Fixtures\TestProduct;
 
 uses(RefreshDatabase::class);
@@ -494,6 +495,51 @@ it('keeps the files on the disk and in the directory of the config', function ()
         ->and(Storage::disk('local')->allFiles())->toBe([]);
 
     expect(exportedCsvRows(downloadExportedFile($component, 'products-2026-10-16.csv')))->toHaveCount(6);
+});
+
+// --- Time limit ---
+
+/**
+ * Exports with TestExportWriter, under a time limit of 120 seconds, which is put back afterwards
+ */
+function exportUnderTimeLimit(array $exportAttributes, ?Throwable $failure = null): mixed
+{
+    config()->set('erickcomp-livewire-data-table.export.writer', TestExportWriter::class);
+    TestExportWriter::$maxExecutionTimeWhileWriting = null;
+    TestExportWriter::$failure = $failure;
+
+    $previous = ini_get('max_execution_time');
+    ini_set('max_execution_time', '120');
+
+    try {
+        return Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable(['formats' => 'csv', ...$exportAttributes])])
+            ->call('export', 'csv');
+    } finally {
+        $limitAfterExport = ini_get('max_execution_time');
+        ini_set('max_execution_time', $previous);
+        TestExportWriter::$failure = null;
+
+        expect($limitAfterExport)->toBe('120');
+    }
+}
+
+it('sets PHP\'s time limit while the rows are written, then puts it back', function (array $exportAttributes, string $expected) {
+    $component = exportUnderTimeLimit($exportAttributes);
+
+    expect(TestExportWriter::$maxExecutionTimeWhileWriting)->toBe($expected)
+        ->and(exportDownloadUrl($component))->toStartWith('/lw-data-table/export/');
+})->with([
+    'a limit' => [['max-execution-time' => '300'], '300'],
+    'a bound limit' => [['max-execution-time' => 600], '600'],
+    'no limit' => [['max-execution-time' => '0'], '0'],
+    'PHP\'s own' => [[], '120'],
+]);
+
+it('puts PHP\'s time limit back when the export fails', function () {
+    expect(fn() => exportUnderTimeLimit(['max-execution-time' => '300'], new RuntimeException('The disk is full')))
+        ->toThrow(RuntimeException::class, 'The disk is full');
+
+    expect(TestExportWriter::$maxExecutionTimeWhileWriting)->toBe('300');
 });
 
 // --- Checks ---

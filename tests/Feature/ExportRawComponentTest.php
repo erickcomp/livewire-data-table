@@ -1,5 +1,6 @@
 <?php
 
+use ErickComp\LivewireDataTable\DataTable\Export;
 use ErickComp\LivewireDataTable\Export\OpenSpoutWriter;
 use ErickComp\LivewireDataTable\Export\PhpSpreadsheetWriter;
 use Illuminate\Support\Facades\Blade;
@@ -28,7 +29,7 @@ it('builds the export from the component, with the other attributes on its butto
         <x-data-table :data-src="collect([['id' => 1, 'name' => 'Product', 'secret' => 's3cr3t']])" preset="empty">
             <x-data-table.column title="Name" data-field="name" export-field="id" />
             <x-data-table.column title="Secret" data-field="secret" exportable="false" td-class="secret-td" />
-            <x-data-table.export formats="xlsx" filename="products-{date}" label="Download" class="export-button" data-test="export" />
+            <x-data-table.export formats="xlsx" filename="products-{date}" label="Download" max-execution-time="300" class="export-button" data-test="export" />
         </x-data-table>
         BLADE,
         deleteCachedView: true,
@@ -40,8 +41,20 @@ it('builds the export from the component, with the other attributes on its butto
         ->toContain('<td class="secret-td">')
         ->not->toContain('exportable')
         ->not->toContain('export-field')
-        ->not->toContain('filename');
+        ->not->toContain('filename')
+        ->not->toContain('execution');
 });
+
+it('reads the time limit of the export', function (mixed $maxExecutionTime, ?int $expected) {
+    expect((new Export(maxExecutionTime: $maxExecutionTime))->maxExecutionTime)->toBe($expected);
+})->with([
+    'not given' => [null, null],
+    'blank' => [' ', null],
+    'seconds' => ['300', 300],
+    'seconds with spaces' => [' 300 ', 300],
+    'bound seconds' => [600, 600],
+    'no limit' => ['0', 0],
+]);
 
 it('only accepts the export as a direct child of the table', function (string $blade) {
     $error = exportBladeError($blade);
@@ -95,6 +108,9 @@ it('reports an invalid export definition', function (string $attributes, string 
 })->with([
     'unknown format' => ['formats="csv,pdf"', \InvalidArgumentException::class, 'Invalid export format: [pdf]. The ones the export writer [' . OpenSpoutWriter::class . '] supports are: csv, xlsx and ods'],
     'filename with a slash' => ['filename="../products"', \InvalidArgumentException::class, 'Invalid export filename: [../products]. It cannot have slashes or control characters'],
+    'time limit that is not a number' => ['max-execution-time="5min"', \InvalidArgumentException::class, 'Invalid value for the attribute [max-execution-time] of the export: [5min]. It must be a whole number of seconds (0 for no limit)'],
+    'negative time limit' => ['max-execution-time="-1"', \InvalidArgumentException::class, 'Invalid value for the attribute [max-execution-time] of the export: [-1]. It must be a whole number of seconds (0 for no limit)'],
+    'fractional time limit' => ['max-execution-time="1.5"', \InvalidArgumentException::class, 'Invalid value for the attribute [max-execution-time] of the export: [1.5]. It must be a whole number of seconds (0 for no limit)'],
 ]);
 
 it('reports an invalid exportable attribute', function () {

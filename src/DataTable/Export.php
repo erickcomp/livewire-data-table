@@ -12,7 +12,8 @@ use Illuminate\View\ComponentAttributeBag;
  * The export of a data table (<x-data-table.export>): a button, or a dropdown with an entry per format, that downloads
  * the rows matching the search and the filters (all the pages), or only the selected rows when there are any.
  *
- * Its attributes go to the button, except "formats", "filename", "label", "selected-label" and "can".
+ * Its attributes go to the button, except "formats", "filename", "label", "selected-label", "can" and
+ * "max-execution-time".
  */
 class Export
 {
@@ -41,6 +42,9 @@ class Export
     /** Gate ability the user must have to export */
     public ?string $can;
 
+    /** PHP's max_execution_time while the rows are written, in seconds (0 for no limit), null to keep PHP's own */
+    public ?int $maxExecutionTime;
+
     /**
      * @param string|string[]|null $formats
      *
@@ -52,6 +56,7 @@ class Export
         ?string $label = null,
         ?string $selectedLabel = null,
         ?string $can = null,
+        int|string|null $maxExecutionTime = null,
     ) {
         // Replaced by the attributes left over when made from an <x-data-table.export>: they go to its button
         $this->attributes = new ComponentAttributeBag();
@@ -80,6 +85,22 @@ class Export
         $this->label = \trim($label ?? '') !== '' ? \trim($label) : null;
         $this->selectedLabel = \trim($selectedLabel ?? '') !== '' ? \trim($selectedLabel) : null;
         $this->can = \trim($can ?? '') !== '' ? \trim($can) : null;
+        $this->maxExecutionTime = static::parseMaxExecutionTime($maxExecutionTime);
+    }
+
+    protected static function parseMaxExecutionTime(int|string|null $maxExecutionTime): ?int
+    {
+        if ($maxExecutionTime === null || (\is_string($maxExecutionTime) && \trim($maxExecutionTime) === '')) {
+            return null;
+        }
+
+        $seconds = \filter_var(\is_string($maxExecutionTime) ? \trim($maxExecutionTime) : $maxExecutionTime, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+
+        if ($seconds === false) {
+            throw new \InvalidArgumentException("Invalid value for the attribute [max-execution-time] of the export: [$maxExecutionTime]. It must be a whole number of seconds (0 for no limit)");
+        }
+
+        return $seconds;
     }
 
     public function hasFormat(string $format): bool

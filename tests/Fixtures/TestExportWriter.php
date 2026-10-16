@@ -9,6 +9,12 @@ use ErickComp\LivewireDataTable\Export\ExportWriter;
  */
 class TestExportWriter implements ExportWriter
 {
+    /** PHP's max_execution_time while the last file was written */
+    public static string|false|null $maxExecutionTimeWhileWriting = null;
+
+    /** Thrown by write(), when set */
+    public static ?\Throwable $failure = null;
+
     public function isAvailable(): bool
     {
         return true;
@@ -21,6 +27,12 @@ class TestExportWriter implements ExportWriter
 
     public function write(string $format, array $header, iterable $rows, string $path): void
     {
+        static::$maxExecutionTimeWhileWriting = \ini_get('max_execution_time');
+
+        if (static::$failure !== null) {
+            throw static::$failure;
+        }
+
         $lines = [\json_encode($header)];
 
         foreach ($rows as $values) {

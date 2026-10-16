@@ -681,7 +681,11 @@ composer require phpoffice/phpspreadsheet     # builds the whole spreadsheet in 
 - **Permission:** with `can`, users without the gate ability do not see the button, and the server refuses the export (403).
 - **Formula injection:** a spreadsheet runs a CSV value starting with `=`, `+`, `-` or `@` as a formula. Such text gets a leading `'` (`export.escape-formulas`, on by default), except text holding just a number, like `-12.5`. XLSX and ODS files always store text as text.
 
-Rows are read from the data source in chunks of 1,000, using the `data-identity-column` (`id` by default) to keep their order steady: on a query data source, that column must exist. The file is written during the Livewire request, so the request's time limit bounds how many rows fit: `export.max-rows` (config) refuses larger exports with a message, and the table's `php-max-memory` applies.
+Rows are read from the data source in chunks of 1,000, using the `data-identity-column` (`id` by default) to keep their order steady: on a query data source, that column must exist. The file is written during the Livewire request, so the request's time limit bounds how many rows fit:
+
+- `max-execution-time="300"` on the `<x-data-table.export>` sets PHP's `max_execution_time` (with `ini_set()`) while the rows are counted and written, and puts the previous value back afterwards (a long-lived worker, as under Octane, keeps its own). It does not lift the limits outside PHP: the web server's or the proxy's timeouts, or PHP-FPM's `request_terminate_timeout`;
+- `export.max-rows` (config) refuses larger exports with a message;
+- the table's `php-max-memory` applies.
 
 **The download.** The finished file does not travel inside Livewire's response (which would hold it whole in memory, base64-encoded, on the server and in the browser). It goes to a filesystem disk, and the browser downloads it from a route of the package, streamed:
 
@@ -943,6 +947,7 @@ A self-closing direct child of `<x-data-table>`, at most one per table. See [Exp
 | `label` | `string` | "Export" (translated) | Text of the button |
 | `selected-label` | `string` | "Export selected" (translated) | Text of the button while rows are selected |
 | `can` | `string` | `null` | Gate ability required to see the button and export |
+| `max-execution-time` | `int` | `null` | PHP's `max_execution_time`, in seconds (`0` for no limit), while the rows are counted and written. Without it, PHP's own applies |
 
 Other attributes go to the button.
 

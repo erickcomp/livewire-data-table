@@ -656,7 +656,8 @@ class LwDataTable extends LivewireComponent
      * browser only sends the format.
      *
      * The file is written here, then downloaded by the browser from a signed URL (see ExportFiles): it is streamed,
-     * instead of travelling inside Livewire's response.
+     * instead of travelling inside Livewire's response. With "max-execution-time", PHP's time limit is set for counting
+     * and writing the rows.
      */
     public function export(string $format): void
     {
@@ -672,6 +673,28 @@ class LwDataTable extends LivewireComponent
             Gate::authorize($export->can);
         }
 
+        if ($export->maxExecutionTime === null) {
+            $this->writeExport($export, $format);
+
+            return;
+        }
+
+        // The limit is put back afterwards: in a long-lived worker (Octane), it would stay for the next requests
+        $previousMaxExecutionTime = \ini_get('max_execution_time');
+        \ini_set('max_execution_time', (string) $export->maxExecutionTime);
+
+        try {
+            $this->writeExport($export, $format);
+        } finally {
+            \ini_set('max_execution_time', (string) $previousMaxExecutionTime);
+        }
+    }
+
+    /**
+     * Counts and writes the rows of an export, then hands the browser the URL to download it (see export())
+     */
+    protected function writeExport(Export $export, string $format): void
+    {
         $this->setupMaxMemory();
 
         $rows = $this->hasSelection() ? $this->selection() : $this->makeSelection(Selection::MODE_ALL);
