@@ -39,7 +39,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | T2 Seleção de linhas na UI + contador | T1 | T0 | ☑ |
 | T3 Bulk actions | T1, T2 | T0 | ☑ |
 | T4 "Limpar tudo" + evento de recarga | — | T2 | ☑ |
-| T5 Ações por linha + clique na linha | T1, T3 | T0 | ☐ |
+| T5 Ações por linha + clique na linha | T1, T3 | T0 | ☑ |
 | T6 Estado na URL (`perPage`) + lembrar o estado na sessão | — | T2 | ☐ |
 | T7 Exportação (adapters OpenSpout / PhpSpreadsheet) | T1 | T2 | ☐ |
 | T8 Edição inline (uma linha) | T1, T3 | T5 | ☐ |
@@ -100,6 +100,16 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
   - "Limpar tudo" limpa o que aparece nos chips (busca e filtros). As buscas por coluna ficam como estão. O botão só aparece com pelo menos um chip.
   - `refreshTable()` chama `skipRender()` quando o evento é de outra tabela, para não re-renderizar à toa todas as tabelas da página. `id` e `name` são os atributos do `<table>` (os sem prefixo do `<x-data-table>`); o `DataTable` ganhou `@property-read` para eles, o que tirou mais uma entrada do baseline do PHPStan.
   - Achado nos testes de navegador: o `visit()` do plugin do Pest só carrega a página na primeira interação ou asserção. Um teste que muda o banco depois do `visit()` precisa de uma asserção antes da mudança.
+- **T5:**
+  - O que bulk actions e row actions têm em comum (confirmação, `can`, parse do handler) foi para a trait `Concerns\DefinesAction`; a `BulkAction` passou a usá-la, sem mudar a API.
+  - `RowAction` aceita um destino entre `url`, `route`, `handler` e `event`. `method` e `target` só valem para `url`/`route`. A rota é conferida com `Route::has()` na definição.
+  - A validação de URL ignora espaços e caracteres de controle antes de ler o esquema, como os navegadores fazem (`java\tscript:`). A URL também é revalidada depois de preenchida, para que um valor vazio não forme outro esquema. Os valores dos placeholders passam por `rawurlencode()`. Por isso, um `{campo}` com uma URL inteira não funciona como URL, e isso está documentado.
+  - Além do plano, o `confirm` aceita placeholders `{campo}` com os valores da linha. O texto padrão é "Are you sure?"/"Tem certeza?" (`confirm_row_action_default_message`).
+  - O `can` é verificado com `Gate::allows($can, [$row])`, com a linha **dentro de um array**: uma linha que seja array seria tomada como lista de argumentos. Policies de models funcionam normalmente.
+  - O handler recebe `row`, a classe da linha quando ela é objeto (`TestProduct $product`), `id`, `selection` (só a linha), `action` e `RowAction::class`. O evento leva `action` e `id`. Linha fora do dataset (inexistente, ou deixada de fora pela busca e pelos filtros) vira a mensagem `row_not_found`. Ação inexistente, ou de link, vira `action_unavailable`. Esta chave substituiu a `bulk_action_invalid` da T3, que ainda não foi publicada.
+  - Clique na linha: o `<tr>` só ganha os atributos quando a ação do `row-click` está disponível para aquela linha. O clique "clica" no próprio elemento da ação na linha (link, botão do form ou botão do servidor), então confirmação, form e chamada ao servidor são os mesmos do menu. Ctrl/Cmd+clique no `row-click-url` abre outra aba, e cliques com texto selecionado são ignorados. Um `row-click` com nome inexistente falha no mount.
+  - Presets novos: `table.row-actions.{links,link,form,menu-container,menu-button(+icon),menu,menu-item}` e `table.tbody.tr.clickable.class`. No vanilla, o menu reaproveita as classes do menu de seleção.
+  - A demo ganhou "View" (rota; também é o `row-click`), "Delete" (handler com confirmação) e "Discard" (form DELETE com confirmação), e o workbench ganhou as rotas `demo.products.show`/`demo.products.destroy`. `tests/Browser/RowActionsTest.php` cobre o dropdown, a confirmação aceita e recusada, o form DELETE e o clique na linha (inclusive que o clique no checkbox não conta como clique na linha).
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
