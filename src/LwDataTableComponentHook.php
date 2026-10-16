@@ -17,16 +17,22 @@ class LwDataTableComponentHook extends LivewireComponentHook
                 return;
             }
 
-            if (!isset($params['dataTable']) && !isset($htmlAttributes['data-table'])) {
+            // The DataTable arrives under a different key depending on the Livewire version that compiled the
+            // <livewire:lw-data-table :data-table="..."> tag in DataTable.blade.php and on the one running it:
+            // Livewire 3 compiles it to a "dataTable" param, while Livewire 4 compiles it to "data-table" and,
+            // as no property or mount() parameter matches it, hands it over as an HTML attribute. A view compiled
+            // by one major version stays in the view cache after switching to the other, so all forms are accepted.
+            $dataTable = $params['dataTable']
+                ?? $params['data-table']
+                ?? $htmlAttributes['data-table']
+                ?? $htmlAttributes['dataTable']
+                ?? null;
+
+            if ($dataTable === null) {
                 return;
             }
 
-            if (\array_key_exists('data-table', $htmlAttributes)) {
-                $params['dataTable'] ??= $htmlAttributes['data-table'];
-                unset($htmlAttributes['data-table']);
-            }
-
-            \Livewire\invade($component)->mountDataTable($params['dataTable']);
+            \Livewire\invade($component)->mountDataTable($dataTable);
         });
 
         before('hydrate', function ($component, $memo, $context) {

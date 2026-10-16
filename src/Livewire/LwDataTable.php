@@ -231,9 +231,8 @@ class LwDataTable extends LivewireComponent
 
     public function withHtmlAttributes(array $attributes): static
     {
-        if (\array_key_exists('data-table', $attributes)) {
-            unset($attributes['data-table']);
-        }
+        // The DataTable is mounted by LwDataTableComponentHook; it must not end up as an attribute of the root element
+        unset($attributes['data-table'], $attributes['dataTable']);
 
         return parent::withHtmlAttributes($attributes);
     }

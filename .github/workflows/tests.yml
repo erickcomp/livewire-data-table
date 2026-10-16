@@ -17,17 +17,29 @@ jobs:
           - php: '8.3'
             laravel: '12'
             testbench: '^10.0'
+            livewire: '^4.0'
           - php: '8.3'
             laravel: '13'
             testbench: '^11.0'
+            livewire: '^4.0'
           - php: '8.4'
             laravel: '12'
             testbench: '^10.0'
+            livewire: '^4.0'
           - php: '8.4'
             laravel: '13'
             testbench: '^11.0'
+            livewire: '^4.0'
+          - php: '8.3'
+            laravel: '12'
+            testbench: '^10.0'
+            livewire: '^3.6'
+          - php: '8.4'
+            laravel: '13'
+            testbench: '^11.0'
+            livewire: '^3.6'
 
-    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / Livewire ${{ matrix.livewire }}
 
     steps:
       - name: Checkout code
@@ -44,11 +56,12 @@ jobs:
         uses: actions/cache@v5
         with:
           path: vendor
-          key: composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
-          restore-keys: composer-${{ matrix.php }}-${{ matrix.laravel }}-
+          key: composer-${{ matrix.php }}-${{ matrix.laravel }}-livewire${{ matrix.livewire }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ matrix.php }}-${{ matrix.laravel }}-livewire${{ matrix.livewire }}-
 
       - name: Install dependencies
         run: |
+          composer require "livewire/livewire:${{ matrix.livewire }}" --no-interaction --no-update
           composer require "orchestra/testbench:${{ matrix.testbench }}" --dev --no-interaction --no-update
           composer update --prefer-dist --no-interaction --no-progress
 
@@ -91,7 +104,13 @@ jobs:
 
   browser:
     runs-on: ubuntu-latest
-    name: Browser tests
+
+    strategy:
+      fail-fast: false
+      matrix:
+        livewire: ['^3.6', '^4.0']
+
+    name: Browser tests / Livewire ${{ matrix.livewire }}
 
     steps:
       - name: Checkout code
@@ -114,11 +133,12 @@ jobs:
         uses: actions/cache@v5
         with:
           path: vendor
-          key: composer-browser-${{ hashFiles('composer.json') }}
-          restore-keys: composer-browser-
+          key: composer-browser-livewire${{ matrix.livewire }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-browser-livewire${{ matrix.livewire }}-
 
       - name: Install dependencies
         run: |
+          composer require "livewire/livewire:${{ matrix.livewire }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction --no-progress
           npm ci
 
@@ -132,6 +152,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-test-screenshots
+          name: browser-test-screenshots-livewire${{ matrix.livewire }}
           path: tests/Browser/Screenshots
           if-no-files-found: ignore
