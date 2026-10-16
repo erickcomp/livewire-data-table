@@ -29,6 +29,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
     $isSelectable = $this->dataTable->selectable;
     $recordsTotal = $isSelectable || $this->dataTable->showRecordsCount ? $this->recordsTotal($rows) : null;
     $bulkActions = $this->availableBulkActions();
+    $export = $this->availableExport();
 @endphp
 <div {{ $this->dataTable->containerAttributes->class([...($this->preset()->get('main-container.class') ?? []), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
@@ -312,12 +313,20 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 </div>
             @endif
 
-            @if (count($this->dataTable->perPageOptions) > 1 || $this->dataTable->showRecordsCount || !empty($bulkActions))
+            @if (count($this->dataTable->perPageOptions) > 1 || $this->dataTable->showRecordsCount || !empty($bulkActions) || $export !== null)
                 <div @class($this->preset()->get('actions.bulk-actions-and-per-page.container.class', []))>
                     @if (!empty($bulkActions))
                         @include('erickcomp_lw_data_table::bulk-actions', [
                             'bulkActions' => $this->dataTable->bulkActions,
                             'actions' => $bulkActions,
+                            'preset' => $this->preset(),
+                        ])
+                    @endif
+
+                    @if ($export !== null)
+                        @include('erickcomp_lw_data_table::export', [
+                            'export' => $export,
+                            'selectable' => $isSelectable,
                             'preset' => $this->preset(),
                         ])
                     @endif

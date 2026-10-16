@@ -44,14 +44,18 @@
         }
     },
     "suggest": {
-        "laravie/serialize-queries": "Allows Eloquent and Database query builders to be used as data sources for data tables."
+        "laravie/serialize-queries": "Allows Eloquent and Database query builders to be used as data sources for data tables.",
+        "openspout/openspout": "Exports data tables to CSV, XLSX and ODS files, writing the rows as they come (^4.0 or ^5.0, recommended for exports).",
+        "phpoffice/phpspreadsheet": "Exports data tables to CSV, XLSX and ODS files, building the whole spreadsheet in memory."
     },
     "require-dev": {
         "pestphp/pest": "^4.7",
         "orchestra/testbench": "^10.0|^11.0",
         "larastan/larastan": "^3.0",
         "laravie/serialize-queries": "^3.3",
-        "pestphp/pest-plugin-browser": "^4.3"
+        "pestphp/pest-plugin-browser": "^4.3",
+        "openspout/openspout": "^5.3",
+        "phpoffice/phpspreadsheet": "^5.10"
     },
     "scripts": {
         "test": "vendor/bin/pest",

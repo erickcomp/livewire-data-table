@@ -16,8 +16,10 @@ class CustomRenderedColumn extends Column
         //?string $name = null,
         bool $searchable = false,
         bool $sortable = false,
+        bool|string $exportable = true,
+        ?string $exportField = null,
     ) {
-        parent::__construct($title, $dataField, /*$name,*/ $searchable, $sortable);
+        parent::__construct($title, $dataField, /*$name,*/ $searchable, $sortable, $exportable, $exportField);
 
         $this->customRendererCode = $customRendererCode;
 

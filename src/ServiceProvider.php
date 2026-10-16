@@ -215,6 +215,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerBulkActionRawComponent();
         $this->registerRowActionsRawComponent();
         $this->registerRowActionRawComponent();
+        $this->registerExportRawComponent();
         $this->registerAssetRawComponent();
         $this->registerScriptsRawComponent();
         $this->registerPaginationRawComponent();
@@ -420,6 +421,33 @@ if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\Dat
     throw new \LogicException("You can only use the [x-data-table.row-action] as a direct child of the [x-data-table.row-actions] component");
 }
 $component->addRowAction($__rawComponentAttributes);
+?>
+SELF_CLOSING_CODE,
+        );
+    }
+
+    protected function registerExportRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.export',
+            openingCode: <<<'OPENING_CODE'
+<?php
+// No tag in the message: Blade would compile it as a component
+throw new \LogicException("The [x-data-table.export] component must be self-closing (ending with \"/>\") and have no content");
+?>
+OPENING_CODE,
+            closingCode: '',
+            selfClosingCode: <<<'SELF_CLOSING_CODE'
+<?php
+if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
+    throw new \LogicException("You can only use the [x-data-table.export] as a direct child of the [x-data-table] component");
+}
+
+if ($component->hasExport()) {
+    throw new \LogicException("You can only have one [x-data-table.export] component per [x-data-table] component");
+}
+
+$component->setExport($__rawComponentAttributes);
 ?>
 SELF_CLOSING_CODE,
         );

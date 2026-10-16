@@ -39,6 +39,12 @@ return [
     'deselect_page' => 'Desmarcar todos desta página',
     'records_found' => ':count registro encontrado|:count registros encontrados',
     'records_selected' => '(:count selecionado)|(:count selecionados)',
+    'export_label' => 'Exportar',
+    'export_selected_label' => 'Exportar selecionados',
+    'export_format_csv' => 'CSV',
+    'export_format_xlsx' => 'Excel (.xlsx)',
+    'export_format_ods' => 'OpenDocument (.ods)',
+    'export_too_many_rows' => 'Há :count registros para exportar, mais que o limite de :max. Reduza-os com a busca ou os filtros.',
     'pagination' => [
         'showing' => 'Exibindo',
         'showing_from' => ' de',

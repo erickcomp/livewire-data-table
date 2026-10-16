@@ -10,6 +10,19 @@ return [
     'query-string-per-page' => 'per-page',
     // Most ids a row selection may hold (selected rows, or rows left out of "select all")
     'max-selected-ids' => 10000,
+    // <x-data-table.export>
+    'export' => [
+        // The spreadsheet library that writes the files: "auto" (OpenSpout when installed, PhpSpreadsheet otherwise),
+        // "openspout", "phpspreadsheet" or the name of a class implementing ErickComp\LivewireDataTable\Export\ExportWriter
+        'writer' => 'auto',
+        // CSV only: text starting with "=", "+", "-", "@", a tab or a carriage return gets a leading "'", so that a
+        // spreadsheet does not run it as a formula
+        'escape-formulas' => true,
+        'csv-delimiter' => ',',
+        // Most rows an export may have (null for no limit). Livewire sends the file inside its response: the whole
+        // file is held in memory on the way
+        'max-rows' => null,
+    ],
     'presets' => [
         'empty' => [
             'extends' => null,
@@ -60,6 +73,13 @@ return [
                     ],
                     'records-count' => [
                         'class' => ['lw-dt-records-count'],
+                    ],
+                    'export' => [
+                        'button' => ['class' => ['lw-dt-export-button']],
+                        'menu-container' => ['class' => ['lw-dt-export-menu-container']],
+                        'menu-button' => ['icon' => '&#9662;'],
+                        'menu' => ['class' => ['lw-dt-selection-menu']],
+                        'menu-item' => ['class' => ['lw-dt-selection-menu-item']],
                     ],
                 ],
             ],
@@ -585,6 +605,16 @@ return [
                         gap: 0.25rem;
                     }
 
+                    .lw-dt .lw-dt-export-button {
+                        padding: 0.25rem 0.75rem;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        background: #fff;
+                        font: inherit;
+                        white-space: nowrap;
+                        cursor: pointer;
+                    }
+
                     .lw-dt .lw-dt-selection-th,
                     .lw-dt .lw-dt-selection-td {
                         width: 1%;
@@ -771,6 +801,16 @@ return [
                     ],
                     'records-count' => [
                         'class' => ['d-flex', 'align-items-center', 'text-muted', 'mr-3'],
+                    ],
+                    'export' => [
+                        'button' => ['class' => ['btn', 'btn-outline-secondary', 'mr-3', 'text-nowrap']],
+                        'menu-container' => ['class' => ['dropdown', 'd-inline-block']],
+                        'menu-button' => [
+                            'class' => ['dropdown-toggle'],
+                            'icon' => '',
+                        ],
+                        'menu' => ['class' => ['dropdown-menu', 'show']],
+                        'menu-item' => ['class' => ['dropdown-item']],
                     ],
 
                 ],
@@ -1238,6 +1278,15 @@ return [
                     ],
                     'records-count' => [
                         'class' => ['flex', 'items-center', 'gap-1', 'text-sm', 'text-gray-600', 'dark:text-gray-300'],
+                    ],
+                    'export' => [
+                        'button' => [
+                            'class' => ['inline-flex', 'items-center', 'gap-1', 'px-3', 'py-2', 'text-sm', 'whitespace-nowrap', 'rounded-md', 'border', 'border-gray-300', 'text-gray-700', 'shadow-sm', 'hover:bg-gray-50', 'dark:border-gray-600', 'dark:text-gray-200', 'dark:hover:bg-gray-700'],
+                        ],
+                        'menu-container' => ['class' => ['inline-block']],
+                        'menu-button' => ['icon' => '&#9662;'],
+                        'menu' => ['class' => ['mt-1', 'w-56', 'py-1', 'rounded-md', 'bg-white', 'dark:bg-gray-800', 'shadow-lg', 'ring-1', 'ring-black/5', 'text-left', 'font-normal']],
+                        'menu-item' => ['class' => ['block', 'w-full', 'px-4', 'py-2', 'text-left', 'text-sm', 'text-gray-700', 'dark:text-gray-200', 'hover:bg-gray-100', 'dark:hover:bg-gray-700']],
                     ],
                 ],
             ],

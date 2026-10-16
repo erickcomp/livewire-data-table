@@ -13,8 +13,10 @@ class DataColumn extends Column
         //?string $name = null,
         bool|string $searchable = false,
         bool $sortable = false,
+        bool|string $exportable = true,
+        ?string $exportField = null,
     ) {
-        parent::__construct($title, $dataField, /*$name,*/ $searchable, $sortable);
+        parent::__construct($title, $dataField, /*$name,*/ $searchable, $sortable, $exportable, $exportField);
     }
 
     /**

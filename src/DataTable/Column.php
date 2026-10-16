@@ -48,11 +48,19 @@ class Column
     public $searchMode = 'contains';
     public bool $sortable = false;
 
+    /** Whether the column goes into the table's exports ("exportable") */
+    public bool $exportable = true;
+
+    /** The row field exported in place of what the column shows ("export-field") */
+    public ?string $exportField = null;
+
     public function __construct(
         string $title,
         ?string $dataField = null,
         bool|string $searchable = false,
         bool $sortable = false,
+        bool|string $exportable = true,
+        ?string $exportField = null,
     ) {
         if (empty(\trim($dataField ?? '')) && ($searchable || $sortable)) {
             throw new \BadMethodCallException('The data-field attribute is required for searchable or sortable columns.');
@@ -61,6 +69,7 @@ class Column
         $this->title = $title;
         $this->sortable = $sortable;
         $this->setupSearchable($searchable);
+        $this->setupExport($exportable, $exportField);
     }
 
     public static function fromComponentAttributeBag(ComponentAttributeBag $attributes, ...$extraArgs): static
@@ -142,6 +151,18 @@ class Column
 
         $this->searchable = true;
         $this->searchMode = \strtolower($searchable);
+    }
+
+    protected function setupExport(bool|string $exportable, ?string $exportField): void
+    {
+        $parsed = \is_bool($exportable) ? $exportable : \filter_var($exportable, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+
+        if ($parsed === null) {
+            throw new \ValueError('Invalid value for the attribute [exportable] of the column [' . $this->title . "]: \"$exportable\". It must be a boolean (true, false, 1, 0, yes, no, on or off)");
+        }
+
+        $this->exportable = $parsed;
+        $this->exportField = \trim($exportField ?? '') !== '' ? \trim($exportField) : null;
     }
 
     public function buildSearchThAttributes($presetClass, ComponentAttributeBag $dataTableSearchThAttributes): ComponentAttributeBag

@@ -14,6 +14,7 @@ use ErickComp\LivewireDataTable\DataTable\BulkActions;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\DataTable\DataColumn;
+use ErickComp\LivewireDataTable\DataTable\Export;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\Filters;
 use ErickComp\LivewireDataTable\DataTable\Footer;
@@ -147,6 +148,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     /** Whether the search, filters, sorting and rows per page are remembered in the session ("remember-state") */
     public bool $rememberState = false;
+
+    /** The export button (<x-data-table.export>) */
+    public ?Export $export = null;
     public ?Footer $footer = null;
 
     public int $collectionSortingFlags;
@@ -466,7 +470,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             || $this->isFilterable()
             || $this->hasPerPageOptions()
             || $this->showRecordsCount
-            || $this->hasBulkActions();
+            || $this->hasBulkActions()
+            || $this->hasExport();
     }
 
     public function preset(): Preset
@@ -687,6 +692,30 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public function hasBulkActions(): bool
     {
         return $this->initializedBulkActions() && !$this->bulkActions->isEmpty();
+    }
+
+    public function setExport(ComponentAttributeBag $exportAttributes)
+    {
+        $this->export = Export::fromComponentAttributeBag($exportAttributes);
+    }
+
+    public function hasExport(): bool
+    {
+        return $this->export !== null;
+    }
+
+    /**
+     * The columns that go into the exports: all but the row actions and the ones with exportable="false". The
+     * selection column is not among the columns.
+     *
+     * @return Column[]
+     */
+    public function exportableColumns(): array
+    {
+        return $this->columns
+            ->filter(fn(Column $column) => $column->exportable && !$column instanceof RowActionsColumn)
+            ->values()
+            ->all();
     }
 
     // public function loadData()

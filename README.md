@@ -26,6 +26,7 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 - **Custom footer** — arbitrary footer content via `<x-data-table.footer>`
 - **Query string sync** — search, filters, sorting, rows per page and page reflected in the URL, so a bookmark brings a view back; optionally, the last state is remembered in the session
 - **Clear all and refresh** — a button to drop the search and filters at once, and an `lw-dt-refresh` event to re-render a table from anywhere on the page
+- **Export** — download the matching rows (from every page) or the selected ones as CSV, XLSX or ODS, written by OpenSpout or PhpSpreadsheet
 - **Internationalization** — ships with English and Brazilian Portuguese translations
 - **Eloquent customization interfaces** — override search, filtering, sorting, and query building at the model level
 - **Auto-discovery** — zero-config service provider registration
@@ -51,6 +52,8 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 | Package | Purpose |
 |---|---|
 | [laravie/serialize-queries](https://github.com/laravie/serialize-queries) | Required when using Eloquent/Query builder instances as data sources |
+| [openspout/openspout](https://github.com/openspout/openspout) (`^4.0` or `^5.0`) | Writes the [exports](#export), row by row (recommended) |
+| [phpoffice/phpspreadsheet](https://github.com/PHPOffice/PhpSpreadsheet) | Writes the [exports](#export) when OpenSpout is not installed |
 
 ## Installation
 
@@ -79,6 +82,7 @@ php artisan vendor:publish --tag=erickcomp-livewire-data-table-lang
 The configuration file (`config/erickcomp-livewire-data-table.php`) contains:
 
 - **Global defaults** — `columns-search-debounce-ms`, query string parameter names (`query-string-*`), `max-selected-ids`
+- **Exports** — `export.writer`, `export.escape-formulas`, `export.csv-delimiter` and `export.max-rows` (see [Export](#export))
 - **Presets** — full theme definitions for `empty`, `vanilla`, `bootstrap4v1`, and `tailwind3v1`
 
 Each preset defines CSS classes, icons, transitions, loader overlays, pagination views, and asset styles for every table element. Presets support inheritance via the `extends` key.
@@ -645,6 +649,42 @@ $this->dispatch('lw-dt-refresh', table: 'products');
 
 `table` is the `id` or `name` given to the `<x-data-table>`; without it, every table on the page refreshes. The search, filters, sorting, page and selection are kept, and the count of a **Select all** is brought up to date.
 
+### Export
+
+An **Export** button downloads the table's rows as a spreadsheet. It needs one of these libraries:
+
+```bash
+composer require openspout/openspout          # recommended: writes the rows as they come, with constant memory
+composer require phpoffice/phpspreadsheet     # builds the whole spreadsheet in memory before saving it
+```
+
+```blade
+<x-data-table :data-src="App\Models\Product::class" preset="tailwind3v1" selectable>
+    <x-data-table.export formats="csv,xlsx" filename="products-{date}" can="export-products" />
+
+    <x-data-table.column title="Name" data-field="name" />
+    <x-data-table.column title="Price" data-field="price">
+        <td>$ {{ number_format($__row->price, 2) }}</td>
+    </x-data-table.column>
+    <x-data-table.column title="Supplier" export-field="supplier.name">
+        <td><a href="/suppliers/{{ $__row->supplier_id }}">{{ $__row->supplier->name }}</a></td>
+    </x-data-table.column>
+    <x-data-table.column title="Internal notes" data-field="notes" exportable="false" />
+</x-data-table>
+```
+
+- **Rows:** the selected rows, when there are any (the button then reads "Export selected"); otherwise, all the rows matching the search, the filters and the column searches, from every page. Either way, they are sorted like the table.
+- **Columns:** all of them, except the row actions column and the ones with `exportable="false"`. The header holds the column titles.
+- **Values:** a column exports its `data-field` (for a custom column too: the raw price above, not the formatted one), or the `export-field` when it has one. Numbers stay numbers; dates, enums and other values become the text the table shows. A custom column with neither exports what it renders, as plain text: its Blade is rendered for every row, which costs much more than reading a field.
+- **Formats:** `csv`, `xlsx` and `ods` (`formats` defaults to `csv,xlsx`). With a single format, the button downloads it right away; with more, it opens a menu. CSV files are UTF-8 with a BOM (so Excel reads the accents right), with the `export.csv-delimiter` of the config (`,` by default; Excel expects `;` in locales that write decimals with a comma).
+- **File name:** `filename` without the extension, where `{date}` and `{datetime}` become the current ones (`export-{date}` by default).
+- **Permission:** with `can`, users without the gate ability do not see the button, and the server refuses the export (403).
+- **Formula injection:** a spreadsheet runs a CSV value starting with `=`, `+`, `-` or `@` as a formula. Such text gets a leading `'` (`export.escape-formulas`, on by default), except text holding just a number, like `-12.5`. XLSX and ODS files always store text as text.
+
+Rows are read from the data source in chunks of 1,000, using the `data-identity-column` (`id` by default) to keep their order steady: on a query data source, that column must exist. Livewire sends the file to the browser inside its response, so the whole file is held in memory on the way: `export.max-rows` (config) refuses larger exports with a message, and the table's `php-max-memory` applies.
+
+The library is picked by `export.writer` (config): `auto` (the default: OpenSpout when installed, PhpSpreadsheet otherwise), `openspout`, `phpspreadsheet`, or the name of your own class implementing `ErickComp\LivewireDataTable\Export\ExportWriter`.
+
 ### Pagination
 
 The component supports multiple pagination types via the `data-src-pagination` attribute:
@@ -791,6 +831,8 @@ HTML attributes prefixed with specific namespaces are forwarded to internal elem
 | `data-field` | `string` | `null` | Data key to display |
 | `sortable` | `bool` | `false` | Enable sorting |
 | `searchable` | `bool\|string` | `false` | Enable per-column search (`true` or mode) |
+| `exportable` | `bool` | `true` | Whether the column goes into the [exports](#export) |
+| `export-field` | `string` | `null` | Row field exported in place of what the column shows |
 
 Supports `th-*`, `td-*`, and `th-search-input-*` prefixes for forwarding attributes.
 
@@ -882,6 +924,20 @@ A self-closing direct child of `<x-data-table.row-actions>`.
 | `can` | `string` | `null` | Gate ability checked with the row |
 
 Other attributes go to the link or button.
+
+### `<x-data-table.export>`
+
+A self-closing direct child of `<x-data-table>`, at most one per table. See [Export](#export).
+
+| Attribute | Type | Default | Description |
+|---|---|---|---|
+| `formats` | `string\|array` | `'csv,xlsx'` | Formats offered: `csv`, `xlsx` and `ods` |
+| `filename` | `string` | `'export-{date}'` | Name of the file, without the extension (`{date}` and `{datetime}` are replaced) |
+| `label` | `string` | "Export" (translated) | Text of the button |
+| `selected-label` | `string` | "Export selected" (translated) | Text of the button while rows are selected |
+| `can` | `string` | `null` | Gate ability required to see the button and export |
+
+Other attributes go to the button.
 
 ### `<x-data-table.assets>`
 

@@ -40,6 +40,8 @@
                 <x-data-table.bulk-action name="category" label="Move to" handler="Workbench\App\DataTable\Products\ChangeCategory@handle" :options="['Books' => 'Books', 'Toys' => 'Toys']" />
             </x-data-table.bulk-actions>
 
+            <x-data-table.export formats="csv,xlsx,ods" filename="products-{date}" />
+
             <x-data-table.filters>
                 <x-data-table.filter
                     data-field="category"
