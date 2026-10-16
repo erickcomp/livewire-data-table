@@ -82,7 +82,7 @@ php artisan vendor:publish --tag=erickcomp-livewire-data-table-lang
 The configuration file (`config/erickcomp-livewire-data-table.php`) contains:
 
 - **Global defaults** — `columns-search-debounce-ms`, query string parameter names (`query-string-*`), `max-selected-ids`
-- **Exports** — `export.writer`, `export.escape-formulas`, `export.csv-delimiter` and `export.max-rows` (see [Export](#export))
+- **Exports** — `export.writer`, `export.escape-formulas`, `export.csv-delimiter`, `export.max-rows`, and where the files wait for their download: `export.disk`, `export.directory`, `export.download-ttl` and `export.route` (see [Export](#export))
 - **Presets** — full theme definitions for `empty`, `vanilla`, `bootstrap4v1`, and `tailwind3v1`
 
 Each preset defines CSS classes, icons, transitions, loader overlays, pagination views, and asset styles for every table element. Presets support inheritance via the `extends` key.
@@ -681,7 +681,14 @@ composer require phpoffice/phpspreadsheet     # builds the whole spreadsheet in 
 - **Permission:** with `can`, users without the gate ability do not see the button, and the server refuses the export (403).
 - **Formula injection:** a spreadsheet runs a CSV value starting with `=`, `+`, `-` or `@` as a formula. Such text gets a leading `'` (`export.escape-formulas`, on by default), except text holding just a number, like `-12.5`. XLSX and ODS files always store text as text.
 
-Rows are read from the data source in chunks of 1,000, using the `data-identity-column` (`id` by default) to keep their order steady: on a query data source, that column must exist. Livewire sends the file to the browser inside its response, so the whole file is held in memory on the way: `export.max-rows` (config) refuses larger exports with a message, and the table's `php-max-memory` applies.
+Rows are read from the data source in chunks of 1,000, using the `data-identity-column` (`id` by default) to keep their order steady: on a query data source, that column must exist. The file is written during the Livewire request, so the request's time limit bounds how many rows fit: `export.max-rows` (config) refuses larger exports with a message, and the table's `php-max-memory` applies.
+
+**The download.** The finished file does not travel inside Livewire's response (which would hold it whole in memory, base64-encoded, on the server and in the browser). It goes to a filesystem disk, and the browser downloads it from a route of the package, streamed:
+
+- the URL is signed, lasts `export.download-ttl` minutes (5 by default) and only works in the session that made the export;
+- the file is deleted once downloaded, so the URL works once; files never downloaded are deleted by a later export, once their URL has expired;
+- `export.disk` and `export.directory` (`local` and `lw-data-table-exports` by default) tell where the files wait. **With more than one server**, use a disk they all reach (S3, for instance): the export and its download may land on different servers;
+- `export.route.prefix` and `export.route.middleware` (`lw-data-table` and `['web']` by default) set the route, `/lw-data-table/export/{file}`. The middleware must start the session.
 
 The library is picked by `export.writer` (config): `auto` (the default: OpenSpout when installed, PhpSpreadsheet otherwise), `openspout`, `phpspreadsheet`, or the name of your own class implementing `ErickComp\LivewireDataTable\Export\ExportWriter`.
 

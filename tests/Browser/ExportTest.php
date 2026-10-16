@@ -1,7 +1,8 @@
 <?php
 
-// The demo table exports CSV, XLSX and ODS files, named "products-{date}", from a menu. Livewire sends a file by
-// clicking a hidden link to a blob: the tests catch that click and put the file's name and text in a <pre>.
+// The demo table exports CSV, XLSX and ODS files, named "products-{date}", from a menu. The server hands the browser
+// the URL of the file, which the table downloads by clicking a hidden link: the tests catch that click, download the
+// file with fetch() (in the same session) and put its name and text in a <pre>, followed by "Download finished".
 // Selectors must contain a CSS special character to be taken as CSS (see SmokeTest.php).
 
 const EXPORT_MENU_BUTTON = '.lw-dt-export-menu-container > button[aria-haspopup="menu"]';
@@ -16,29 +17,29 @@ function catchDownloads(mixed $page): mixed
 {
     $page->script(<<<'JS'
         () => {
-            const createObjectURL = URL.createObjectURL.bind(URL);
             const click = HTMLAnchorElement.prototype.click;
-            let lastBlob = null;
-
-            URL.createObjectURL = (blob) => {
-                lastBlob = blob;
-
-                return createObjectURL(blob);
-            };
 
             HTMLAnchorElement.prototype.click = function () {
-                if (!this.download) {
+                if (!this.hasAttribute('download')) {
                     return click.call(this);
                 }
 
-                const name = this.download;
-
-                lastBlob.text().then((text) => {
+                fetch(this.href).then(async (response) => {
+                    const disposition = response.headers.get('Content-Disposition') ?? '';
                     const pre = document.createElement('pre');
                     pre.id = 'downloaded-file';
-                    pre.dataset.name = name;
-                    pre.textContent = text;
+                    pre.dataset.status = response.status;
+                    pre.dataset.name = disposition.match(/filename="?([^";]+)"?/)?.[1] ?? '';
+                    pre.textContent = await response.text();
                     document.body.appendChild(pre);
+                }).catch((error) => {
+                    const pre = document.createElement('pre');
+                    pre.id = 'downloaded-file';
+                    pre.dataset.error = String(error);
+                    document.body.appendChild(pre);
+                }).finally(() => {
+                    // Something to wait for
+                    document.body.insertAdjacentText('beforeend', 'Download finished');
                 });
             };
         }
@@ -72,7 +73,9 @@ it('downloads the rows matching the search, from every page', function () {
     catchDownloads($page)
         ->click(EXPORT_MENU_BUTTON)
         ->click(exportMenuItem('CSV'))
+        ->waitForText('Download finished')
         ->assertPresent(DOWNLOADED_FILE)
+        ->assertAttribute(DOWNLOADED_FILE, 'data-status', '200')
         ->assertAttribute(DOWNLOADED_FILE, 'data-name', 'products-' . now()->format('Y-m-d') . '.csv')
         ->assertScript(downloadedCsvLinesScript() . "[0] === 'ID,Name,Category,Price'")
         ->assertScript(downloadedCsvLinesScript() . '.length', 11)
@@ -91,6 +94,7 @@ it('downloads only the selected rows, and says so', function () {
     catchDownloads($page)
         ->click(EXPORT_MENU_BUTTON)
         ->click(exportMenuItem('CSV'))
+        ->waitForText('Download finished')
         ->assertPresent(DOWNLOADED_FILE)
         ->assertScript(downloadedCsvLinesScript() . '.length', 3)
         ->assertScript(downloadedCsvLinesScript() . "[1].startsWith('1,')")
@@ -108,9 +112,13 @@ it('downloads spreadsheets', function () {
         ->click(EXPORT_MENU_BUTTON)
         ->assertVisible(exportMenuItem('OpenDocument (.ods)'))
         ->click(exportMenuItem('Excel (.xlsx)'))
+        ->waitForText('Download finished')
         ->assertPresent(DOWNLOADED_FILE)
         ->assertAttribute(DOWNLOADED_FILE, 'data-name', 'products-' . now()->format('Y-m-d') . '.xlsx')
         // XLSX files are zip files
         ->assertScript("document.querySelector('" . DOWNLOADED_FILE . "').textContent.startsWith('PK')")
         ->assertNoJavaScriptErrors();
 });
+
+
+

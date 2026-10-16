@@ -10,6 +10,7 @@ use ErickComp\LivewireDataTable\DataTable\BulkAction;
 use ErickComp\LivewireDataTable\DataTable\Export;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\DataTable\RowAction;
+use ErickComp\LivewireDataTable\Export\ExportFiles;
 use ErickComp\LivewireDataTable\Export\ExportWriter;
 use ErickComp\LivewireDataTable\Export\ExportWriterResolver;
 use ErickComp\LivewireDataTable\Export\TableExporter;
@@ -251,7 +252,7 @@ class LwDataTable extends LivewireComponent
 
             toggleFiltersContainer(event) {
                 this.dtData().toggleFiltersContainer(\$wire);
-            }{$this->selectionXData()}{$this->bulkActionsXData()}{$this->rowActionsXData()}
+            }{$this->selectionXData()}{$this->bulkActionsXData()}{$this->rowActionsXData()}{$this->exportXData()}
         };";
 
         return $xData;
@@ -437,6 +438,29 @@ class LwDataTable extends LivewireComponent
                 }
 
                 row.querySelector(`[data-lw-dt-row-action='\${CSS.escape(row.dataset.lwDtRowClickAction)}']`)?.click();
+            }";
+    }
+
+    /**
+     * The Alpine method that downloads a finished export, added to xData() when the table has an export. The server
+     * calls it with the file's URL (see export()); the file comes as an attachment, so the page stays.
+     */
+    protected function exportXData(): string
+    {
+        if (!$this->dataTable->hasExport()) {
+            return '';
+        }
+
+        return ",
+
+            downloadExport(url) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = '';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
             }";
     }
 
@@ -627,21 +651,21 @@ class LwDataTable extends LivewireComponent
     }
 
     /**
-     * Downloads the table's rows in one of the formats of its <x-data-table.export>: the selected rows when there are
+     * Exports the table's rows in one of the formats of its <x-data-table.export>: the selected rows when there are
      * any, otherwise all the rows matching the search and the filters, from every page, sorted like the table. The
      * browser only sends the format.
      *
-     * Livewire sends the file to the browser inside its response (base64 encoded): the whole file is held in memory
-     * on the way. See "export.max-rows" in the config.
+     * The file is written here, then downloaded by the browser from a signed URL (see ExportFiles): it is streamed,
+     * instead of travelling inside Livewire's response.
      */
-    public function export(string $format): mixed
+    public function export(string $format): void
     {
         $export = $this->dataTable->export;
 
         if ($export === null || !$export->hasFormat($format)) {
             $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.action_unavailable')));
 
-            return null;
+            return;
         }
 
         if ($export->can !== null) {
@@ -656,7 +680,7 @@ class LwDataTable extends LivewireComponent
         if ($maxRows > 0 && ($count = $rows->count()) > $maxRows) {
             $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.export_too_many_rows', ['count' => $count, 'max' => $maxRows])));
 
-            return null;
+            return;
         }
 
         $exporter = new TableExporter(
@@ -671,15 +695,14 @@ class LwDataTable extends LivewireComponent
             \app(ExportWriterResolver::class)
                 ->resolve()
                 ->write($format, $exporter->header(), $exporter->rows($rows->lazy()), $path);
-        } catch (\Throwable $e) {
-            @\unlink($path);
 
-            throw $e;
+            $downloadUrl = \app(ExportFiles::class)->store($path, $export->filename($format));
+        } finally {
+            @\unlink($path);
         }
 
-        return \response()
-            ->download($path, $export->filename($format), ['Content-Type' => $export->contentType($format)])
-            ->deleteFileAfterSend();
+        // Runs downloadExport() (see exportXData()) in the browser
+        $this->js('downloadExport', $downloadUrl);
     }
 
     /**

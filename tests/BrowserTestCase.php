@@ -31,5 +31,8 @@ abstract class BrowserTestCase extends Orchestra
     protected function defineEnvironment($app): void
     {
         $app['config']->set('session.driver', 'cookie');
+
+        // Set before the routes are read (see WithoutContentLength)
+        $app['config']->set('erickcomp-livewire-data-table.export.route.middleware', ['web', \Tests\Fixtures\WithoutContentLength::class]);
     }
 }

@@ -100,11 +100,6 @@ class Export
         ]) . '.' . $format;
     }
 
-    public function contentType(string $format): string
-    {
-        return static::CONTENT_TYPES[$format];
-    }
-
     public function label(): string
     {
         return $this->label ?? __('erickcomp_lw_data_table::messages.export_label');

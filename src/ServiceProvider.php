@@ -26,6 +26,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerBladeComponents();
         $this->registerLivewireComponents();
         $this->registerPaginationViews();
+        $this->registerRoutes();
     }
 
     protected function registerPublishableAssets()
@@ -39,6 +40,11 @@ class ServiceProvider extends LaravelAbstractServiceProvider
                 __DIR__ . '/../lang' => $this->app->langPath('vendor/erickcomp_lw_data_table'),
             ], 'erickcomp-livewire-data-table-lang');
         }
+    }
+
+    protected function registerRoutes()
+    {
+        $this->loadRoutesFrom(__DIR__ . '/../routes/lw-data-table.php');
     }
 
     protected function registerLwDataTableComponentHook()

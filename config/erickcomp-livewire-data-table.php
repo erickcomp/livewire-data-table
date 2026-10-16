@@ -19,9 +19,21 @@ return [
         // spreadsheet does not run it as a formula
         'escape-formulas' => true,
         'csv-delimiter' => ',',
-        // Most rows an export may have (null for no limit). Livewire sends the file inside its response: the whole
-        // file is held in memory on the way
+        // Most rows an export may have (null for no limit). The rows are written as the request runs, which limits
+        // how many fit in its time
         'max-rows' => null,
+        // The finished files wait in this directory of a filesystem disk until the browser downloads them, once.
+        // With more than one server, use a disk they all reach (s3, for instance)
+        'disk' => 'local',
+        'directory' => 'lw-data-table-exports',
+        // Minutes the download URL lasts. Files never downloaded are deleted by a later export
+        'download-ttl' => 5,
+        // The route the files are downloaded from. Its middleware must start the session: a download only works in
+        // the session that made the export
+        'route' => [
+            'prefix' => 'lw-data-table',
+            'middleware' => ['web'],
+        ],
     ],
     'presets' => [
         'empty' => [

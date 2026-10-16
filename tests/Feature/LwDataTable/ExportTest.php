@@ -3,12 +3,18 @@
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\DataTable\DataColumn;
+use ErickComp\LivewireDataTable\Export\ExportFiles;
 use ErickComp\LivewireDataTable\Export\OpenSpoutWriter;
 use ErickComp\LivewireDataTable\Export\PhpSpreadsheetWriter;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Routing\Middleware\ValidateSignature;
+use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Illuminate\View\ComponentAttributeBag;
 use Livewire\Livewire;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -21,6 +27,7 @@ const EXPORT_BOM = "\u{FEFF}";
 
 beforeEach(function () {
     $this->travelTo(Carbon::parse('2026-10-16 14:30:05'));
+    Storage::fake('local');
 
     TestProduct::insert([
         ['id' => 1, 'name' => 'Laptop Pro', 'category' => 'electronics', 'price' => 1299.99, 'created_at' => now(), 'updated_at' => now()],
@@ -67,9 +74,40 @@ function exportDataTable(array $exportAttributes = [], array $columns = [], arra
     return $dataTable;
 }
 
-function exportedFileContent(mixed $component): string
+/**
+ * The URL the export hands to the browser's downloadExport()
+ */
+function exportDownloadUrl(mixed $component): string
 {
-    return base64_decode(data_get($component->effects, 'download.content'));
+    expect(data_get($component->effects, 'xjs.0.expression'))->toBe('downloadExport');
+
+    return data_get($component->effects, 'xjs.0.params.0');
+}
+
+/**
+ * Downloads the exported file as the browser does: from the URL handed to downloadExport(), in the same session
+ */
+function downloadExportedFile(mixed $component, ?string $name = null, ?string $contentType = null): TestResponse
+{
+    $response = test()->withCookie(config('session.cookie'), session()->getId())
+        ->get(exportDownloadUrl($component))
+        ->assertOk();
+
+    if ($name !== null) {
+        $response->assertDownload($name);
+    }
+
+    if ($contentType !== null) {
+        $response->assertHeader('Content-Type', $contentType);
+    }
+
+    return $response;
+}
+
+function assertNoExportDownload(mixed $component): void
+{
+    expect(data_get($component->effects, 'xjs'))->toBeEmpty()
+        ->and(Storage::disk('local')->allFiles())->toBe([]);
 }
 
 /**
@@ -78,9 +116,9 @@ function exportedFileContent(mixed $component): string
  *
  * @return array<int, array<int, string>>
  */
-function exportedCsvRows(mixed $component): array
+function exportedCsvRows(TestResponse $download): array
 {
-    $content = exportedFileContent($component);
+    $content = $download->streamedContent();
 
     expect($content)->toStartWith(EXPORT_BOM);
 
@@ -106,7 +144,7 @@ function exportedCsvRows(mixed $component): array
  */
 function exportCsvRows(mixed $component): array
 {
-    return exportedCsvRows($component->call('export', 'csv')->assertFileDownloaded('products-2026-10-16.csv', contentType: EXPORT_CSV_CONTENT_TYPE));
+    return exportedCsvRows(downloadExportedFile($component->call('export', 'csv'), 'products-2026-10-16.csv', EXPORT_CSV_CONTENT_TYPE));
 }
 
 // --- Rows ---
@@ -114,11 +152,12 @@ function exportCsvRows(mixed $component): array
 it('downloads the rows of every page as CSV', function (string $writer, string $expected) {
     config()->set('erickcomp-livewire-data-table.export.writer', $writer);
 
-    Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
         ->assertSee('Laptop Pro')
         ->assertDontSee('Office Desk')
-        ->call('export', 'csv')
-        ->assertFileDownloaded('products-2026-10-16.csv', EXPORT_BOM . $expected, EXPORT_CSV_CONTENT_TYPE);
+        ->call('export', 'csv');
+
+    expect(downloadExportedFile($component, 'products-2026-10-16.csv', EXPORT_CSV_CONTENT_TYPE)->streamedContent())->toBe(EXPORT_BOM . $expected);
 })->with([
     // Both are the same CSV: fputcsv(), which OpenSpout uses, quotes text with spaces
     'openspout' => ['openspout', "ID,Name,Price\n1,\"Laptop Pro\",1299.99\n2,\"Wireless Mouse\",29.99\n3,\"Office Desk\",349.5\n4,\"Ergonomic Chair\",599.5\n5,Bookshelf,129.5\n"],
@@ -270,11 +309,10 @@ it('downloads XLSX and ODS files, with text kept as text', function (string $wri
     TestProduct::query()->whereKey(1)->update(['name' => '=1+1']);
 
     $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
-        ->call('export', $format)
-        ->assertFileDownloaded("products-2026-10-16.$format", contentType: $contentType);
+        ->call('export', $format);
 
     $path = tempnam(sys_get_temp_dir(), 'lw-dt-export-test-');
-    file_put_contents($path, exportedFileContent($component));
+    file_put_contents($path, downloadExportedFile($component, "products-2026-10-16.$format", $contentType)->streamedContent());
     $spreadsheet = IOFactory::load($path);
     unlink($path);
 
@@ -291,28 +329,171 @@ it('downloads XLSX and ODS files, with text kept as text', function (string $wri
 ]);
 
 it('fills the date and time in the file name', function () {
-    Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable(['filename' => 'products {datetime}'])])
-        ->call('export', 'csv')
-        ->assertFileDownloaded('products 2026-10-16_14-30-05.csv');
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable(['filename' => 'products {datetime}'])])
+        ->call('export', 'csv');
+
+    downloadExportedFile($component, 'products 2026-10-16_14-30-05.csv');
+});
+
+it('names the file with any characters', function () {
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable(['filename' => 'Relatório "100%" {date}'])])
+        ->call('export', 'csv');
+
+    // Browsers take the UTF-8 name; older clients, the ASCII one
+    downloadExportedFile($component)->assertHeader(
+        'Content-Disposition',
+        'attachment; filename="Relatorio \\"100\\" 2026-10-16.csv"; filename*=utf-8\'\'' . rawurlencode('Relatório "100%" 2026-10-16.csv'),
+    );
 });
 
 it('names the file "export" with the date by default', function () {
     $dataTable = exportDataTable();
     $dataTable->setExport(new ComponentAttributeBag());
 
-    Livewire::test(LwDataTable::class, ['dataTable' => $dataTable])
-        ->call('export', 'xlsx')
-        ->assertFileDownloaded('export-2026-10-16.xlsx');
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => $dataTable])
+        ->call('export', 'xlsx');
+
+    downloadExportedFile($component, 'export-2026-10-16.xlsx');
 });
 
-it('deletes the temporary file once it is sent', function () {
+// --- Download ---
+
+it('leaves the file on the disk until it is downloaded, once', function () {
     $before = glob(sys_get_temp_dir() . '/lw-dt-export-*');
 
-    Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
-        ->call('export', 'xlsx')
-        ->assertFileDownloaded('products-2026-10-16.xlsx');
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+        ->call('export', 'csv');
 
-    expect(glob(sys_get_temp_dir() . '/lw-dt-export-*'))->toBe($before);
+    // The file written by the export has moved to the disk
+    expect(glob(sys_get_temp_dir() . '/lw-dt-export-*'))->toBe($before)
+        ->and(Storage::disk('local')->files('lw-data-table-exports'))->toHaveCount(1)
+        ->and(exportDownloadUrl($component))->toStartWith('/lw-data-table/export/');
+
+    downloadExportedFile($component)->streamedContent();
+
+    expect(Storage::disk('local')->allFiles())->toBe([]);
+
+    test()->withCookie(config('session.cookie'), session()->getId())
+        ->get(exportDownloadUrl($component))
+        ->assertNotFound();
+});
+
+it('answers a HEAD request without using the download up', function () {
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+        ->call('export', 'csv');
+
+    // call() leaves out the cookies that get() adds
+    $this->withCookie(config('session.cookie'), session()->getId())
+        ->call('HEAD', exportDownloadUrl($component), cookies: $this->prepareCookiesForRequest())
+        ->assertOk()
+        ->assertDownload('products-2026-10-16.csv');
+
+    expect(Storage::disk('local')->files('lw-data-table-exports'))->toHaveCount(1);
+
+    expect(exportedCsvRows(downloadExportedFile($component)))->toHaveCount(6);
+});
+
+it('only downloads in the session that made the export', function () {
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+        ->call('export', 'csv');
+
+    test()->withCookie(config('session.cookie'), str_repeat('a', 40))
+        ->get(exportDownloadUrl($component))
+        ->assertForbidden();
+
+    expect(Storage::disk('local')->files('lw-data-table-exports'))->toHaveCount(1);
+});
+
+it('refuses a download URL that was changed', function (string $search, string $replace) {
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+        ->call('export', 'csv');
+
+    test()->withCookie(config('session.cookie'), session()->getId())
+        ->get(str_replace($search, $replace, exportDownloadUrl($component)))
+        ->assertForbidden();
+})->with([
+    'file name' => ['products-2026-10-16.csv', 'products-2026-10-16.exe'],
+    'expiry' => ['expires=', 'expires=9'],
+]);
+
+it('refuses an expired download URL', function () {
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+        ->call('export', 'csv');
+
+    $this->travel(6)->minutes();
+
+    test()->withCookie(config('session.cookie'), session()->getId())
+        ->get(exportDownloadUrl($component))
+        ->assertForbidden();
+});
+
+it('deletes the files never downloaded once their URL has expired', function () {
+    $exportedFiles = fn() => Storage::disk('local')->files('lw-data-table-exports');
+
+    // The files are dated by the filesystem, which ignores the travel in time: they are dated by hand
+    $age = function (string $path, int $seconds) {
+        touch(Storage::disk('local')->path($path), now()->getTimestamp() - $seconds);
+    };
+
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+        ->call('export', 'csv');
+    [$expired] = $exportedFiles();
+    // Past the 5 minutes of the URL and the margin of a minute
+    $age($expired, 5 * 60 + 61);
+
+    $component->call('export', 'xlsx');
+    [$recent] = array_values(array_diff($exportedFiles(), [$expired]));
+    $age($recent, 5 * 60 + 59);
+
+    $component->call('export', 'ods');
+
+    expect($exportedFiles())->toHaveCount(2)
+        ->not->toContain($expired)
+        ->toContain($recent);
+});
+
+it('takes the route of the downloads from the config', function () {
+    config()->set('erickcomp-livewire-data-table.export.route.prefix', '/admin/tables/');
+    config()->set('erickcomp-livewire-data-table.export.route.middleware', ['web', 'throttle:60,1']);
+
+    // The routes are read when the application boots: the download route is read again, with the new config, in
+    // place of the one read then
+    $routes = new RouteCollection();
+
+    foreach (Route::getRoutes()->getRoutes() as $route) {
+        if ($route->getName() !== ExportFiles::ROUTE_NAME) {
+            $routes->add($route);
+        }
+    }
+
+    Route::setRoutes($routes);
+    require __DIR__ . '/../../../routes/lw-data-table.php';
+    Route::getRoutes()->refreshNameLookups();
+
+    $route = Route::getRoutes()->getByName(ExportFiles::ROUTE_NAME);
+
+    expect($route->uri())->toBe('admin/tables/export/{file}')
+        ->and($route->middleware())->toBe(['web', 'throttle:60,1', ValidateSignature::class . ':relative']);
+
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+        ->call('export', 'csv');
+
+    expect(exportDownloadUrl($component))->toStartWith('/admin/tables/export/')
+        ->and(exportedCsvRows(downloadExportedFile($component)))->toHaveCount(6);
+});
+
+it('keeps the files on the disk and in the directory of the config', function () {
+    Storage::fake('exports');
+    config()->set('erickcomp-livewire-data-table.export.disk', 'exports');
+    config()->set('erickcomp-livewire-data-table.export.directory', '/tmp/table-exports/');
+
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+        ->call('export', 'csv');
+
+    expect(Storage::disk('exports')->files('tmp/table-exports'))->toHaveCount(1)
+        ->and(Storage::disk('local')->allFiles())->toBe([]);
+
+    expect(exportedCsvRows(downloadExportedFile($component, 'products-2026-10-16.csv')))->toHaveCount(6);
 });
 
 // --- Checks ---
@@ -320,9 +501,9 @@ it('deletes the temporary file once it is sent', function () {
 it('refuses a format the table does not offer', function () {
     Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable(['formats' => 'csv'])])
         ->call('export', 'xlsx')
-        ->assertNoFileDownloaded()
         ->assertSet('flash.0.type', 'error')
-        ->assertSee('This action is not available.');
+        ->assertSee('This action is not available.')
+        ->tap(fn($component) => assertNoExportDownload($component));
 });
 
 it('refuses to export a table without an export', function () {
@@ -331,15 +512,15 @@ it('refuses to export a table without an export', function () {
 
     Livewire::test(LwDataTable::class, ['dataTable' => $dataTable])
         ->call('export', 'csv')
-        ->assertNoFileDownloaded()
-        ->assertSee('This action is not available.');
+        ->assertSee('This action is not available.')
+        ->tap(fn($component) => assertNoExportDownload($component));
 });
 
 it('checks the gate', function () {
     Gate::define('export-products', fn(?object $user = null) => false);
 
     Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable(['can' => 'export-products'])])
-        ->assertDontSee('Export')
+        ->assertDontSeeHtml('$wire.export(')
         ->call('export', 'csv')
         ->assertForbidden();
 });
@@ -347,23 +528,27 @@ it('checks the gate', function () {
 it('exports when the gate allows it', function () {
     Gate::define('export-products', fn(?object $user = null) => true);
 
-    Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable(['can' => 'export-products'])])
-        ->assertSee('Export')
-        ->call('export', 'csv')
-        ->assertFileDownloaded('products-2026-10-16.csv');
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable(['can' => 'export-products'])])
+        ->assertSeeHtml('$wire.export(')
+        ->call('export', 'csv');
+
+    downloadExportedFile($component, 'products-2026-10-16.csv');
 });
 
 it('refuses more rows than the configured limit', function () {
     config()->set('erickcomp-livewire-data-table.export.max-rows', 4);
 
-    Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => exportDataTable()])
         ->call('export', 'csv')
-        ->assertNoFileDownloaded()
         ->assertSet('flash.0.type', 'error')
-        ->assertSee('There are 5 records to export, more than the limit of 4. Narrow them down with the search or the filters.')
-        ->call('applyFilters', ['category' => ['category' => 'furniture']])
-        ->call('export', 'csv')
-        ->assertFileDownloaded('products-2026-10-16.csv');
+        ->assertSee('There are 5 records to export, more than the limit of 4. Narrow them down with the search or the filters.');
+
+    assertNoExportDownload($component);
+
+    $component->call('applyFilters', ['category' => ['category' => 'furniture']])
+        ->call('export', 'csv');
+
+    expect(exportedCsvRows(downloadExportedFile($component)))->toHaveCount(4);
 });
 
 // --- Rendering ---
