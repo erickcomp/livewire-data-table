@@ -35,7 +35,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 |---|---|---|---|
 | T0 Infra: workbench + testes de navegador | — | — | ☑ |
 | T0.1 Correção: montagem da tabela no Livewire 3 | — | T0 | ☑ |
-| T1 Seleção no servidor (`Selection` + dados não paginados) | — | — | ☐ |
+| T1 Seleção no servidor (`Selection` + dados não paginados) | — | — | ☑ |
 | T2 Seleção de linhas na UI + contador | T1 | T0 | ☐ |
 | T3 Bulk actions | T1, T2 | T0 | ☐ |
 | T4 "Limpar tudo" + evento de recarga | — | T2 | ☐ |
@@ -56,6 +56,18 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
   - CI: duas entradas com Livewire 3 na matriz `tests` (PHP 8.3/Laravel 12 e PHP 8.4/Laravel 13), e o job `browser` virou matriz Livewire 3/4.
   - No Livewire 3, o PHPStan acusa 2 erros que já existiam: `parent::withHtmlAttributes()` só existe no Livewire 4 (o Livewire 3 nunca chama o método) e uma entrada do baseline fica sem uso. O job de PHPStan do CI roda no Livewire 4, por isso não é afetado.
   - Achado 2 (é o problema do `perPage` da T6, confirmado no navegador): com `per-page="10,25,50"` o select mostra 10, mas a tabela traz 15 linhas. A demo usa `per-page="15,30,60"` para não depender disso; a T6 deve trocar para valores que exponham o problema e cobri-lo com um teste de navegador.
+- **T1:**
+  - `LwDataTable::makeSelection()` e `buildRetrievalParams()` são **protegidos**: o Livewire deixa o navegador chamar qualquer método público do componente. Por isso a T2 deve manter o `selection()` não público; os handlers recebem a `Selection` por injeção. O `makeSelection()` chama `processFilters()` antes, porque uma ação pode rodar antes do `render()`, e sem isso os filtros ficariam de fora.
+  - API da `Selection` além do plano:
+    - `isQueryable()` e `identityColumn()`.
+    - `isNotEmpty()`.
+    - `lazy()` pagina por offset e mantém a ordenação da tabela, com a identidade desempatando; serve para leitura e exportação.
+    - `lazyById()` é seguro para alterar as linhas durante a iteração, mas sai na ordem da identidade.
+    - `count()` usa `getCountForPagination()` (acerta queries com `GROUP BY` e ignora o `ORDER BY`).
+    - Os dados não paginados são pedidos ao data source uma vez por `Selection`.
+    - Quando a identidade é a chave inteira de um model Eloquent, ids não inteiros são descartados (no PostgreSQL eles derrubariam a query).
+  - `LwDataRetrievalParams::paginate()` passou a aceitar `QueryBuilder`; antes, `applyAndPaginate(DB::table(...))` dava `TypeError`. Callables que paginam por conta própria podem checar `$params->isPaginationDisabled()` (documentado no README).
+  - O baseline do PHPStan foi regenerado sem entradas novas: 2 entradas citam classes anônimas pelo número da linha (que mudou), 1 saiu porque o erro foi corrigido e 1 mensagem mudou de texto. Achado para depois: `resolvedModelInstance` (trait `AppliesDataRetrievalParamsOnEloquentBuilder`) não é declarada em lugar nenhum, então vira propriedade dinâmica, o que gera deprecation no PHP 8.2+.
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
@@ -180,7 +192,7 @@ Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 
 - `DataTable` (construtor): `bool|string $selectable = false` (parse com `filter_var` como em `Filters::isCollapsible()`) e `bool|string $preserveSelectionOnFilter = false`. Novos prefixos de bag: `selection-th-`, `selection-td-`, `selection-checkbox-`. `hasTableActions()` passa a considerar `selectable`.
 - `LwDataTable` (fora da URL):
   - Propriedades: `public array $selectedIds = []` (selecionados no modo ids, excluídos no modo all), `public bool $selectAllMatching = false`, `#[Locked] public ?int $matchingTotal = null`.
-  - Métodos: `selectAllMatching()` (liga o modo all, limpa os ids e calcula `matchingTotal` via `Selection::count()`; em `LengthAwarePaginator` dá para usar `total()` no render), `deselectAll()`, `selection(): Selection` (público, usado por handlers e testes), `selectedCount(): int`.
+  - Métodos: `selectAllMatching()` (liga o modo all, limpa os ids e calcula `matchingTotal` via `Selection::count()`; em `LengthAwarePaginator` dá para usar `total()` no render), `deselectAll()`, `selection(): Selection` (**protegido**, ver notas da T1; os handlers recebem a `Selection` por injeção), `selectedCount(): int`.
   - `updatedSelectedIds()`: normaliza para strings únicas e limita a `config('erickcomp-livewire-data-table.max-selected-ids', 10000)`.
 - **Reset da seleção:** em `updating()` para `search`/`filters`/`columnsSearch.*` e em `applyFilters()` (que atribui direto e não dispara `updating`), limpar a seleção, a menos que `preserve-selection-on-filter` esteja ligado. Nesse caso mantém os ids explícitos, mas sempre sai do modo all (como o `preserveSelectionsOnFilter` do Magento). Mudanças de per-page e de ordenação preservam a seleção.
 - **View** (partials):
