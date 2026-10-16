@@ -41,7 +41,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | T4 "Limpar tudo" + evento de recarga | — | T2 | ☑ |
 | T5 Ações por linha + clique na linha | T1, T3 | T0 | ☑ |
 | T6 Estado na URL (`perPage`) + lembrar o estado na sessão | — | T2 | ☑ |
-| T7 Exportação (adapters OpenSpout / PhpSpreadsheet) | T1 | T2 | ☐ |
+| T7 Exportação (adapters OpenSpout / PhpSpreadsheet) | T1 | T2 | ☑ |
 | T8 Edição inline (uma linha) | T1, T3 | T5 | ☐ |
 
 **Notas de execução**
@@ -123,6 +123,18 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
   - Corrigido de passagem: `columnsSearchUrlParam()` lia do preset a chave `query-string-cols-search`, mas os presets e a config usam `query-string-param-cols-search`.
   - Ajustes em testes antigos: `PaginationTypeTest` e `PaginationResetTest` usavam `perPage` fora das opções (`'2'`, `'15' + 1`), o que só funcionava por causa da brecha; agora declaram as opções.
   - Nos testes de navegador, a sessão usa o driver `cookie` (`BrowserTestCase`): com o `array` do `phpunit.xml`, nada persiste entre as requisições do navegador. A demo aceita `?per-page-options=` e `?remember=1`.
+- **T7:**
+  - Versões: OpenSpout 4 e 5 (os testes de exportação passam nas duas; o `require-dev` usa a 5). No OpenSpout 4, as opções do CSV não têm construtor, e o delimitador é gravado por reflection: a atribuição direta derrubava o PHPStan, que analisa a 5 (propriedade `readonly`). O CI ganhou as extensões `gd`, `zip`, `xmlreader` e `xmlwriter`, que o PhpSpreadsheet exige.
+  - O `ExportWriter` recebe os valores prontos (texto, número ou null). O `TableExporter` (`src/Export`) monta o cabeçalho e as linhas, e o escape de fórmulas do CSV fica nele, não nos writers. Assim, um writer próprio também recebe os valores escapados. A config `export.writer` aceita, além de `auto|openspout|phpspreadsheet`, o nome de uma classe que implemente `ExportWriter`. Os writers saem do container, e é assim que os testes simulam "nenhuma lib" (o `isAvailable()` sobrescrito numa subclasse).
+  - Os dois writers gravam o mesmo CSV: UTF-8 com BOM e `\n`. A única diferença é que o OpenSpout (via `fputcsv()`) põe aspas em texto com espaços, e o PhpSpreadsheet não. Por isso os testes do componente leem o CSV como uma planilha leria. Nova config `export.csv-delimiter` (padrão `,`; o Excel em pt-BR espera `;`).
+  - Texto nunca vira fórmula. O `Cell::fromValue()` do OpenSpout transforma em fórmula qualquer texto que comece com `=`, então o writer cria `StringCell`. No PhpSpreadsheet, usa `setCellValueExplicit()`. Os testes leem os XLSX/ODS dos dois writers com o PhpSpreadsheet: o leitor do OpenSpout também recria `=...` como fórmula, seja o que for que o arquivo diga.
+  - O escape de fórmulas do CSV poupa o texto que é só um número (`-12.5`, `+1`): a planilha lê esse texto como o número que ele é.
+  - As linhas vêm sempre de uma `Selection`. Com seleção, é a do usuário. Sem seleção, é uma `Selection` no modo "all" sem exclusões, cujo `lazy()` (chunks de 1000 por offset, ordenado como a tabela e desempatado pela identidade) já existia. Por isso, numa fonte baseada em query, a coluna de identidade tem que existir (documentado). Ids enviados a uma tabela sem `selectable` são ignorados.
+  - Valores: o `export-field` vale para qualquer coluna, não só para as custom. Booleanos viram 1/0; enums viram o valor (ou o nome); datas, o texto que a tabela mostra (o `(string)` do Carbon); arrays e objetos sem `__toString`, JSON. Na coluna custom sem campo, o texto renderizado tem as tags removidas, as entidades decodificadas e os espaços colapsados. O `$loop` passado ao Blade não traz `count`/`last`/`remaining`, que o streaming não conhece.
+  - O Livewire manda o arquivo dentro da resposta, em base64, então o arquivo inteiro passa pela memória. O `export.max-rows` recusa (com mensagem `export_too_many_rows`) exportações acima do limite, contando as linhas antes. O arquivo temporário é apagado depois do envio (`deleteFileAfterSend()`, que o `sendContent()` respeita dentro do Livewire) ou em caso de erro.
+  - UI: com um formato, um botão ("Export (CSV)"); com mais, um menu (posicionado com `fixed`, como os outros). Com linhas selecionadas, o botão passa a dizer "Export selected" (atributo `selected-label`). Ordem na linha de ações: bulk actions, exportação, contador, per-page. Novas chaves de preset: `actions.bulk-actions-and-per-page.export.{button,menu-container,menu-button(+icon),menu,menu-item}`. No vanilla, o menu reaproveita as classes do menu de seleção. Lang: `export_label`, `export_selected_label`, `export_format_{csv,xlsx,ods}`, `export_too_many_rows`. `formats` tem como padrão `csv,xlsx`, e `filename`, `export-{date}` (aceita também `{datetime}`).
+  - Ação inexistente ou formato não oferecido viram a mensagem `action_unavailable`. Gate negado dá 403 e esconde o botão.
+  - A demo ganhou a exportação (CSV, XLSX e ODS). `tests/Browser/ExportTest.php` captura o download (o Livewire clica num link oculto para um blob) e confere nome e conteúdo: busca aplicada a todas as páginas, só os selecionados (com o rótulo trocado) e XLSX.
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
