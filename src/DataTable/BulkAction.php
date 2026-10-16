@@ -3,6 +3,7 @@
 namespace ErickComp\LivewireDataTable\DataTable;
 
 use ErickComp\LivewireDataTable\Concerns\CreatesFromComponentAttributeBag;
+use ErickComp\LivewireDataTable\Concerns\DefinesAction;
 use ErickComp\LivewireDataTable\Support\ServerCallable;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
@@ -16,6 +17,7 @@ use Illuminate\View\ComponentAttributeBag;
 class BulkAction
 {
     use CreatesFromComponentAttributeBag;
+    use DefinesAction;
 
     public string $name;
     public string $label;
@@ -24,16 +26,6 @@ class BulkAction
 
     /** @var array<string, string> Sub-actions: the option values handed over to the handler, with their labels */
     public array $options = [];
-
-    /** Whether the user has to confirm before the action runs */
-    public bool $requiresConfirmation = false;
-
-    /** The question asked before running the action (":count" becomes the number of selected rows), null for the default one */
-    public ?string $confirm = null;
-    public ?string $confirmTitle = null;
-
-    /** Gate ability the user must have to run the action */
-    public ?string $can = null;
 
     /** Whether the rows stay selected after the action runs */
     public bool $keepSelection = false;
@@ -58,24 +50,13 @@ class BulkAction
             throw new \InvalidArgumentException('The [name] attribute of an [x-data-table.bulk-action] is required');
         }
 
-        $this->label = \trim($label ?? '') !== '' ? \trim($label) : Str::headline($this->name);
+        $this->label = static::blankToNull($label) ?? Str::headline($this->name);
 
-        $handler = \is_string($handler) ? \trim($handler) : $handler;
-        $hasHandler = $handler !== null && $handler !== '';
-        $event = \trim($event ?? '');
+        $this->handler = static::parseHandler($handler, "the bulk action [{$this->name}]");
+        $this->event = static::blankToNull($event);
 
-        if ($hasHandler === ($event !== '')) {
+        if (($this->handler === null) === ($this->event === null)) {
             throw new \InvalidArgumentException("The bulk action [{$this->name}] must have either a [handler] or an [event] attribute (and only one of them)");
-        }
-
-        if ($hasHandler) {
-            try {
-                $this->handler = new ServerCallable($handler);
-            } catch (\ValueError $e) {
-                throw new \InvalidArgumentException("Invalid handler for the bulk action [{$this->name}]: {$e->getMessage()}", previous: $e);
-            }
-        } else {
-            $this->event = $event;
         }
 
         if (\is_string($options)) {
@@ -86,13 +67,9 @@ class BulkAction
             $this->options[(string) $optionValue] = (string) $optionLabel;
         }
 
-        // A bare "confirm" (or a boolean) asks the default question; a text is the question itself
-        $confirmFlag = \is_string($confirm) ? \filter_var(\trim($confirm), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) : $confirm;
-        $this->requiresConfirmation = $confirmFlag !== false && $confirm !== null;
-        $this->confirm = $this->requiresConfirmation && $confirmFlag === null ? \trim($confirm) : null;
-
-        $this->confirmTitle = \trim($confirmTitle ?? '') !== '' ? \trim($confirmTitle) : null;
-        $this->can = \trim($can ?? '') !== '' ? \trim($can) : null;
+        // ":count" in the question becomes the number of selected rows
+        $this->setupConfirmation($confirm, $confirmTitle);
+        $this->can = static::blankToNull($can);
         $this->keepSelection = \is_bool($keepSelection)
             ? $keepSelection
             : (\filter_var($keepSelection, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) ?? true);
@@ -101,11 +78,6 @@ class BulkAction
     public function confirmMessage(): string
     {
         return $this->confirm ?? __('erickcomp_lw_data_table::messages.confirm_default_message');
-    }
-
-    public function confirmTitle(): string
-    {
-        return $this->confirmTitle ?? __('erickcomp_lw_data_table::messages.confirm_default_title');
     }
 
     public function hasOptions(): bool
