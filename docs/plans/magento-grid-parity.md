@@ -38,7 +38,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | T1 Seleção no servidor (`Selection` + dados não paginados) | — | — | ☑ |
 | T2 Seleção de linhas na UI + contador | T1 | T0 | ☑ |
 | T3 Bulk actions | T1, T2 | T0 | ☑ |
-| T4 "Limpar tudo" + evento de recarga | — | T2 | ☐ |
+| T4 "Limpar tudo" + evento de recarga | — | T2 | ☑ |
 | T5 Ações por linha + clique na linha | T1, T3 | T0 | ☐ |
 | T6 Estado na URL (`perPage`) + lembrar o estado na sessão | — | T2 | ☐ |
 | T7 Exportação (adapters OpenSpout / PhpSpreadsheet) | T1 | T2 | ☐ |
@@ -95,6 +95,11 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
   - `ComponentAttributeBag` não escapa valores ao imprimir. O partial escapa os atributos com `e($valor, false)`, para não codificar de novo o que o Blade já escapou nos atributos com `:`.
   - O componente `x-data-table.bulk-action` com conteúdo lança erro, e a mensagem não pode conter a tag literal (`<x-...>`): o compilador de componentes do Blade tentaria compilá-la.
   - A demo do workbench ganhou "Delete" (com confirmação) e "Move to" (com opções). `tests/Browser/BulkActionsTest.php` cobre confirmar e recusar, opções, o modo "todos" com exclusões, a falta de seleção e o fechamento da mensagem. O Playwright fecha os diálogos nativos sozinho, por isso os testes substituem `window.confirm`/`window.alert`.
+- **T4:**
+  - O método do store Alpine se chama `clearAllFilters()`, e não `clearAll()`, para casar com o do servidor e com o do `x-data`. Ele zera `inputSearch` e `inputFilters`; o formato vazio vem de `emptyFilterInputs()`, que compartilha com `computeInitialFilters()` o valor vazio de cada filtro (`emptyFilterInputValue()`).
+  - "Limpar tudo" limpa o que aparece nos chips (busca e filtros). As buscas por coluna ficam como estão. O botão só aparece com pelo menos um chip.
+  - `refreshTable()` chama `skipRender()` quando o evento é de outra tabela, para não re-renderizar à toa todas as tabelas da página. `id` e `name` são os atributos do `<table>` (os sem prefixo do `<x-data-table>`); o `DataTable` ganhou `@property-read` para eles, o que tirou mais uma entrada do baseline do PHPStan.
+  - Achado nos testes de navegador: o `visit()` do plugin do Pest só carrega a página na primeira interação ou asserção. Um teste que muda o banco depois do `visit()` precisa de uma asserção antes da mudança.
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
