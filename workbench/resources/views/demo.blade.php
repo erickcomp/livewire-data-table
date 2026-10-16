@@ -35,6 +35,11 @@
         <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" :data-src-pagination="$pagination" per-page="15,30,60" id="products" selectable>
             <x-data-table.search data-fields="name,category" />
 
+            <x-data-table.bulk-actions>
+                <x-data-table.bulk-action name="delete" label="Delete" handler="Workbench\App\DataTable\Products\DeleteProducts" confirm="Delete :count product(s)?" />
+                <x-data-table.bulk-action name="category" label="Move to" handler="Workbench\App\DataTable\Products\ChangeCategory@handle" :options="['Books' => 'Books', 'Toys' => 'Toys']" />
+            </x-data-table.bulk-actions>
+
             <x-data-table.filters>
                 <x-data-table.filter
                     data-field="category"

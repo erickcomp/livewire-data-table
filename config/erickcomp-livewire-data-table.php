@@ -321,6 +321,24 @@ return [
                 //'default-style-for-pagination' => true,
             ],
 
+            'messages' => [
+                'container' => [
+                    'class' => ['lw-dt-messages'],
+                ],
+                'success' => [
+                    'class' => ['lw-dt-message', 'lw-dt-message-success'],
+                ],
+                'error' => [
+                    'class' => ['lw-dt-message', 'lw-dt-message-error'],
+                ],
+                'info' => [
+                    'class' => ['lw-dt-message', 'lw-dt-message-info'],
+                ],
+                'button-dismiss' => [
+                    'class' => ['lw-dt-message-dismiss'],
+                ],
+            ],
+
             'reload-alert' => [
                 'alert-before-reload' => true,
                 'function-name' => 'reloadRequiredAlert',
@@ -583,6 +601,60 @@ return [
 
                     .lw-dt tr.lw-dt-selected-row {
                         background: #eef4ff;
+                    }
+
+                    .lw-dt .lw-dt-bulk-actions-select {
+                        min-width: 10rem;
+                    }
+
+                    .lw-dt .lw-dt-messages {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 0.5rem;
+                        margin-bottom: 1rem;
+                    }
+
+                    .lw-dt .lw-dt-message {
+                        display: flex;
+                        align-items: flex-start;
+                        justify-content: space-between;
+                        gap: 1rem;
+                        padding: 0.75rem 1rem;
+                        border: 1px solid;
+                        border-radius: 4px;
+                    }
+
+                    .lw-dt .lw-dt-message-success {
+                        color: #1e5631;
+                        background: #e9f7ef;
+                        border-color: #a3d9b1;
+                    }
+
+                    .lw-dt .lw-dt-message-error {
+                        color: #842029;
+                        background: #fbeaea;
+                        border-color: #f1aeb5;
+                    }
+
+                    .lw-dt .lw-dt-message-info {
+                        color: #084298;
+                        background: #e7f1ff;
+                        border-color: #9ec5fe;
+                    }
+
+                    .lw-dt .lw-dt-message-dismiss {
+                        padding: 0;
+                        border: none;
+                        background: none;
+                        color: inherit;
+                        font-size: 1.25rem;
+                        line-height: 1;
+                        opacity: 0.6;
+                        cursor: pointer;
+                    }
+
+                    .lw-dt .lw-dt-message-dismiss:hover {
+                        opacity: 1;
                     }
                 </style>
                 CSS,
@@ -880,6 +952,24 @@ return [
                 'view' => 'erickcomp_lw_data_table::bootstrap4',
                 'simple-view' => 'erickcomp_lw_data_table::simple-bootstrap4',
                 //'default-style-for-pagination' => true,
+            ],
+
+            'messages' => [
+                'container' => [
+                    'class' => ['lw-dt-messages'],
+                ],
+                'success' => [
+                    'class' => ['alert', 'alert-success', 'alert-dismissible'],
+                ],
+                'error' => [
+                    'class' => ['alert', 'alert-danger', 'alert-dismissible'],
+                ],
+                'info' => [
+                    'class' => ['alert', 'alert-info', 'alert-dismissible'],
+                ],
+                'button-dismiss' => [
+                    'class' => ['close'],
+                ],
             ],
 
             'reload-alert' => [
@@ -1356,6 +1446,22 @@ return [
                 'container' => ['class' => ['mt-4', 'justify-between']],
                 'view' => 'erickcomp_lw_data_table::tailwind3',
                 'simple-view' => 'erickcomp_lw_data_table::simple-tailwind3',
+            ],
+
+            'messages' => [
+                'container' => ['class' => ['flex', 'flex-col', 'gap-2', 'mb-4']],
+                'success' => [
+                    'class' => ['flex', 'items-start', 'justify-between', 'gap-4', 'px-4', 'py-3', 'rounded-md', 'border', 'border-green-300', 'bg-green-50', 'text-green-800', 'dark:border-green-800', 'dark:bg-green-950', 'dark:text-green-200'],
+                ],
+                'error' => [
+                    'class' => ['flex', 'items-start', 'justify-between', 'gap-4', 'px-4', 'py-3', 'rounded-md', 'border', 'border-red-300', 'bg-red-50', 'text-red-800', 'dark:border-red-800', 'dark:bg-red-950', 'dark:text-red-200'],
+                ],
+                'info' => [
+                    'class' => ['flex', 'items-start', 'justify-between', 'gap-4', 'px-4', 'py-3', 'rounded-md', 'border', 'border-blue-300', 'bg-blue-50', 'text-blue-800', 'dark:border-blue-800', 'dark:bg-blue-950', 'dark:text-blue-200'],
+                ],
+                'button-dismiss' => [
+                    'class' => ['text-xl', 'leading-none', 'opacity-60', 'hover:opacity-100'],
+                ],
             ],
 
             'reload-alert' => [

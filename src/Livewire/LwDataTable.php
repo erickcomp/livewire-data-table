@@ -6,8 +6,11 @@ use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\ProvidesUnpaginatedData;
 use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable;
+use ErickComp\LivewireDataTable\DataTable\BulkAction;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 use ErickComp\LivewireDataTable\Selection\Selection;
+use ErickComp\LivewireDataTable\Support\ActionResult;
+use ErickComp\LivewireDataTable\Support\ActionResultHandler;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
@@ -18,6 +21,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Js;
 use Illuminate\Support\LazyCollection;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
@@ -83,6 +88,14 @@ class LwDataTable extends LivewireComponent
     /** How many rows the "all" selection mode covers, before exclusions */
     #[Locked]
     public ?int $matchingTotal = null;
+
+    /**
+     * The messages shown above the table, e.g. the result of a bulk action. They last until the next request.
+     *
+     * @var array<int, array{type: string, message: string, key: string}>
+     */
+    #[Locked]
+    public array $flash = [];
 
     protected DataTable $dataTable;
 
@@ -222,7 +235,7 @@ class LwDataTable extends LivewireComponent
 
             toggleFiltersContainer(event) {
                 this.dtData().toggleFiltersContainer(\$wire);
-            }{$this->selectionXData()}
+            }{$this->selectionXData()}{$this->bulkActionsXData()}
         };";
 
         return $xData;
@@ -299,6 +312,73 @@ class LwDataTable extends LivewireComponent
             }";
     }
 
+    /**
+     * The Alpine method behind the bulk actions dropdown, added to xData() when there are bulk actions
+     */
+    protected function bulkActionsXData(): string
+    {
+        if (!$this->dataTable->hasBulkActions()) {
+            return '';
+        }
+
+        $noSelectionMessage = Js::from(__('erickcomp_lw_data_table::messages.bulk_actions_no_selection'));
+        $confirmFunction = $this->confirmDialogConfig()['function-name'];
+
+        return ",
+
+            /* Runs the action picked in the dropdown (an option with data-lw-dt-* attributes) on the selected rows */
+            async runBulkAction(select) {
+                const picked = select.selectedOptions[0];
+                select.value = '';
+
+                if (!picked || !picked.dataset.lwDtAction) {
+                    return;
+                }
+
+                if (this.selectedCount === 0) {
+                    window.alert({$noSelectionMessage});
+
+                    return;
+                }
+
+                if (picked.dataset.lwDtConfirm !== undefined) {
+                    const message = picked.dataset.lwDtConfirm.replaceAll(':count', this.selectedCount);
+
+                    if (!(await {$confirmFunction}(message, picked.dataset.lwDtConfirmTitle))) {
+                        return;
+                    }
+                }
+
+                await \$wire.executeBulkAction(picked.dataset.lwDtAction, picked.dataset.lwDtOption ?? null);
+            }";
+    }
+
+    /**
+     * The preset's "confirm-dialog": the JS function asked to confirm an action, by default window.confirm()
+     *
+     * @return array{function-name: string, function-code: ?string}
+     */
+    protected function confirmDialogConfig(): array
+    {
+        $config = $this->preset()->get('confirm-dialog', null) ?? [];
+
+        if (($config['function-name'] ?? null) === null) {
+            return [
+                'function-name' => 'lwDataTableConfirm',
+                'function-code' => <<<JS
+                    async function lwDataTableConfirm(message, title) {
+                        return window.confirm(message);
+                    }
+                JS,
+            ];
+        }
+
+        return [
+            'function-name' => $config['function-name'],
+            'function-code' => $config['function-code'] ?? null,
+        ];
+    }
+
     public function updating(string $property, $value)
     {
         if (\in_array($property, ['search', 'filters', 'perPage']) || \str_starts_with($property, 'columnsSearch.')) {
@@ -332,6 +412,76 @@ class LwDataTable extends LivewireComponent
         $this->selectionMode = Selection::MODE_IDS;
         $this->selectedIds = [];
         $this->matchingTotal = null;
+    }
+
+    /**
+     * Runs a bulk action (<x-data-table.bulk-action>) on the selected rows. The browser only sends the action's name
+     * and option: everything else comes from the table's definition and is checked here.
+     */
+    public function executeBulkAction(string $name, ?string $option = null): mixed
+    {
+        $action = $this->dataTable->bulkActions?->find($name);
+
+        if ($action === null || ($action->hasOptions() ? !$action->hasOption($option) : $option !== null)) {
+            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.bulk_action_invalid')));
+
+            return null;
+        }
+
+        if ($action->can !== null) {
+            Gate::authorize($action->can);
+        }
+
+        $selection = $this->selection();
+        $count = $selection->count();
+
+        if ($count === 0) {
+            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.bulk_actions_no_selection')));
+
+            return null;
+        }
+
+        if ($action->event !== null) {
+            $this->dispatch($action->event, action: $action->name, option: $option, ids: $selection->ids(), count: $count);
+
+            if (!$action->keepSelection) {
+                $this->deselectAll();
+            }
+
+            return null;
+        }
+
+        $result = ActionResultHandler::run(
+            $action->handler,
+            [
+                'selection' => $selection,
+                Selection::class => $selection,
+                'option' => $option,
+                'action' => $action,
+                BulkAction::class => $action,
+            ],
+            $this,
+            __('erickcomp_lw_data_table::messages.bulk_action_done'),
+            [':count' => (string) $count],
+        );
+
+        if ($result->message !== null) {
+            $this->flashMessage($result->message);
+        }
+
+        if (!$result->failed() && !$action->keepSelection) {
+            $this->deselectAll();
+        }
+
+        return $result->response;
+    }
+
+    /**
+     * The messages last for one response: any later request (paging, sorting, another action...) drops them
+     */
+    public function hydrate(): void
+    {
+        $this->flash = [];
     }
 
     /**
@@ -765,6 +915,29 @@ class LwDataTable extends LivewireComponent
         $this->applyPendingSelectionReset();
 
         return $this->makeSelection($this->selectionMode, $this->normalizedSelectedIds());
+    }
+
+    protected function flashMessage(ActionResult $message): void
+    {
+        // The key tells the messages apart when the page morphs: a new one is never taken for one dismissed before
+        $this->flash[] = [...$message->toArray(), 'key' => \bin2hex(\random_bytes(4))];
+    }
+
+    /**
+     * The bulk actions the current user may run: the ones whose gate ability is denied are left out of the dropdown
+     *
+     * @return BulkAction[]
+     */
+    protected function availableBulkActions(): array
+    {
+        if (!$this->dataTable->hasBulkActions()) {
+            return [];
+        }
+
+        return \array_filter(
+            $this->dataTable->bulkActions->actions,
+            fn(BulkAction $action) => $action->can === null || Gate::allows($action->can),
+        );
     }
 
     protected function selectedCount(): int

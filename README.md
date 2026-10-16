@@ -18,6 +18,7 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 - **Pagination** — length-aware, simple, and cursor pagination with custom views for Bootstrap and Tailwind
 - **Per-page selector** — configurable options with `max` and `all` special values
 - **Row selection** — a checkbox per row, a page checkbox, a "select all matching rows" menu and a records counter, à la Magento's admin grid
+- **Bulk actions** — an "Actions" dropdown that runs PHP handlers (or dispatches Livewire events) on the selected rows, with sub-actions, confirmation, gate checks and result messages
 - **Loading overlay** — built-in spinner overlay with Livewire loading states
 - **Custom column rendering** — use Blade content inside column definitions for full control
 - **Row-level customization** — dynamic `@rowClass`, `@rowStyle`, and `@rowAttributes` directives
@@ -505,6 +506,90 @@ Add `selectable` to the table to get a column of checkboxes and a selection menu
 
 The selection column takes attributes with the `selection-th-`, `selection-td-` and `selection-checkbox-` prefixes. A custom `<x-data-table.footer>` should account for the extra column in its `colspan`s.
 
+### Bulk Actions
+
+Bulk actions run on the selected rows, picked from an "Actions" dropdown above the table (Magento's mass actions). They make the table selectable:
+
+```blade
+<x-data-table :data-src="App\Models\Product::class" preset="tailwind3v1">
+    <x-data-table.bulk-actions placeholder="Actions">
+        <x-data-table.bulk-action name="delete" label="Delete"
+            handler="App\DataTable\Products\DeleteProducts"
+            confirm="Delete :count product(s)?" can="delete-products" />
+        <x-data-table.bulk-action name="status" label="Change status"
+            handler="App\DataTable\Products\ChangeStatus@handle"
+            :options="['1' => 'Enable', '0' => 'Disable']" />
+        <x-data-table.bulk-action name="notify" label="Notify" event="products-notify" keep-selection />
+    </x-data-table.bulk-actions>
+
+    <x-data-table.column title="Name" data-field="name" />
+</x-data-table>
+```
+
+A **handler** is referenced like a [callable data source](#table-with-callable-data-source): `Class` (invokable), `Class@method`, `Class::method`, a function name or a `[Class::class, 'method']` array — never a closure, since the table's definition is cached. It is called through the container, which hands over the parameters it asks for:
+
+- `Selection $selection` (or `$selection`) — the selected rows. In the "Select all" mode, these are all the rows matching the current search and filters, but the ones unchecked;
+- `?string $option` — the option picked, for actions with `options` (shown as an `<optgroup>`);
+- `BulkAction $action` (or `$action`) — the action's definition;
+- anything else the container can resolve.
+
+```php
+namespace App\DataTable\Products;
+
+use ErickComp\LivewireDataTable\Selection\Selection;
+use ErickComp\LivewireDataTable\Support\ActionResult;
+
+class ChangeStatus
+{
+    public function handle(Selection $selection, string $option): ActionResult
+    {
+        $selection->query()->update(['active' => $option === '1']);
+
+        return ActionResult::success(':count product(s) updated');
+    }
+}
+```
+
+`Selection` gives the rows in several ways: `query()` (a builder for the selected rows, on Eloquent and query builder data sources), `rows()`, `lazy()`, `ids()` (checked against the data source), `count()`, and `isAllMatching()`/`selectedIds()`/`excludedIds()` for the raw selection.
+
+What the handler returns decides what the user gets:
+
+| Return value | Result |
+|---|---|
+| `null` (or anything not listed below) | The default message, "The action was applied to N record(s)." |
+| `string` | A success message |
+| `ActionResult::success()`, `::info()` or `::error()` | A message of that type. An error leaves the rows selected |
+| A redirect (`redirect()->route(...)`, `redirect()->to(...)`) | The page is redirected |
+| A download (`response()->download(...)`, `response()->streamDownload(...)`, `Storage::download(...)`) or a `Responsable` making one | The file is downloaded |
+
+`:count` in the messages becomes the number of selected rows. Throwing `ErrorMessageForUserException` shows its message as an error. The messages show above the table until the next request.
+
+An action with **`event`** instead of a handler dispatches that Livewire event with `action`, `option`, `ids` and `count`, for a listener elsewhere on the page to do the work:
+
+```php
+#[On('products-notify')]
+public function notify(string $action, ?string $option, array $ids, int $count) { /* ... */ }
+```
+
+Other details:
+
+- The browser only sends the action's name and option. The server finds the action in the table's definition, checks the option, the gate ability (`can`) and that rows are selected, and resolves the rows itself.
+- Actions whose `can` ability the user does not have are left out of the dropdown (and refused, with a 403, if called anyway).
+- After the action runs, the selection is cleared, unless the action has `keep-selection` (or the result is an error).
+- `confirm` asks for confirmation first: a bare `confirm` asks "Are you sure you want to apply this action to N record(s)?", and a text is the question itself. By default, it uses `window.confirm()`; the preset's `confirm-dialog` key can name another function, `async (message, title) => bool`:
+
+```php
+'confirm-dialog' => [
+    'function-name' => 'myConfirm',
+    // Optional: the code is pushed with the table. Leave it out when the page already defines the function.
+    'function-code' => <<<JS
+        async function myConfirm(message, title) {
+            return (await Swal.fire({ title, text: message, showCancelButton: true })).isConfirmed;
+        }
+    JS,
+],
+```
+
 ### Pagination
 
 The component supports multiple pagination types via the `data-src-pagination` attribute:
@@ -649,6 +734,34 @@ Supports `from-*` and `to-*` prefixes for range filter input attributes.
 | `row-length` | `int` | `4` | Number of filter items per row |
 
 Supports `button-toggle-*`, `button-apply-*`, and `filter-item-*` prefixes for forwarding attributes.
+
+### `<x-data-table.bulk-actions>`
+
+A direct child of `<x-data-table>`, at most one per table. See [Bulk Actions](#bulk-actions).
+
+| Attribute | Type | Default | Description |
+|---|---|---|---|
+| `placeholder` | `string` | "Actions" (translated) | The dropdown's empty option |
+
+Other attributes go to the `<select>`.
+
+### `<x-data-table.bulk-action>`
+
+A self-closing direct child of `<x-data-table.bulk-actions>`.
+
+| Attribute | Type | Default | Description |
+|---|---|---|---|
+| `name` | `string` | **required** | Unique name, sent by the browser to run the action |
+| `label` | `string` | From `name` | Text in the dropdown |
+| `handler` | `string\|array` | — | PHP handler (see [Bulk Actions](#bulk-actions)). Use either `handler` or `event` |
+| `event` | `string` | — | Livewire event dispatched instead of calling a handler |
+| `options` | `array` | `[]` | Sub-actions, as `value => label`: the action becomes an `<optgroup>` and the handler gets the value as `$option` |
+| `confirm` | `bool\|string` | `false` | Ask for confirmation first: `true` for the default question, or the question (`:count` is replaced) |
+| `confirm-title` | `string` | "Confirm" (translated) | Title handed over to the preset's `confirm-dialog` function |
+| `can` | `string` | `null` | Gate ability required to see and run the action |
+| `keep-selection` | `bool` | `false` | Keep the rows selected after the action runs |
+
+Other attributes go to the `<option>` (or `<optgroup>`).
 
 ### `<x-data-table.assets>`
 
@@ -829,6 +942,8 @@ Each preset can configure:
 - `table` — wrapper, thead, tbody (including the selected row class), tfoot, th sorting indicators, and the selection column, checkboxes and menu (`table.selection`)
 - `loader-overlay` — loading spinner template and CSS
 - `pagination` — views, container classes, per-page defaults
+- `messages` — the messages shown above the table (`container`, `success`, `error`, `info`, `button-dismiss`)
+- `confirm-dialog` — the JavaScript function asked to confirm an action (`function-name`, `function-code`); `window.confirm()` by default
 - `reload-alert` — behavior when the serialized component cache expires
 - `assets` — CSS `<style>` blocks injected with the table
 - `scripts` — additional JavaScript

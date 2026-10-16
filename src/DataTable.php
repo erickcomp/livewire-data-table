@@ -9,6 +9,8 @@ use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\EloquentDataSource;
 use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable\BaseDataTableComponent;
+use ErickComp\LivewireDataTable\DataTable\BulkAction;
+use ErickComp\LivewireDataTable\DataTable\BulkActions;
 use ErickComp\LivewireDataTable\DataTable\Column;
 use ErickComp\LivewireDataTable\DataTable\CustomRenderedColumn;
 use ErickComp\LivewireDataTable\DataTable\DataColumn;
@@ -113,6 +115,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     /** Whether the "N records found (M selected)" counter shows up */
     public bool $showRecordsCount;
+
+    /** The "records-count" attribute, null when not given (the counter then follows "selectable") */
+    protected ?bool $recordsCountAttribute = null;
     //public ComponentAttributeBag $tbodyTdAttributes;
     //public ComponentAttributeBag $tfootAttributes;
     //public ComponentAttributeBag $tfootTrAttributes;
@@ -120,6 +125,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     //public iterable $rows = [];
     public ?Filters $filters = null;
+    public ?BulkActions $bulkActions = null;
     public ?Footer $footer = null;
 
     public int $collectionSortingFlags;
@@ -284,9 +290,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         $this->selectable = static::parseBooleanAttribute('selectable', $selectable);
         $this->preserveSelectionOnFilter = static::parseBooleanAttribute('preserve-selection-on-filter', $preserveSelectionOnFilter);
-        $this->showRecordsCount = $recordsCount === null
-            ? $this->selectable
-            : static::parseBooleanAttribute('records-count', $recordsCount);
+        $this->recordsCountAttribute = $recordsCount === null ? null : static::parseBooleanAttribute('records-count', $recordsCount);
+        $this->showRecordsCount = $this->recordsCountAttribute ?? $this->selectable;
 
         // $this->searchable = match (true) {
         //     $searchable === false => [],
@@ -412,7 +417,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         return $this->isSearchable()
             || $this->isFilterable()
             || $this->hasPerPageOptions()
-            || $this->showRecordsCount;
+            || $this->showRecordsCount
+            || $this->hasBulkActions();
     }
 
     public function preset(): Preset
@@ -552,6 +558,34 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             $this->initFilters(new ComponentAttributeBag());
         }
         $this->filters->filtersItems[] = new Filter($filterAttributes, $customRendererCode);
+    }
+
+    public function initBulkActions(ComponentAttributeBag $bulkActionsAttributes)
+    {
+        $this->bulkActions = new BulkActions($bulkActionsAttributes);
+
+        // Bulk actions run on the selected rows, so the rows have to be selectable
+        $this->selectable = true;
+        $this->showRecordsCount = $this->recordsCountAttribute ?? true;
+    }
+
+    public function initializedBulkActions(): bool
+    {
+        return $this->bulkActions !== null;
+    }
+
+    public function addBulkAction(ComponentAttributeBag $bulkActionAttributes)
+    {
+        if (!$this->initializedBulkActions()) {
+            $this->initBulkActions(new ComponentAttributeBag());
+        }
+
+        $this->bulkActions->add(BulkAction::fromComponentAttributeBag($bulkActionAttributes));
+    }
+
+    public function hasBulkActions(): bool
+    {
+        return $this->initializedBulkActions() && !$this->bulkActions->isEmpty();
     }
 
     // public function loadData()

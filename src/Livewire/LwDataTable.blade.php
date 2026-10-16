@@ -27,9 +27,17 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 @php
     $isSelectable = $this->dataTable->selectable;
     $recordsTotal = $isSelectable || $this->dataTable->showRecordsCount ? $this->recordsTotal($rows) : null;
+    $bulkActions = $this->availableBulkActions();
 @endphp
 <div {{ $this->dataTable->containerAttributes->class([...($this->preset()->get('main-container.class') ?? []), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
+    @if (!empty($this->flash))
+        @include('erickcomp_lw_data_table::flash-messages', [
+            'messages' => $this->flash,
+            'preset' => $this->preset(),
+        ])
+    @endif
+
     @if($this->dataTable->hasTableActions())
         <div @class($this->preset()->get('actions.container.class'))>
             <div @class($this->preset()->get('actions.row.class'))>
@@ -284,8 +292,16 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 </div>
             @endif
 
-            @if (count($this->dataTable->perPageOptions) > 1 || $this->dataTable->showRecordsCount)
+            @if (count($this->dataTable->perPageOptions) > 1 || $this->dataTable->showRecordsCount || !empty($bulkActions))
                 <div @class($this->preset()->get('actions.bulk-actions-and-per-page.container.class', []))>
+                    @if (!empty($bulkActions))
+                        @include('erickcomp_lw_data_table::bulk-actions', [
+                            'bulkActions' => $this->dataTable->bulkActions,
+                            'actions' => $bulkActions,
+                            'preset' => $this->preset(),
+                        ])
+                    @endif
+
                     @if ($this->dataTable->showRecordsCount)
                         @include('erickcomp_lw_data_table::records-count', [
                             'recordsTotal' => $recordsTotal,
@@ -550,6 +566,11 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 //$message = __('erickcomp_lw_data_table::messages.reload_required');
             }
         }
+
+        // The confirmation asked before running an action: function-name(message, title) resolves to true to go on.
+        // With a function-name and no function-code, the function is expected to be defined by the page. Livewire
+        // outputs this block once per page, for the first table: tables without actions output it too.
+        echo $this->confirmDialogConfig()['function-code'] ?? '';
     @endphp
 </script>
 @endassets

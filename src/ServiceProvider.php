@@ -211,6 +211,8 @@ class ServiceProvider extends LaravelAbstractServiceProvider
         $this->registerSearchRawComponent();
         $this->registerFiltersRawComponent();
         $this->registerFilterRawComponent();
+        $this->registerBulkActionsRawComponent();
+        $this->registerBulkActionRawComponent();
         $this->registerAssetRawComponent();
         $this->registerScriptsRawComponent();
         $this->registerPaginationRawComponent();
@@ -330,6 +332,49 @@ if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\Dat
     throw new \LogicException("You can only use the [x-data-table.filter] as a direct child of the [x-data-table.filters] component");
 }
 $component->addFilter($__rawComponentAttributes);
+?>
+SELF_CLOSING_CODE,
+        );
+    }
+
+    protected function registerBulkActionsRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.bulk-actions',
+            openingCode: <<<'OPENING_CODE'
+<?php
+if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== null) {
+    throw new \LogicException("You can only use the [x-data-table.bulk-actions] as a direct child of the [x-data-table] component");
+}
+
+if ($component->initializedBulkActions()) {
+    throw new \LogicException("You can only have one [x-data-table.bulk-actions] component per [x-data-table] component");
+}
+
+$component->initBulkActions($__rawComponentAttributes);
+?>
+OPENING_CODE,
+            closingCode: '',
+        );
+    }
+
+    protected function registerBulkActionRawComponent()
+    {
+        $this->registerRawBladeComponent(
+            tag: 'x-data-table.bulk-action',
+            openingCode: <<<'OPENING_CODE'
+<?php
+// No tag in the message: Blade would compile it as a component
+throw new \LogicException("The [x-data-table.bulk-action] component must be self-closing (ending with \"/>\") and have no content");
+?>
+OPENING_CODE,
+            closingCode: '',
+            selfClosingCode: <<<'SELF_CLOSING_CODE'
+<?php
+if(!isset($component) || !$component instanceof \ErickComp\LivewireDataTable\DataTable || $__parentRawComponentTag !== 'x-data-table.bulk-actions') {
+    throw new \LogicException("You can only use the [x-data-table.bulk-action] as a direct child of the [x-data-table.bulk-actions] component");
+}
+$component->addBulkAction($__rawComponentAttributes);
 ?>
 SELF_CLOSING_CODE,
         );
