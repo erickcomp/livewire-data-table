@@ -283,7 +283,20 @@ return [
                         'clickable' => [
                             'class' => ['lw-dt-clickable-row'],
                         ],
+                        'editing' => [
+                            'class' => ['lw-dt-editing-row'],
+                        ],
                     ],
+                ],
+                'inline-edit' => [
+                    'input' => ['class' => ['lw-dt-inline-edit-input']],
+                    'checkbox' => ['class' => ['lw-dt-inline-edit-checkbox']],
+                    'invalid' => ['class' => ['lw-dt-inline-edit-invalid']],
+                    'error' => ['class' => ['lw-dt-inline-edit-error']],
+                    'buttons' => ['class' => ['lw-dt-inline-edit-buttons']],
+                    'button-save' => ['class' => ['lw-dt-inline-edit-save']],
+                    'button-cancel' => ['class' => ['lw-dt-inline-edit-cancel']],
+                    'button-edit' => ['class' => ['lw-dt-row-action']],
                 ],
                 'selection' => [
                     'th' => ['class' => ['lw-dt-selection-th']],
@@ -704,6 +717,52 @@ return [
                         display: contents;
                     }
 
+                    .lw-dt tr.lw-dt-editing-row {
+                        background: #fffbe6;
+                    }
+
+                    .lw-dt .lw-dt-inline-edit-input {
+                        box-sizing: border-box;
+                        width: 100%;
+                        min-width: 6rem;
+                        padding: 0.25rem 0.375rem;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        font: inherit;
+                    }
+
+                    .lw-dt .lw-dt-inline-edit-invalid {
+                        border-color: #c00;
+                    }
+
+                    .lw-dt .lw-dt-inline-edit-error {
+                        margin-top: 0.25rem;
+                        color: #c00;
+                        font-size: 0.85em;
+                    }
+
+                    .lw-dt .lw-dt-inline-edit-buttons {
+                        display: inline-flex;
+                        gap: 0.5rem;
+                        white-space: nowrap;
+                    }
+
+                    .lw-dt .lw-dt-inline-edit-save,
+                    .lw-dt .lw-dt-inline-edit-cancel {
+                        padding: 0.125rem 0.5rem;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        background: #fff;
+                        font: inherit;
+                        cursor: pointer;
+                    }
+
+                    .lw-dt .lw-dt-inline-edit-save {
+                        border-color: #0645ad;
+                        background: #0645ad;
+                        color: #fff;
+                    }
+
                     .lw-dt .lw-dt-row-actions-menu-button {
                         padding: 0.125rem 0.5rem;
                         border: 1px solid #ccc;
@@ -1035,7 +1094,20 @@ return [
                         'clickable' => [
                             'class' => ['lw-dt-clickable-row'],
                         ],
+                        'editing' => [
+                            'class' => ['table-warning'],
+                        ],
                     ],
+                ],
+                'inline-edit' => [
+                    'input' => ['class' => ['form-control', 'form-control-sm']],
+                    'checkbox' => ['class' => ['position-static']],
+                    'invalid' => ['class' => ['is-invalid']],
+                    'error' => ['class' => ['invalid-feedback', 'd-block']],
+                    'buttons' => ['class' => ['text-nowrap']],
+                    'button-save' => ['class' => ['btn', 'btn-primary', 'btn-sm', 'mr-1']],
+                    'button-cancel' => ['class' => ['btn', 'btn-outline-secondary', 'btn-sm']],
+                    'button-edit' => ['class' => ['btn', 'btn-link', 'btn-sm', 'p-0', 'align-baseline']],
                 ],
                 'selection' => [
                     'th' => ['class' => ['text-nowrap']],
@@ -1572,7 +1644,18 @@ return [
                         'nodatafound' => ['class' => ['text-center', 'font-semibold', 'text-gray-500', 'dark:text-gray-400', 'py-4']],
                         'selected' => ['class' => ['bg-indigo-50', 'dark:bg-gray-700']],
                         'clickable' => ['class' => ['cursor-pointer', 'hover:bg-gray-50', 'dark:hover:bg-gray-800']],
+                        'editing' => ['class' => ['bg-amber-50', 'dark:bg-gray-700']],
                     ],
+                ],
+                'inline-edit' => [
+                    'input' => ['class' => ['w-full', 'min-w-[6rem]', 'py-1', 'px-2', 'text-sm', 'text-gray-800', 'rounded-md', 'border', 'border-gray-300', 'shadow-sm', 'focus:border-indigo-500', 'focus:ring-indigo-500', 'dark:text-white', 'dark:bg-gray-700', 'dark:border-gray-600']],
+                    'checkbox' => ['class' => ['rounded', 'border-gray-300', 'text-indigo-600', 'focus:ring-indigo-500', 'dark:border-gray-600', 'dark:bg-gray-700']],
+                    'invalid' => ['class' => ['border-red-500', 'dark:border-red-400']],
+                    'error' => ['class' => ['mt-1', 'text-xs', 'text-red-600', 'dark:text-red-400']],
+                    'buttons' => ['class' => ['inline-flex', 'gap-2', 'whitespace-nowrap']],
+                    'button-save' => ['class' => ['px-2', 'py-1', 'text-sm', 'rounded-md', 'bg-indigo-600', 'text-white', 'hover:bg-indigo-500', 'disabled:opacity-50']],
+                    'button-cancel' => ['class' => ['px-2', 'py-1', 'text-sm', 'rounded-md', 'border', 'border-gray-300', 'text-gray-700', 'hover:bg-gray-50', 'dark:border-gray-600', 'dark:text-gray-200', 'dark:hover:bg-gray-700']],
+                    'button-edit' => ['class' => ['text-indigo-600', 'hover:underline', 'dark:text-indigo-400']],
                 ],
                 'selection' => [
                     'th' => ['class' => ['w-px', 'whitespace-nowrap']],

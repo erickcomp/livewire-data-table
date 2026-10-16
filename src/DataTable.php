@@ -23,6 +23,7 @@ use ErickComp\LivewireDataTable\DataTable\RowActionsColumn;
 use ErickComp\LivewireDataTable\DataTable\Search;
 use ErickComp\LivewireDataTable\Livewire\LwDataTable;
 use ErickComp\LivewireDataTable\Livewire\Preset;
+use ErickComp\LivewireDataTable\Support\ServerCallable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\CursorPaginator;
@@ -51,6 +52,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public const PER_PAGE_MAX = 'max';
     public const PER_PAGE_ALL = 'all';
     public const PER_PAGE_ALL_OPTION_VALUE = '___all___';
+
+    public const INLINE_EDIT_TRIGGER_BUTTON = 'button';
+    public const INLINE_EDIT_TRIGGER_ROW_CLICK = 'row-click';
 
     public const LIVEWIRE_LOADING_DELAY_MODIFIERS = [
         null,
@@ -151,6 +155,15 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     /** The export button (<x-data-table.export>) */
     public ?Export $export = null;
+
+    /** The handler that saves a row edited inline ("inline-edit"), which turns inline editing on */
+    public ?ServerCallable $inlineEdit = null;
+
+    /** What starts editing a row: an "Edit" button or a click on the row ("inline-edit-trigger") */
+    public string $inlineEditTrigger = self::INLINE_EDIT_TRIGGER_BUTTON;
+
+    /** Gate ability, checked with the row, the user must have to edit it ("inline-edit-can") */
+    public ?string $inlineEditCan = null;
     public ?Footer $footer = null;
 
     public int $collectionSortingFlags;
@@ -235,6 +248,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         ?string $rowClickUrl = null,
         ?string $stateKey = null,
         bool|string $rememberState = false,
+        string|array|null $inlineEdit = null,
+        ?string $inlineEditTrigger = null,
+        ?string $inlineEditCan = null,
 
 
         public array $actions = [],
@@ -344,6 +360,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         if ($this->rememberState && $this->stateKey === null) {
             throw new \InvalidArgumentException('A table with [remember-state] needs a [state-key], which tells it apart from the other tables');
         }
+
+        $this->setupInlineEdit($inlineEdit, $inlineEditTrigger, $inlineEditCan);
 
         // $this->searchable = match (true) {
         //     $searchable === false => [],
@@ -694,6 +712,59 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         return $this->initializedBulkActions() && !$this->bulkActions->isEmpty();
     }
 
+    public function hasInlineEdit(): bool
+    {
+        return $this->inlineEdit !== null;
+    }
+
+    public function editsInlineOnRowClick(): bool
+    {
+        return $this->hasInlineEdit() && $this->inlineEditTrigger === static::INLINE_EDIT_TRIGGER_ROW_CLICK;
+    }
+
+    /**
+     * The columns edited inline: the ones with an "editor"
+     *
+     * @return array<int, Column>
+     */
+    public function editableColumns(): array
+    {
+        return $this->columns->filter(fn(Column $column) => $column->editor !== null)->values()->all();
+    }
+
+    /**
+     * Checks that the inline editing makes sense once all the columns are in: editors need a handler to save them,
+     * and a handler needs editors
+     *
+     * @throws \LogicException
+     */
+    public function validateInlineEdit(): void
+    {
+        $editableColumns = $this->editableColumns();
+
+        if (!$this->hasInlineEdit()) {
+            if (!empty($editableColumns)) {
+                throw new \LogicException("The column [{$editableColumns[0]->title}] has an [editor], but the table has no [inline-edit] handler to save the changes");
+            }
+
+            return;
+        }
+
+        if (empty($editableColumns)) {
+            throw new \LogicException('The table has an [inline-edit] handler, but none of its columns has an [editor]');
+        }
+
+        $fields = [];
+
+        foreach ($editableColumns as $column) {
+            if (isset($fields[$column->editor->field])) {
+                throw new \LogicException("The columns [{$fields[$column->editor->field]}] and [{$column->title}] edit the same field: [{$column->editor->field}]");
+            }
+
+            $fields[$column->editor->field] = $column->title;
+        }
+    }
+
     public function setExport(ComponentAttributeBag $exportAttributes)
     {
         $this->export = Export::fromComponentAttributeBag($exportAttributes);
@@ -1012,6 +1083,28 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             'tbody-tr-' => 'tbodyTrAttributes',
             'tbody-' => 'tbodyAttributes',
         ];
+    }
+
+    protected function setupInlineEdit(string|array|null $inlineEdit, ?string $inlineEditTrigger, ?string $inlineEditCan): void
+    {
+        $inlineEdit = \is_string($inlineEdit) ? \trim($inlineEdit) : $inlineEdit;
+
+        if ($inlineEdit !== null && $inlineEdit !== '') {
+            try {
+                $this->inlineEdit = new ServerCallable($inlineEdit);
+            } catch (\ValueError $e) {
+                throw new \InvalidArgumentException("Invalid handler for the [inline-edit] of the table: {$e->getMessage()}", previous: $e);
+            }
+        }
+
+        $trigger = \strtolower(\trim($inlineEditTrigger ?? ''));
+        $this->inlineEditTrigger = $trigger === '' ? static::INLINE_EDIT_TRIGGER_BUTTON : $trigger;
+
+        if (!\in_array($this->inlineEditTrigger, [static::INLINE_EDIT_TRIGGER_BUTTON, static::INLINE_EDIT_TRIGGER_ROW_CLICK], true)) {
+            throw new \InvalidArgumentException("Invalid value for the attribute [inline-edit-trigger]: [$inlineEditTrigger]. The valid ones are: button and row-click");
+        }
+
+        $this->inlineEditCan = \trim($inlineEditCan ?? '') !== '' ? \trim($inlineEditCan) : null;
     }
 
     protected static function parsePaginationType(?string $dataSrcPagination): DataSourcePaginationType

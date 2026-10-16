@@ -30,6 +30,9 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
     $recordsTotal = $isSelectable || $this->dataTable->showRecordsCount ? $this->recordsTotal($rows) : null;
     $bulkActions = $this->availableBulkActions();
     $export = $this->availableExport();
+    $hasInlineEdit = $this->dataTable->hasInlineEdit();
+    // Without a row actions column, the inline editing buttons get a column of their own, the last one
+    $hasInlineEditColumn = $hasInlineEdit && !$this->dataTable->initializedRowActions();
 @endphp
 <div {{ $this->dataTable->containerAttributes->class([...($this->preset()->get('main-container.class') ?? []), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
@@ -403,6 +406,9 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                             
                         </th>
                     @endforeach
+                    @if ($hasInlineEditColumn)
+                        <th @class($this->preset()->get('table.thead.tr.th.class', []))>{{ __('erickcomp_lw_data_table::messages.row_actions_title') }}</th>
+                    @endif
                 </tr>
                 
                 @if($this->dataTable->hasSearchableColumns() && $this->hasRows($rows) || !empty(\array_filter($columnsSearch)))
@@ -428,6 +434,9 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                 @endif
                             </th>
                         @endforeach
+                        @if ($hasInlineEditColumn)
+                            <th @class($this->preset()->get('table.thead.tr.search.th.class', []))></th>
+                        @endif
                     </tr>
                 @endif
             </thead>
@@ -442,7 +451,8 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                     $tdPresetClass = $this->preset()->get('table.tbody.tr.td.class');
                     $columnsTdAttributes = [];
 
-                    $hasRowActionsOrClick = $this->dataTable->hasRowActions() || $this->dataTable->hasRowClick();
+                    $hasRowActionsOrClick = $this->dataTable->hasRowActions() || $this->dataTable->hasRowClick() || $hasInlineEdit;
+                    $editingRowClass = Arr::toCssClasses($this->preset()->get('table.tbody.tr.editing.class', []));
 
                     if ($isSelectable) {
                         $selectionTdAttributes = $this->dataTable->selectionTdAttributes
@@ -457,9 +467,25 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                     @php
                         $rowSelectionId = $isSelectable || $hasRowActionsOrClick ? $this->rowSelectionId($row) : null;
                         $visibleRowActions = $this->visibleRowActions($row);
-                        $rowClickAttributes = $hasRowActionsOrClick ? $this->rowClickAttributes($row, $rowSelectionId, $visibleRowActions) : [];
+                        $isEditingRow = $hasInlineEdit && $rowSelectionId === $this->editingRowId;
+                        $canEditRow = $hasInlineEdit && !$isEditingRow && $this->canEditInline($row);
+                        // "edit": the row offers the "Edit" button; "editing": it shows "Save" and "Cancel"
+                        $inlineEditState = match (true) {
+                            $isEditingRow => 'editing',
+                            $canEditRow && !$this->dataTable->editsInlineOnRowClick() => 'edit',
+                            default => null,
+                        };
+                        $rowClickAttributes = $hasRowActionsOrClick ? $this->rowClickAttributes($row, $rowSelectionId, $visibleRowActions, $canEditRow, $isEditingRow) : [];
+                        $trAttributes = $this->dataTable->getTrAttributesForRow($this, $row, $loop)->merge($rowClickAttributes);
+
+                        if ($isEditingRow && $editingRowClass !== '') {
+                            $trAttributes = $trAttributes->class($editingRowClass);
+                        }
+
+                        $editorsRendered = 0;
                     @endphp
-                    <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop)->merge($rowClickAttributes) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}"
+                    <tr {{ $trAttributes }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}"
+                        @if ($isEditingRow) x-on:keydown="onInlineEditKeydown($event)" @endif
                         @if ($isSelectable && $selectedRowClass !== '') x-bind:class="{ {{ Js::from($selectedRowClass) }}: isRowSelected({{ Js::from($rowSelectionId) }}) }" @endif>
                         @if ($isSelectable)
                             <td {{ $selectionTdAttributes }}>
@@ -476,8 +502,17 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                 // and may change it ($attributes['x'] = ...), which must not reach the next rows
                                 $tdAttributes = clone ($columnsTdAttributes[$columnKey] ??= $column->buildTdAttributes($tdPresetClass));
                             @endphp
-                            
-                            @if($column instanceof CustomRenderedColumn)
+
+                            {{-- No @continue in these branches: it would skip the end marker Livewire puts at @endif, and
+                                 morphing the row in and out of editing would fail --}}
+                            @if ($isEditingRow && $column->editor !== null)
+                                @include('erickcomp_lw_data_table::inline-editor', [
+                                    'column' => $column,
+                                    'tdAttributes' => $tdAttributes,
+                                    'autofocus' => $editorsRendered++ === 0,
+                                    'preset' => $this->preset(),
+                                ])
+                            @elseif($column instanceof CustomRenderedColumn)
                                 @php
                                     $customRenderedColumn = Blade::render($column->customRendererCode, array_merge($this->dataTable->allViewData(), ['attributes' => $tdAttributes, 'loop' => $loop->parent, '__row' => $row]));
                                     $trimmed = trim($customRenderedColumn);
@@ -490,13 +525,12 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                         {!! $customRenderedColumn !!}
                                     </td>
                                 @endif
-
-                                @continue
                             @elseif ($column instanceof RowActionsColumn)
                                 @include('erickcomp_lw_data_table::row-actions', [
                                     'column' => $column,
                                     'actions' => $visibleRowActions,
                                     'rowId' => $rowSelectionId,
+                                    'inlineEdit' => $inlineEditState,
                                     'preset' => $this->preset(),
                                 ])
                             @elseif ($column instanceof DataColumn)
@@ -511,10 +545,23 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                 @php throw new \InvalidArgumentException('Cannot render column of type ' . \get_debug_type($column)); @endphp
                             @endif
                         @endforeach
+                        @if ($hasInlineEditColumn)
+                            <td @class($tdPresetClass ?? [])>
+                                @if ($inlineEditState !== null)
+                                    @include('erickcomp_lw_data_table::inline-edit-buttons', [
+                                        'editing' => $inlineEditState === 'editing',
+                                        'rowId' => $rowSelectionId,
+                                        'class' => $this->preset()->get('table.inline-edit.button-edit.class', []),
+                                        'role' => null,
+                                        'preset' => $this->preset(),
+                                    ])
+                                @endif
+                            </td>
+                        @endif
                     </tr>
                 @empty
                     <tr {{ $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.nodatafound.class')) }}>
-                        <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns) + ($isSelectable ? 1 : 0), 1]) }}">
+                        <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns) + ($isSelectable ? 1 : 0) + ($hasInlineEditColumn ? 1 : 0), 1]) }}">
                             {{ __('erickcomp_lw_data_table::messages.no_data_found_table_td_text')  }}
                         </td>
                     </tr>

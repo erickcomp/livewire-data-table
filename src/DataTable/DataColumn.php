@@ -15,8 +15,12 @@ class DataColumn extends Column
         bool $sortable = false,
         bool|string $exportable = true,
         ?string $exportField = null,
+        ?string $editor = null,
+        mixed $editorOptions = null,
+        mixed $editorRules = null,
+        ?string $editorField = null,
     ) {
-        parent::__construct($title, $dataField, /*$name,*/ $searchable, $sortable, $exportable, $exportField);
+        parent::__construct($title, $dataField, /*$name,*/ $searchable, $sortable, $exportable, $exportField, $editor, $editorOptions, $editorRules, $editorField);
     }
 
     /**

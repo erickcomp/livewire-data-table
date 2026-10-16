@@ -18,6 +18,8 @@ Route::get('/demo/{preset?}', function (Request $request, string $preset = 'vani
         // ?per-page-options=10,25 and ?remember=1 let browser tests try other per-page options and remember-state
         'perPageOptions' => (string) $request->query('per-page-options', '15,30,60'),
         'rememberState' => $request->boolean('remember'),
+        // ?edit-on-click=1 edits a row when it is clicked, instead of with the "Edit" button among its actions
+        'inlineEditTrigger' => $request->boolean('edit-on-click') ? 'row-click' : 'button',
     ]);
 })
     ->where('preset', 'vanilla|bootstrap4v1|tailwind3v1')

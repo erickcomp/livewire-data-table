@@ -32,7 +32,8 @@
     </nav>
 
     <main style="padding: 1rem;">
-        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" :data-src-pagination="$pagination" :per-page="$perPageOptions" id="products" selectable row-click="view" state-key="products" :remember-state="$rememberState">
+        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" :data-src-pagination="$pagination" :per-page="$perPageOptions" id="products" selectable row-click="view" state-key="products" :remember-state="$rememberState"
+            inline-edit="Workbench\App\DataTable\Products\SaveProduct" :inline-edit-trigger="$inlineEditTrigger">
             <x-data-table.search data-fields="name,category" />
 
             <x-data-table.bulk-actions>
@@ -53,9 +54,10 @@
             </x-data-table.filters>
 
             <x-data-table.column title="ID" data-field="id" sortable />
-            <x-data-table.column title="Name" data-field="name" sortable searchable />
-            <x-data-table.column title="Category" data-field="category" sortable searchable />
-            <x-data-table.column title="Price" data-field="price" sortable />
+            <x-data-table.column title="Name" data-field="name" sortable searchable editor="text" editor-rules="required|max:100" />
+            <x-data-table.column title="Category" data-field="category" sortable searchable
+                editor="select" :editor-options="['Books' => 'Books', 'Electronics' => 'Electronics', 'Garden' => 'Garden', 'Toys' => 'Toys']" />
+            <x-data-table.column title="Price" data-field="price" sortable editor="number" editor-rules="required|numeric|min:0" editor-step="0.01" />
 
             <x-data-table.row-actions>
                 <x-data-table.row-action name="view" label="View" route="demo.products.show" :route-params="['product' => 'id']" />

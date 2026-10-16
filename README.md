@@ -20,6 +20,7 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 - **Row selection** — a checkbox per row, a page checkbox, a "select all matching rows" menu and a records counter, à la Magento's admin grid
 - **Bulk actions** — an "Actions" dropdown that runs PHP handlers (or dispatches Livewire events) on the selected rows, with sub-actions, confirmation, gate checks and result messages
 - **Row actions** — a column of per-row actions (links, routes, forms with any HTTP method, PHP handlers or events) shown side by side or in a dropdown, with per-row gate checks, and rows that react to clicks
+- **Inline editing** — edit a row in place (text, number, select, date, datetime, checkbox and textarea inputs), validated with Laravel's rules and saved by a PHP handler
 - **Loading overlay** — built-in spinner overlay with Livewire loading states
 - **Custom column rendering** — use Blade content inside column definitions for full control
 - **Row-level customization** — dynamic `@rowClass`, `@rowStyle`, and `@rowAttributes` directives
@@ -633,6 +634,47 @@ A `url` or `route` action is a link, unless it has another `method` than GET (`p
 
 **Clicking a row:** `row-click="edit"` on the table runs that row action when the row is clicked (on the rows where the action is available), and `row-click-url="/users/{id}/edit"` leads to that URL instead (Ctrl/Cmd+click opens a new tab). Clicks on links, buttons, form fields, labels and elements marked with `data-lw-dt-no-row-click` keep doing what they do.
 
+### Inline Editing
+
+Rows can be edited in place, one at a time. The table names the handler that saves a row, and each editable column names its input:
+
+```blade
+<x-data-table :data-src="App\Models\Product::class" preset="tailwind3v1"
+    inline-edit="App\DataTable\Products\SaveProduct" inline-edit-can="update">
+    <x-data-table.column title="Name" data-field="name" editor="text" editor-rules="required|max:100|unique:products,name,{id}" />
+    <x-data-table.column title="Category" data-field="category_id" editor="select" :editor-options="$categories" />
+    <x-data-table.column title="Price" data-field="price" editor="number" editor-rules="required|numeric|min:0" editor-step="0.01" />
+    <x-data-table.column title="Active" data-field="active" editor="checkbox" />
+
+    <x-data-table.row-actions>
+        <x-data-table.row-action name="show" label="View" route="products.show" :route-params="['product' => 'id']" />
+    </x-data-table.row-actions>
+</x-data-table>
+```
+
+```php
+namespace App\DataTable\Products;
+
+use App\Models\Product;
+
+class SaveProduct
+{
+    public function __invoke(Product $product, array $values): string
+    {
+        $product->update($values);
+
+        return "{$product->name} saved";
+    }
+}
+```
+
+- **Starting:** with `inline-edit-trigger="button"` (the default), an **Edit** button joins the row actions (or a column of its own, the last one, when the table has none). With `inline-edit-trigger="row-click"`, a click on the row starts editing it; on the rows the user may not edit, the table's `row-click` or `row-click-url` applies instead.
+- **Editing:** the editable cells of the row become inputs, and its actions become **Save** and **Cancel**. Enter saves (except in a textarea) and Escape cancels. Editing another row drops the changes made to the previous one, and so does a search, a filter, a sort or a page that leaves the row out.
+- **Editors:** `editor` is one of `text`, `number`, `select` (with `:editor-options`, as `value => label`), `date`, `datetime`, `checkbox` and `textarea`. The editor edits the column's `data-field`, or its `editor-field` (a custom column with no `data-field` needs one; `owner.name` reaches into nested fields). Attributes with the `editor-` prefix go to the input (`editor-step`, `editor-placeholder`, `editor-maxlength`...).
+- **Validation:** each value is checked against its editor's type (a number, a date, a boolean, one of the options) and the column's `editor-rules`, a string or an array of Laravel validation rules. The rules see the fields by their own names (`after:start_date` works), the messages name the columns by their titles, and `{id}` in a rule becomes the row's id. The messages show under the inputs.
+- **Saving:** the handler is referenced like a [bulk action's](#bulk-actions). It gets `array $values` (only the editable fields: numbers as numbers, checkboxes as booleans, an empty number, date or select as `null`), the row as `$row` (or by its class, e.g. `Product $product`) and `string $id`. It returns what a bulk action handler returns: a message, a redirect or a download; nothing shows "Saved.". A `ValidationException` it throws (e.g. `ValidationException::withMessages(['name' => '...'])`) shows its messages under the inputs, and an `ErrorMessageForUserException` keeps the row in editing with an error message.
+- **Checks:** the browser only sends the values. The row must still be among the table's rows when it is edited and when it is saved, only the editable fields are read, and `inline-edit-can` is a gate ability checked with the row (`Gate::allows('update', $product)`, so policies work): the rows the user may not edit offer no **Edit**, and the server refuses them (403).
+
 ### Refreshing the Table
 
 The rows are fetched again on every request the table makes. When they change elsewhere on the page (a form in a modal, another component), dispatch the `lw-dt-refresh` event to show the change right away:
@@ -810,6 +852,9 @@ For large datasets, you can increase the memory limit per table:
 | `row-click-url` | `string` | `null` | URL a click on a row leads to, with `{field}` placeholders |
 | `state-key` | `string` | `null` | Steady name of the table (letters, digits, `-` and `_`), e.g. to remember its state |
 | `remember-state` | `bool` | `false` | Remember the search, filters, sorting and rows per page in the session (needs `state-key`) |
+| `inline-edit` | `string\|array` | `null` | Handler that saves a row edited inline: turns [inline editing](#inline-editing) on |
+| `inline-edit-trigger` | `string` | `'button'` | What starts editing a row: `button` (an **Edit** button) or `row-click` |
+| `inline-edit-can` | `string` | `null` | Gate ability, checked with the row, required to edit it |
 | `data-identity-column` | `string` | `'id'` | Row identity column |
 | `php-max-memory` | `string` | `null` | PHP memory_limit override |
 | `dynamic-view-data` | `array` | `[]` | Per-user/per-request variables passed to Blade renderers (encrypted, travels over the wire) |
@@ -844,8 +889,12 @@ HTML attributes prefixed with specific namespaces are forwarded to internal elem
 | `searchable` | `bool\|string` | `false` | Enable per-column search (`true` or mode) |
 | `exportable` | `bool` | `true` | Whether the column goes into the [exports](#export) |
 | `export-field` | `string` | `null` | Row field exported in place of what the column shows |
+| `editor` | `string` | `null` | [Inline editing](#inline-editing) input: `text`, `number`, `select`, `date`, `datetime`, `checkbox` or `textarea` |
+| `editor-options` | `array` | `[]` | Options of a `select` editor, as `value => label` |
+| `editor-rules` | `string\|array` | `[]` | Validation rules of the edited value (`{id}` becomes the row's id) |
+| `editor-field` | `string` | From `data-field` | Row field the editor edits |
 
-Supports `th-*`, `td-*`, and `th-search-input-*` prefixes for forwarding attributes.
+Supports `th-*`, `td-*`, `th-search-input-*` and `editor-*` (the inline editor's input) prefixes for forwarding attributes.
 
 ### `<x-data-table.search>`
 

@@ -8,11 +8,25 @@
     @var mixed $row
     @var string $rowId
     @var \Illuminate\View\ComponentAttributeBag $tdAttributes
+    @var ?string $inlineEdit "edit" to offer the inline "Edit" button with the actions, "editing" to show "Save" and
+         "Cancel" in their place (the row is being edited), null otherwise
     @var \ErickComp\LivewireDataTable\Livewire\Preset $preset
 --}}
+@php
+    $entriesCount = count($actions) + ($inlineEdit === 'edit' ? 1 : 0);
+@endphp
 <td {{ $tdAttributes }}>
-    @if (count($actions) === 1 || (count($actions) > 1 && !$column->isDropdown()))
+    @if ($inlineEdit === 'editing')
+        @include('erickcomp_lw_data_table::inline-edit-buttons', ['editing' => true, 'class' => [], 'role' => null])
+    @elseif ($entriesCount === 1 || ($entriesCount > 1 && !$column->isDropdown()))
         <span @class($preset->get('table.row-actions.links.class', []))>
+            @if ($inlineEdit === 'edit')
+                @include('erickcomp_lw_data_table::inline-edit-buttons', [
+                    'editing' => false,
+                    'class' => $preset->get('table.row-actions.link.class', []),
+                    'role' => null,
+                ])
+            @endif
             @foreach ($actions as $action)
                 @include('erickcomp_lw_data_table::row-action', [
                     'class' => $preset->get('table.row-actions.link.class', []),
@@ -20,7 +34,7 @@
                 ])
             @endforeach
         </span>
-    @elseif (count($actions) > 1)
+    @elseif ($entriesCount > 1)
         <span @class($preset->get('table.row-actions.menu-container.class', []))
             data-lw-dt-no-row-click
             x-data="{
@@ -51,6 +65,15 @@
 
             <ul role="menu" x-show="rowActionsOpen" x-cloak x-bind:style="rowActionsStyle" x-on:click="rowActionsOpen = false"
                 @class($preset->get('table.row-actions.menu.class', []))>
+                @if ($inlineEdit === 'edit')
+                    <li role="none">
+                        @include('erickcomp_lw_data_table::inline-edit-buttons', [
+                            'editing' => false,
+                            'class' => $preset->get('table.row-actions.menu-item.class', []),
+                            'role' => 'menuitem',
+                        ])
+                    </li>
+                @endif
                 @foreach ($actions as $action)
                     <li role="none">
                         @include('erickcomp_lw_data_table::row-action', [

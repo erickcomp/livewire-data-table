@@ -28,8 +28,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Js;
 use Illuminate\Support\LazyCollection;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
@@ -106,6 +108,16 @@ class LwDataTable extends LivewireComponent
     #[Locked]
     public array $flash = [];
 
+    /** The id of the row being edited inline, if any. Only editRow() sets it, after checking the row and the gate */
+    #[Locked]
+    public ?string $editingRowId = null;
+
+    /**
+     * The values of the row being edited, by field (see the columns' editors). The browser changes them as the user
+     * types: they travel with the next request, and only the editable fields are ever read.
+     */
+    public array $editingValues = [];
+
     protected DataTable $dataTable;
 
     /**
@@ -144,6 +156,11 @@ class LwDataTable extends LivewireComponent
             $this->paginators[$rows->getPageName()] = $rows->lastPage();
 
             $rows = $this->getTableData();
+        }
+
+        // The row being edited left the page (another search, sorting or page...): the edit is dropped
+        if ($this->editingRowId !== null && !\in_array($this->editingRowId, $this->pageRowsIds($rows), true)) {
+            $this->cancelInlineEdit();
         }
 
         // When the rows tell how many match, the count of the "all" selection is kept current for free
@@ -252,7 +269,7 @@ class LwDataTable extends LivewireComponent
 
             toggleFiltersContainer(event) {
                 this.dtData().toggleFiltersContainer(\$wire);
-            }{$this->selectionXData()}{$this->bulkActionsXData()}{$this->rowActionsXData()}{$this->exportXData()}
+            }{$this->selectionXData()}{$this->bulkActionsXData()}{$this->rowActionsXData()}{$this->inlineEditXData()}{$this->exportXData()}
         };";
 
         return $xData;
@@ -377,7 +394,7 @@ class LwDataTable extends LivewireComponent
      */
     protected function rowActionsXData(): string
     {
-        if (!$this->dataTable->hasRowActions() && !$this->dataTable->hasRowClick()) {
+        if (!$this->dataTable->hasRowActions() && !$this->dataTable->hasRowClick() && !$this->dataTable->editsInlineOnRowClick()) {
             return '';
         }
 
@@ -427,6 +444,12 @@ class LwDataTable extends LivewireComponent
                     return;
                 }
 
+                if (row.dataset.lwDtRowClickEdit !== undefined) {
+                    \$wire.editRow(row.dataset.lwDtRowId);
+
+                    return;
+                }
+
                 if (row.dataset.lwDtRowClickUrl !== undefined) {
                     if (event.ctrlKey || event.metaKey) {
                         window.open(row.dataset.lwDtRowClickUrl, '_blank', 'noopener');
@@ -438,6 +461,29 @@ class LwDataTable extends LivewireComponent
                 }
 
                 row.querySelector(`[data-lw-dt-row-action='\${CSS.escape(row.dataset.lwDtRowClickAction)}']`)?.click();
+            }";
+    }
+
+    /**
+     * The Alpine method behind the keyboard of the row being edited inline, added to xData() when the table edits rows:
+     * Enter saves (except in a textarea, or on a button, which Enter clicks) and Escape cancels
+     */
+    protected function inlineEditXData(): string
+    {
+        if (!$this->dataTable->hasInlineEdit()) {
+            return '';
+        }
+
+        return ",
+
+            onInlineEditKeydown(event) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    \$wire.cancelInlineEdit();
+                } else if (event.key === 'Enter' && !['TEXTAREA', 'BUTTON'].includes(event.target.tagName)) {
+                    event.preventDefault();
+                    \$wire.saveInlineEdit();
+                }
             }";
     }
 
@@ -648,6 +694,103 @@ class LwDataTable extends LivewireComponent
         }
 
         return $result->response;
+    }
+
+    /**
+     * Starts editing a row inline (see the table's "inline-edit"): its editable fields are loaded into $editingValues.
+     * Editing another row drops the changes made to the previous one.
+     */
+    public function editRow(string $rowId): void
+    {
+        if (!$this->dataTable->hasInlineEdit()) {
+            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.action_unavailable')));
+
+            return;
+        }
+
+        $row = $this->findRow($rowId);
+
+        if ($row === null) {
+            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.row_not_found')));
+
+            return;
+        }
+
+        $this->authorizeInlineEdit($row);
+
+        $values = [];
+
+        foreach ($this->dataTable->editableColumns() as $column) {
+            \data_set($values, $column->editor->field, $column->editor->inputValue(\data_get($row, $column->editor->field)));
+        }
+
+        // The row's own id, which may be written differently from the one sent ("01" finds the row 1 by an integer key)
+        $this->editingRowId = $this->rowSelectionId($row);
+        $this->editingValues = $values;
+        $this->resetErrorBag();
+    }
+
+    /**
+     * Validates the row being edited and hands its editable fields to the table's "inline-edit" handler. The browser
+     * only sends the values: the row is looked up again (it must still be among the table's rows) and the gate is
+     * checked again. A ValidationException thrown by the handler shows its messages next to the fields.
+     */
+    public function saveInlineEdit(): mixed
+    {
+        if ($this->editingRowId === null || !$this->dataTable->hasInlineEdit()) {
+            return null;
+        }
+
+        $rowId = $this->editingRowId;
+        $row = $this->findRow($rowId);
+
+        if ($row === null) {
+            $this->cancelInlineEdit();
+            $this->flashMessage(ActionResult::error(__('erickcomp_lw_data_table::messages.row_not_found')));
+
+            return null;
+        }
+
+        $this->authorizeInlineEdit($row);
+
+        $parameters = [
+            'values' => $this->validatedInlineEditValues($rowId),
+            'id' => $rowId,
+            'row' => $row,
+        ];
+
+        // A model (or any object) row can also be asked for by its class, e.g. "Product $product"
+        if (\is_object($row)) {
+            $parameters[$row::class] = $row;
+        }
+
+        try {
+            $result = ActionResultHandler::run(
+                $this->dataTable->inlineEdit,
+                $parameters,
+                $this,
+                __('erickcomp_lw_data_table::messages.inline_edit_saved'),
+            );
+        } catch (ValidationException $e) {
+            throw static::inlineEditValidationException($e->errors());
+        }
+
+        if (!$result->failed()) {
+            $this->cancelInlineEdit();
+        }
+
+        if ($result->message !== null) {
+            $this->flashMessage($result->message);
+        }
+
+        return $result->response;
+    }
+
+    public function cancelInlineEdit(): void
+    {
+        $this->editingRowId = null;
+        $this->editingValues = [];
+        $this->resetErrorBag();
     }
 
     /**
@@ -956,8 +1099,10 @@ class LwDataTable extends LivewireComponent
             $this->vd = \encrypt(\serialize($dataTable->dynamicViewData));
         }
 
-        // Fails early (and loudly) on a row-click naming a row action that does not exist
+        // Fails early (and loudly) on a row-click naming a row action that does not exist, and on editors without a
+        // handler (or the other way around)
         $dataTable->rowClickAction();
+        $dataTable->validateInlineEdit();
 
         $this->dataTable = $dataTable;
 
@@ -1424,6 +1569,81 @@ class LwDataTable extends LivewireComponent
     }
 
     /**
+     * The row with the given id, if it is among the table's rows (with the current search and filters)
+     */
+    protected function findRow(string $rowId): mixed
+    {
+        return $this->makeSelection(Selection::MODE_IDS, [$rowId])->rows()->first();
+    }
+
+    /**
+     * Whether the current user may edit the row inline
+     */
+    protected function canEditInline(mixed $row): bool
+    {
+        $can = $this->dataTable->inlineEditCan;
+
+        // Wrapped: an array row would be taken for a list of arguments
+        return $this->dataTable->hasInlineEdit() && ($can === null || Gate::allows($can, [$row]));
+    }
+
+    protected function authorizeInlineEdit(mixed $row): void
+    {
+        if ($this->dataTable->inlineEditCan !== null) {
+            Gate::authorize($this->dataTable->inlineEditCan, [$row]);
+        }
+    }
+
+    /**
+     * The editable fields of $editingValues, validated and converted for the handler (see ColumnEditor::value()).
+     * The rules see the fields by their own names, so rules comparing fields ("after:start_date") work; the messages
+     * name the columns by their titles.
+     *
+     * @throws ValidationException with the messages keyed like the inputs ("editingValues.price")
+     */
+    protected function validatedInlineEditValues(string $rowId): array
+    {
+        $data = [];
+        $rules = [];
+        $attributes = [];
+        $values = [];
+
+        foreach ($this->dataTable->editableColumns() as $column) {
+            $field = $column->editor->field;
+
+            \data_set($data, $field, \data_get($this->editingValues, $field));
+            $rules[$field] = $column->editor->validationRules($rowId);
+            $attributes[$field] = $column->title;
+        }
+
+        $validator = Validator::make($data, $rules, [], $attributes);
+
+        if ($validator->fails()) {
+            throw static::inlineEditValidationException($validator->errors()->toArray());
+        }
+
+        foreach ($this->dataTable->editableColumns() as $column) {
+            \data_set($values, $column->editor->field, $column->editor->value(\data_get($data, $column->editor->field)));
+        }
+
+        return $values;
+    }
+
+    /**
+     * @param array<string, string|string[]> $errors Keyed by field
+     */
+    protected static function inlineEditValidationException(array $errors): ValidationException
+    {
+        $keyed = [];
+
+        foreach ($errors as $field => $messages) {
+            $keyed[\str_starts_with($field, 'editingValues.') ? $field : "editingValues.$field"] = $messages;
+        }
+
+        return ValidationException::withMessages($keyed);
+    }
+
+    /**
      * The table's export, unless the current user may not use it
      */
     protected function availableExport(): ?Export
@@ -1463,15 +1683,22 @@ class LwDataTable extends LivewireComponent
     }
 
     /**
-     * What makes a row clickable (row-click or row-click-url), or nothing when it is not: a row-click action must be
-     * among the row's visible actions
+     * What makes a row clickable, or nothing when it is not: editing it inline (inline-edit-trigger="row-click", on the
+     * rows the user may edit), else the row-click action (which must be among the row's visible actions) or the
+     * row-click-url. The row being edited takes no clicks: they would leave it.
      *
      * @param RowAction[] $visibleRowActions
      * @return array<string, string>
      */
-    protected function rowClickAttributes(mixed $row, string $rowId, array $visibleRowActions): array
+    protected function rowClickAttributes(mixed $row, string $rowId, array $visibleRowActions, bool $canEditInline = false, bool $isEditing = false): array
     {
-        if ($this->dataTable->rowClickUrl !== null) {
+        if ($isEditing) {
+            return [];
+        }
+
+        if ($canEditInline && $this->dataTable->editsInlineOnRowClick()) {
+            $target = ['data-lw-dt-row-click-edit' => ''];
+        } elseif ($this->dataTable->rowClickUrl !== null) {
             $target = ['data-lw-dt-row-click-url' => RowAction::fillUrl($this->dataTable->rowClickUrl, $row, 'the [row-click-url] of the table')];
         } elseif ($this->dataTable->rowClick !== null && isset($visibleRowActions[$this->dataTable->rowClick])) {
             $target = ['data-lw-dt-row-click-action' => $this->dataTable->rowClick];

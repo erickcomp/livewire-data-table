@@ -41,6 +41,9 @@ class Column
     public ComponentAttributeBag $thAttributes;
     public ComponentAttributeBag $thSearchThAttributes;
     public ComponentAttributeBag $thSearchInputAttributes;
+
+    /** The attributes of the inline editor's input ("editor-" prefix, e.g. editor-step="0.01") */
+    public ComponentAttributeBag $editorInputAttributes;
     public ?string $dataField = null;
     public string $name;
     public string $title;
@@ -54,6 +57,9 @@ class Column
     /** The row field exported in place of what the column shows ("export-field") */
     public ?string $exportField = null;
 
+    /** How the column is edited inline ("editor"), if it is */
+    public ?ColumnEditor $editor = null;
+
     public function __construct(
         string $title,
         ?string $dataField = null,
@@ -61,6 +67,10 @@ class Column
         bool $sortable = false,
         bool|string $exportable = true,
         ?string $exportField = null,
+        ?string $editor = null,
+        mixed $editorOptions = null,
+        mixed $editorRules = null,
+        ?string $editorField = null,
     ) {
         if (empty(\trim($dataField ?? '')) && ($searchable || $sortable)) {
             throw new \BadMethodCallException('The data-field attribute is required for searchable or sortable columns.');
@@ -70,6 +80,7 @@ class Column
         $this->sortable = $sortable;
         $this->setupSearchable($searchable);
         $this->setupExport($exportable, $exportField);
+        $this->editor = ColumnEditor::fromColumnAttributes($title, $editor, $editorOptions, $editorRules, $editorField, $dataField);
     }
 
     public static function fromComponentAttributeBag(ComponentAttributeBag $attributes, ...$extraArgs): static
@@ -189,6 +200,7 @@ class Column
             'thead-search-th-' => 'thSearchThAttributes',
             'th-' => 'thAttributes',
             'td-' => 'tdAttributes',
+            'editor-' => 'editorInputAttributes',
         ];
     }
 }
