@@ -77,7 +77,12 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
   - O menu fica com `position: fixed`, calculada a partir do botão, porque o wrapper da tabela pode cortar conteúdo (`overflow-hidden` no Tailwind). O `x-anchor` existe no Livewire 4, mas não dá para contar com ele no 3.
   - A chave de preset do contador é `actions.bulk-actions-and-per-page.records-count.class`, no lugar de `actions.records-count`: ele fica na mesma linha do per-page. Novas chaves: `table.selection.{th,td,checkbox,menu-container,menu-button(+icon),menu,menu-item}` e `table.tbody.tr.selected.class`. Os partials ficam em `src/Livewire/Partials` (namespace `erickcomp_lw_data_table`).
   - A demo do workbench ficou `selectable`; `tests/Browser/SelectionTest.php` cobre marcar, paginar, a página inteira, o menu, as exclusões e o reset ao buscar.
-  - Achado (fica para depois): o atributo `data-src-pagination` é ignorado. O construtor do `DataTable` recebe `$dataSrcPagination`, mas passa `$this->dataSrcPaginationType` (sempre o padrão) para a factory. O README documenta o atributo.
+  - Achado (corrigido depois da T2): o atributo `data-src-pagination` era ignorado. O construtor do `DataTable` recebia `$dataSrcPagination`, mas passava `$this->dataSrcPaginationType` (sempre o padrão) para a factory.
+- **Correção da paginação (depois da T2):**
+  - `data-src-pagination` passou a valer, sem diferenciar maiúsculas; um valor inválido gera `ValueError` listando os válidos.
+  - Com o atributo funcionando, apareceu um bug que ele escondia: a paginação por cursor não saía da primeira página. O Livewire guarda o cursor na mesma chave que o número da página, e o `buildRetrievalParams()` chamava `Paginator::resolveCurrentPage()`, cujo resolver troca por 1 qualquer valor que não seja número. Agora `LwDataTable::currentPage()` devolve null em paginação por cursor.
+  - A demo aceita `?pagination=`. `tests/Browser/PaginationTest.php` cobre os 4 tipos no navegador e `tests/Feature/LwDataTable/PaginationTypeTest.php` cobre o atributo e a navegação.
+  - O `assertCount()` do plugin de browser do Pest para de contar em 100 elementos; para contagens maiores, use `assertScript("document.querySelectorAll(...).length", N)`.
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
