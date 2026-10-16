@@ -32,6 +32,17 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 @endphp
 <div {{ $this->dataTable->containerAttributes->class([...($this->preset()->get('main-container.class') ?? []), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
+    @if (($restoredStateUrlQuery = $this->restoredStateUrlQuery()) !== '')
+        {{-- Runs while the page loads, before Livewire reads the URL (see restoredStateUrlQuery()) --}}
+        <script>
+            (() => {
+                const url = new URL(window.location.href);
+                new URLSearchParams({{ Js::from($restoredStateUrlQuery) }}).forEach((value, name) => url.searchParams.append(name, value));
+                window.history.replaceState(window.history.state, '', url);
+            })();
+        </script>
+    @endif
+
     @if (!empty($this->flash))
         @include('erickcomp_lw_data_table::flash-messages', [
             'messages' => $this->flash,

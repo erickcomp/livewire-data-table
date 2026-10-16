@@ -32,7 +32,7 @@
     </nav>
 
     <main style="padding: 1rem;">
-        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" :data-src-pagination="$pagination" per-page="15,30,60" id="products" selectable row-click="view">
+        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" :data-src-pagination="$pagination" :per-page="$perPageOptions" id="products" selectable row-click="view" state-key="products" :remember-state="$rememberState">
             <x-data-table.search data-fields="name,category" />
 
             <x-data-table.bulk-actions>

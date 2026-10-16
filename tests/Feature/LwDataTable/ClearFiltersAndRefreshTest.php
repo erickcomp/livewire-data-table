@@ -55,9 +55,7 @@ function addProduct(string $name): void
 // --- Clear all ---
 
 it('clears the search and all the filters and goes back to the first page', function () {
-    // perPage is not aligned with the options yet (see T6 in docs/plans/magento-grid-parity.md)
-    Livewire::test(LwDataTable::class, ['dataTable' => clearAndRefreshDataTable(['perPage' => '1,10'])])
-        ->set('perPage', '1')
+    Livewire::test(LwDataTable::class, ['dataTable' => clearAndRefreshDataTable(['perPage' => '1'])])
         ->set('search', 'e')
         ->call('applyFilters', ['category' => ['category' => 'furniture'], 'price' => ['price' => ['from' => '100', 'to' => '']]])
         ->call('gotoPage', 2, 'page')

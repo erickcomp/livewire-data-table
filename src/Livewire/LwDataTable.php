@@ -64,12 +64,14 @@ class LwDataTable extends LivewireComponent
     #[Url]
     public array $columnsSearch = [];
 
-    #[Url]
+    #[Url(except: '')]
     public string $sortBy = '';
 
-    #[Url]
+    #[Url(except: '')]
     public string $sortDir = '';
     public ?bool $filtersContainerIsOpen = null;
+
+    /** One of the keys of DataTable::perPageOptionsForSelect(): render() brings any other value back to the first one */
     public ?string $perPage = '15';
 
     #[Locked]
@@ -107,6 +109,9 @@ class LwDataTable extends LivewireComponent
      */
     protected bool $selectionResetPending = false;
 
+    /** Set when mount() brought back a remembered state, for the first render to put it in the URL */
+    protected bool $stateRestored = false;
+
     //protected string $preset = 'vanilla';
     protected array $processedFilters = [];
     protected array $appliedFilters = [];
@@ -119,6 +124,7 @@ class LwDataTable extends LivewireComponent
 
     public function render()
     {
+        $this->perPage = $this->sanitizedPerPage($this->perPage);
         $this->applyPendingSelectionReset();
         $this->setupMaxMemory();
         $this->processFilters();
@@ -633,6 +639,8 @@ class LwDataTable extends LivewireComponent
         $this->applyPendingSelectionReset();
 
         $this->selectedIds = $this->normalizedSelectedIds();
+
+        $this->rememberState();
     }
 
     /**
@@ -847,6 +855,9 @@ class LwDataTable extends LivewireComponent
 
         $this->dataTable = $dataTable;
 
+        // Livewire reads the URL after this: a URL with any of the table's parameters wins over the remembered state
+        $this->restoreRememberedState();
+
         $this->dt = DataTable::toCache($dataTable);
     }
 
@@ -911,8 +922,176 @@ class LwDataTable extends LivewireComponent
     protected function columnsSearchUrlParam(): string
     {
         return $this->dataTable->columnsSearchName
-            ?? $this->preset()->get('query-string-cols-search')
+            ?? $this->preset()->get('query-string-param-cols-search')
             ?? \config('erickcomp-livewire-data-table.query-string-param-cols-search', 'cols-search');
+    }
+
+    protected function perPageUrlParam(): string
+    {
+        return $this->dataTable->perPageName
+            ?? $this->preset()->get('query-string-per-page')
+            ?? \config('erickcomp-livewire-data-table.query-string-per-page', 'per-page');
+    }
+
+    /**
+     * The first of the per-page options: the rows per page when nothing else asks for others
+     */
+    protected function defaultPerPage(): string
+    {
+        $firstOption = \array_key_first($this->dataTable->perPageOptionsForSelect());
+
+        return $firstOption === null ? (string) $this->dataTable->maxPerPage : (string) $firstOption;
+    }
+
+    /**
+     * The given rows per page if they are one of the options, the default ones otherwise: the browser (and the URL)
+     * can send anything
+     */
+    protected function sanitizedPerPage(mixed $perPage): string
+    {
+        $options = \array_map(\strval(...), \array_keys($this->dataTable->perPageOptionsForSelect()));
+
+        return \is_scalar($perPage) && \in_array((string) $perPage, $options, true) ? (string) $perPage : $this->defaultPerPage();
+    }
+
+    /**
+     * The search, filters, columns search, sorting and rows per page, as remembered with "remember-state". Neither the
+     * page nor the selection are part of it.
+     *
+     * @return array{search: string, filters: array, columnsSearch: array, sortBy: string, sortDir: string, perPage: string}
+     */
+    protected function currentState(): array
+    {
+        $sortBy = $this->sanitizeSortBy($this->sortBy);
+
+        return [
+            'search' => $this->search,
+            'filters' => $this->sanitizeFilters($this->filters),
+            'columnsSearch' => $this->sanitizeColumnsSearch($this->columnsSearch),
+            'sortBy' => $sortBy,
+            'sortDir' => $this->sanitizeSortDir($sortBy, $this->sortDir),
+            'perPage' => $this->sanitizedPerPage($this->perPage),
+        ];
+    }
+
+    protected function stateSessionKey(): string
+    {
+        return 'lw-dt-state.' . $this->dataTable->stateKey;
+    }
+
+    /**
+     * Saves the state in the session, when it changed
+     */
+    protected function rememberState(): void
+    {
+        if (!$this->dataTable->rememberState) {
+            return;
+        }
+
+        $state = $this->currentState();
+
+        if (session()->get($this->stateSessionKey()) !== $state) {
+            session()->put($this->stateSessionKey(), $state);
+        }
+    }
+
+    /**
+     * Brings back the remembered state when the URL has none of the table's parameters. The session is checked like
+     * any input: what does not fit the table's definition is dropped.
+     */
+    protected function restoreRememberedState(): void
+    {
+        if (!$this->dataTable->rememberState || $this->urlHasTableState()) {
+            return;
+        }
+
+        $state = session()->get($this->stateSessionKey());
+
+        if (!\is_array($state)) {
+            return;
+        }
+
+        $columnsSearch = \is_array($state['columnsSearch'] ?? null) ? $state['columnsSearch'] : [];
+
+        $this->search = \is_string($state['search'] ?? null) ? $state['search'] : '';
+        $this->filters = $this->sanitizeFilters(\is_array($state['filters'] ?? null) ? $state['filters'] : []);
+        $this->columnsSearch = $this->sanitizeColumnsSearch(\array_map(\strval(...), \array_filter($columnsSearch, \is_scalar(...))));
+        $this->sortBy = $this->sanitizeSortBy(\is_string($state['sortBy'] ?? null) ? $state['sortBy'] : '');
+        $this->sortDir = $this->sanitizeSortDir($this->sortBy, $state['sortDir'] ?? '');
+        $this->perPage = $this->sanitizedPerPage($state['perPage'] ?? null);
+
+        $this->stateRestored = true;
+    }
+
+    /**
+     * The URL query of a state brought back by restoreRememberedState(), with the values that differ from the defaults.
+     * The first render writes it to the URL before Livewire starts: Livewire 3 only shows the values it pushes to the
+     * history (search, filters...) once they change, and both versions then take them as values that came in the URL.
+     */
+    protected function restoredStateUrlQuery(): string
+    {
+        if (!$this->stateRestored) {
+            return '';
+        }
+
+        $params = \array_filter(
+            [
+                $this->searchUrlParam() => $this->search,
+                $this->filtersUrlParam() => $this->filters,
+                $this->columnsSearchUrlParam() => $this->columnsSearch,
+                'sortBy' => $this->sortBy,
+                'sortDir' => $this->sortDir,
+                $this->perPageUrlParam() => $this->perPage === $this->defaultPerPage() ? '' : $this->perPage,
+            ],
+            fn(mixed $value) => $value !== '' && $value !== [],
+        );
+
+        return \http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    protected function urlHasTableState(): bool
+    {
+        $urlParams = [
+            $this->searchUrlParam(),
+            $this->filtersUrlParam(),
+            $this->columnsSearchUrlParam(),
+            'sortBy',
+            'sortDir',
+            $this->perPageUrlParam(),
+            $this->pageNameUrlParam(),
+        ];
+
+        foreach ($urlParams as $urlParam) {
+            if (\request()->query->has($urlParam)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Only the values of the filters the table defines, as [data field => [name => value]]. A value is a scalar or,
+     * for ranges and multiple choices, an array of scalars.
+     */
+    protected function sanitizeFilters(array $filters): array
+    {
+        $sanitized = [];
+
+        foreach ($this->dataTable->filters->filtersItems ?? [] as $filterItem) {
+            $value = $filters[$filterItem->dataField][$filterItem->name] ?? null;
+
+            if (\is_scalar($value) || (\is_array($value) && $value === \array_filter($value, \is_scalar(...)))) {
+                $sanitized[$filterItem->dataField][$filterItem->name] = $value;
+            }
+        }
+
+        return $sanitized;
+    }
+
+    protected function sanitizeSortDir(string $sortBy, mixed $sortDir): string
+    {
+        return $sortBy !== '' && \in_array($sortDir, [static::SORT_DIR_ASC, static::SORT_DIR_DESC], true) ? $sortDir : static::SORT_DIR_NONE;
     }
 
     protected function setupMaxMemory()
@@ -1296,14 +1475,23 @@ class LwDataTable extends LivewireComponent
             // 'page' => [
             //     'as' => $this->pageNameUrlParam(),
             // ],
+            // "except" is each value with nothing chosen: Livewire then shows any other value in the URL from the start,
+            // including a remembered one (see restoreRememberedState())
             'search' => [
                 'as' => $this->searchUrlParam(),
+                'except' => '',
             ],
             'filters' => [
                 'as' => $this->filtersUrlParam(),
+                'except' => [],
             ],
             'columnsSearch' => [
                 'as' => $this->columnsSearchUrlParam(),
+                'except' => [],
+            ],
+            'perPage' => [
+                'as' => $this->perPageUrlParam(),
+                'except' => $this->defaultPerPage(),
             ],
         ];
     }

@@ -26,6 +26,7 @@ function paginatedDataTable(?string $dataSrcPagination): DataTable
         dataSrc: TestProduct::class,
         preset: 'vanilla',
         dataSrcPagination: $dataSrcPagination,
+        perPage: '15,2',
     );
 
     $dataTable->columns->push(DataColumn::fromComponentAttributeBag(new ComponentAttributeBag([

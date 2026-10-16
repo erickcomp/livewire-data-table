@@ -54,9 +54,10 @@ class QueryBuilderDataSource implements DataSource, ProvidesUnpaginatedData
     {
         return match ($this->paginationType) {
             DataSourcePaginationType::None => $this->getDataQuery($params)->get(),
-            DataSourcePaginationType::LengthAware => $this->getDataQuery($params)->paginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
-            DataSourcePaginationType::Cursor => $this->getDataQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
-            DataSourcePaginationType::Simple => $this->getDataQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
+            // Through the params, which also handle the "all" per-page option
+            DataSourcePaginationType::LengthAware => $params->paginate($this->getDataQuery($params)),
+            DataSourcePaginationType::Cursor => $params->cursorPaginate($this->getDataQuery($params)),
+            DataSourcePaginationType::Simple => $params->simplePaginate($this->getDataQuery($params)),
         };
     }
 

@@ -23,4 +23,13 @@ abstract class BrowserTestCase extends Orchestra
     protected bool $seed = true;
 
     protected string $seeder = \Workbench\Database\Seeders\DatabaseSeeder::class;
+
+    /**
+     * phpunit.xml keeps the session in an array, which the browser's requests do not share: a cookie carries it
+     * from one request to the next, as remember-state needs
+     */
+    protected function defineEnvironment($app): void
+    {
+        $app['config']->set('session.driver', 'cookie');
+    }
 }

@@ -11,7 +11,8 @@ trait PaginatesCollections
     protected function paginate(Collection $data, LwDataRetrievalParams $params): LengthAwarePaginator
     {
         if ($params->chosenPaginationIsAll() || $params->isPaginationDisabled()) {
-            $perPage = $data->count();
+            // At least 1: paginators divide by it
+            $perPage = \max($data->count(), 1);
             $page = 1;
         } else {
             $perPage = $params->perPage;
@@ -35,7 +36,8 @@ trait PaginatesCollections
     protected function simplePaginate(Collection $data, LwDataRetrievalParams $params): Paginator
     {
         if ($params->chosenPaginationIsAll() || $params->isPaginationDisabled()) {
-            $perPage = $data->count();
+            // At least 1: paginators divide by it
+            $perPage = \max($data->count(), 1);
             $page = 1;
         } else {
             $perPage = $params->perPage;

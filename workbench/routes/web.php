@@ -12,7 +12,13 @@ Route::get('/demo/{preset?}', function (Request $request, string $preset = 'vani
     $pagination = DataSourcePaginationType::tryFromIgnoreCase((string) $request->query('pagination', ''))
         ?? DataSourcePaginationType::LengthAware;
 
-    return view('workbench::demo', ['preset' => $preset, 'pagination' => $pagination->value]);
+    return view('workbench::demo', [
+        'preset' => $preset,
+        'pagination' => $pagination->value,
+        // ?per-page-options=10,25 and ?remember=1 let browser tests try other per-page options and remember-state
+        'perPageOptions' => (string) $request->query('per-page-options', '15,30,60'),
+        'rememberState' => $request->boolean('remember'),
+    ]);
 })
     ->where('preset', 'vanilla|bootstrap4v1|tailwind3v1')
     ->name('demo');

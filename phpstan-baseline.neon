@@ -49,24 +49,6 @@ parameters:
 			path: src/Data/EloquentBuilderDataSource.php
 
 		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:cursorPaginate\(\) expects int\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/EloquentBuilderDataSource.php
-
-		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:paginate\(\) expects int\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/EloquentBuilderDataSource.php
-
-		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:simplePaginate\(\) expects int\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/EloquentBuilderDataSource.php
-
-		-
 			message: '#^Access to an undefined property ErickComp\\LivewireDataTable\\Data\\EloquentDataSource\:\:\$resolvedModelInstance\.$#'
 			identifier: property.notFound
 			count: 1
@@ -121,24 +103,6 @@ parameters:
 			path: src/Data/EloquentDataSource.php
 
 		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:cursorPaginate\(\) expects int\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/EloquentDataSource.php
-
-		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:paginate\(\) expects int\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/EloquentDataSource.php
-
-		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:simplePaginate\(\) expects int\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/EloquentDataSource.php
-
-		-
 			message: '#^Parameter \#2 \$options of method Illuminate\\Support\\Collection\<\(int\|string\),mixed\>\:\:sortBy\(\) expects 0\|1\|2\|3\|5\|6\|7\|8\|9\|10\|11\|13\|14\|15, int given\.$#'
 			identifier: argument.type
 			count: 1
@@ -158,24 +122,6 @@ parameters:
 
 		-
 			message: '#^Parameter \#2 \$direction of method Illuminate\\Database\\Query\\Builder\:\:orderBy\(\) expects ''asc''\|''desc''\|SortDirection, non\-falsy\-string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/QueryBuilderDataSource.php
-
-		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Query\\Builder\:\:cursorPaginate\(\) expects int\|null, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/QueryBuilderDataSource.php
-
-		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Query\\Builder\:\:paginate\(\) expects Closure\|int, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Data/QueryBuilderDataSource.php
-
-		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Query\\Builder\:\:simplePaginate\(\) expects int, string\|null given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Data/QueryBuilderDataSource.php

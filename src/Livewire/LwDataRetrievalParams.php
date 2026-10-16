@@ -131,7 +131,7 @@ class LwDataRetrievalParams
     public function paginate(Collection|QueryBuilder|EloquentBuilder $data): LengthAwarePaginator
     {
         if ($data instanceof EloquentBuilder || $data instanceof QueryBuilder) {
-            if ($this->paginationDisabled) {
+            if ($this->showsAllRows()) {
                 $items = $data->get();
 
                 return new LengthAwarePaginator($items, $items->count(), \max($items->count(), 1), 1, $this->paginatorOptions());
@@ -151,7 +151,7 @@ class LwDataRetrievalParams
     public function simplePaginate(Collection|QueryBuilder|EloquentBuilder $data): Paginator
     {
         if ($data instanceof EloquentBuilder || $data instanceof QueryBuilder) {
-            if ($this->paginationDisabled) {
+            if ($this->showsAllRows()) {
                 $items = $data->get();
 
                 return new Paginator($items, \max($items->count(), 1), 1, $this->paginatorOptions());
@@ -170,7 +170,7 @@ class LwDataRetrievalParams
 
     public function cursorPaginate(QueryBuilder|EloquentBuilder $data): CursorPaginator
     {
-        if ($this->paginationDisabled) {
+        if ($this->showsAllRows()) {
             $items = $data->get();
 
             return new CursorPaginator($items, \max($items->count(), 1), null, [
@@ -206,5 +206,13 @@ class LwDataRetrievalParams
             'path' => Paginator::resolveCurrentPath(),
             'pageName' => $this->pageName,
         ];
+    }
+
+    /**
+     * Whether all the rows go on a single page: the "all" per-page option was chosen, or pagination is disabled
+     */
+    protected function showsAllRows(): bool
+    {
+        return $this->paginationDisabled || $this->chosenPaginationIsAll();
     }
 }

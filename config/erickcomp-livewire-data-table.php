@@ -7,6 +7,7 @@ return [
     'query-string-search' => 'search',
     'query-string-filters' => 'filters',
     'query-string-param-cols-search' => 'cols-search',
+    'query-string-per-page' => 'per-page',
     // Most ids a row selection may hold (selected rows, or rows left out of "select all")
     'max-selected-ids' => 10000,
     'presets' => [
@@ -17,6 +18,7 @@ return [
             'query-string-search' => 'search',
             'query-string-filters' => 'filters',
             'query-string-param-cols-search' => 'cols-search',
+            'query-string-per-page' => 'per-page',
             'table' => [
                 'wrapper' => [
                     'class' => [],

@@ -24,7 +24,7 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 - **Custom column rendering** — use Blade content inside column definitions for full control
 - **Row-level customization** — dynamic `@rowClass`, `@rowStyle`, and `@rowAttributes` directives
 - **Custom footer** — arbitrary footer content via `<x-data-table.footer>`
-- **Query string sync** — search, filters, sorting, and pagination state reflected in the URL
+- **Query string sync** — search, filters, sorting, rows per page and page reflected in the URL, so a bookmark brings a view back; optionally, the last state is remembered in the session
 - **Clear all and refresh** — a button to drop the search and filters at once, and an `lw-dt-refresh` event to re-render a table from anywhere on the page
 - **Internationalization** — ships with English and Brazilian Portuguese translations
 - **Eloquent customization interfaces** — override search, filtering, sorting, and query building at the model level
@@ -78,7 +78,7 @@ php artisan vendor:publish --tag=erickcomp-livewire-data-table-lang
 
 The configuration file (`config/erickcomp-livewire-data-table.php`) contains:
 
-- **Global defaults** — `columns-search-debounce-ms`, query string parameter names
+- **Global defaults** — `columns-search-debounce-ms`, query string parameter names (`query-string-*`), `max-selected-ids`
 - **Presets** — full theme definitions for `empty`, `vanilla`, `bootstrap4v1`, and `tailwind3v1`
 
 Each preset defines CSS classes, icons, transitions, loader overlays, pagination views, and asset styles for every table element. Presets support inheritance via the `extends` key.
@@ -670,6 +670,34 @@ Special `per-page` values:
 - `max` — resolves to the `max-per-page` value (default: 1000)
 - `all` — shows all records (translatable label)
 
+The table starts with the first option, in the order given. The rows per page asked by the browser or the URL must be one of the options; any other value falls back to the first one.
+
+### State and URL
+
+The search, filters, column searches, sorting, rows per page and page are kept in the URL as they change, so the address of the page reproduces what is on the screen: bookmark it or share it to come back to the same view (Magento's grid bookmarks). Values left at their defaults stay out of the URL.
+
+The parameter names can be changed per table, in the preset (`query-string-*` keys) or in the config:
+
+| Table attribute | Config / preset key | Default |
+|---|---|---|
+| `search-name` | `query-string-search` | `search` |
+| `filters-name` | `query-string-filters` | `filters` |
+| `columns-search-name` | `query-string-param-cols-search` | `cols-search` |
+| `per-page-name` | `query-string-per-page` | `per-page` |
+| `page-name` | `query-string-page-name` | `page` |
+
+Sorting uses `sortBy` and `sortDir`. Give tables on the same page different names, or their parameters will mix.
+
+To come back to the last state when the URL has none of the table's parameters (e.g. after following a menu link), add `remember-state` and a `state-key` that tells the table apart from the others:
+
+```blade
+<x-data-table :data-src="App\Models\User::class" state-key="users" remember-state>
+    ...
+</x-data-table>
+```
+
+The search, filters, column searches, sorting and rows per page are kept in the session (under `lw-dt-state.users`); the page and the selection are not. The remembered state shows up in the URL as soon as the table loads, and a URL with any of the table's parameters wins over it. What comes back from the session is checked against the table's definition, like any input: unknown filters and columns, sorting by a column that is not sortable and rows per page that are not an option are dropped.
+
 ### Loading Delay
 
 Control when the loading overlay appears using Livewire delay modifiers:
@@ -719,6 +747,7 @@ For large datasets, you can increase the memory limit per table:
 | `search-name` | `string` | `'search'` | Query string parameter for search |
 | `filters-name` | `string` | `'filters'` | Query string parameter for filters |
 | `columns-search-name` | `string` | `'cols-search'` | Query string parameter for column search |
+| `per-page-name` | `string` | `'per-page'` | Query string parameter for the rows per page |
 | `columns-search-debounce` | `int` | `250` | Debounce in ms for column search |
 | `pagination-view` | `string` | Preset default | Custom pagination view |
 | `loading-delay-modifier` | `string` | `null` | Livewire loading delay modifier |
@@ -728,6 +757,8 @@ For large datasets, you can increase the memory limit per table:
 | `records-count` | `bool` | Same as `selectable` | Show the "N records found (M selected)" counter |
 | `row-click` | `string` | `null` | Name of the row action run when a row is clicked |
 | `row-click-url` | `string` | `null` | URL a click on a row leads to, with `{field}` placeholders |
+| `state-key` | `string` | `null` | Steady name of the table (letters, digits, `-` and `_`), e.g. to remember its state |
+| `remember-state` | `bool` | `false` | Remember the search, filters, sorting and rows per page in the session (needs `state-key`) |
 | `data-identity-column` | `string` | `'id'` | Row identity column |
 | `php-max-memory` | `string` | `null` | PHP memory_limit override |
 | `dynamic-view-data` | `array` | `[]` | Per-user/per-request variables passed to Blade renderers (encrypted, travels over the wire) |

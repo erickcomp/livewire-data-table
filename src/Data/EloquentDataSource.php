@@ -74,9 +74,10 @@ class EloquentDataSource implements DataSource, ProvidesUnpaginatedData
 
         return match ($this->paginationType) {
             DataSourcePaginationType::None => $this->getQuery($params)->get(),
-            DataSourcePaginationType::LengthAware => $this->getQuery($params)->paginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
-            DataSourcePaginationType::Cursor => $this->getQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
-            DataSourcePaginationType::Simple => $this->getQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
+            // Through the params, which also handle the "all" per-page option
+            DataSourcePaginationType::LengthAware => $params->paginate($this->getQuery($params)),
+            DataSourcePaginationType::Cursor => $params->cursorPaginate($this->getQuery($params)),
+            DataSourcePaginationType::Simple => $params->simplePaginate($this->getQuery($params)),
         };
     }
 

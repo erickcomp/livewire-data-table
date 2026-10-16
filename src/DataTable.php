@@ -141,6 +141,12 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
     /** Where a click on a row leads ("row-click-url"), with "{field}" placeholders like a row action's url */
     public ?string $rowClickUrl = null;
+
+    /** Identifies the table steadily across requests, e.g. to remember its state ("state-key") */
+    public ?string $stateKey = null;
+
+    /** Whether the search, filters, sorting and rows per page are remembered in the session ("remember-state") */
+    public bool $rememberState = false;
     public ?Footer $footer = null;
 
     public int $collectionSortingFlags;
@@ -197,6 +203,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         public ?string $searchName = null,
         public ?string $filtersName = null,
         public ?string $columnsSearchName = null,
+        public ?string $perPageName = null,
         public int $maxPerPage = 1000,
         ?string $paginationView = null,
         public ?string $phpMaxMemory = null,
@@ -222,6 +229,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         bool|string|null $recordsCount = null,
         ?string $rowClick = null,
         ?string $rowClickUrl = null,
+        ?string $stateKey = null,
+        bool|string $rememberState = false,
 
 
         public array $actions = [],
@@ -319,6 +328,17 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         if ($this->rowClickUrl !== null) {
             RowAction::validateUrl($this->rowClickUrl, 'the [row-click-url] of the table');
+        }
+
+        $this->stateKey = \trim($stateKey ?? '') !== '' ? \trim($stateKey) : null;
+        $this->rememberState = static::parseBooleanAttribute('remember-state', $rememberState);
+
+        if ($this->stateKey !== null && !\preg_match('/^[\w\-]+$/', $this->stateKey)) {
+            throw new \InvalidArgumentException("Invalid state key: [{$this->stateKey}]. Use only letters, digits, \"-\" and \"_\"");
+        }
+
+        if ($this->rememberState && $this->stateKey === null) {
+            throw new \InvalidArgumentException('A table with [remember-state] needs a [state-key], which tells it apart from the other tables');
         }
 
         // $this->searchable = match (true) {
@@ -690,45 +710,33 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         return count($this->perPageOptions) > 1;
     }
 
+    /**
+     * The per-page options as value => label, in the order they were given: "max" becomes the max-per-page value,
+     * "all" a value that pages nothing, and options above max-per-page are left out
+     */
     public function perPageOptionsForSelect(): array
     {
-        $options = \array_combine($this->perPageOptions, $this->perPageOptions);
-        $toRemove = [];
+        $options = [];
 
-        foreach ($options as $optionVal => $optionLabel) {
-
-            if ($optionVal === static::PER_PAGE_MAX) {
-                $toRemove[] = $optionVal;
-
+        foreach ($this->perPageOptions as $option) {
+            if ($option === static::PER_PAGE_MAX) {
                 $options[$this->maxPerPage] = $this->maxPerPage;
 
                 continue;
-
             }
 
-            if ($optionVal === static::PER_PAGE_ALL) {
-                $toRemove[] = $optionVal;
-
+            if ($option === static::PER_PAGE_ALL) {
                 $options[static::PER_PAGE_ALL_OPTION_VALUE] = __('erickcomp_lw_data_table::messages.per_page_option_all_label');
 
                 continue;
             }
 
-            $intOptionVal = (int) $optionVal;
-
-            if ($intOptionVal > $this->maxPerPage) {
-                $toRemove[] = $optionVal;
+            if ((int) $option > $this->maxPerPage) {
+                continue;
             }
-        }
 
-        foreach ($toRemove as $key) {
-            unset($options[$key]);
+            $options[$option] = $option;
         }
-
-        // if (\array_key_exists(static::PER_PAGE_ALL, $options)) {
-        //     unset($options[static::PER_PAGE_ALL]);
-        //     $options[static::PER_PAGE_ALL_OPTION_VALUE] = __('erickcomp_lw_data_table::messages.per_page_option_all_label');
-        // }
 
         return $options;
     }

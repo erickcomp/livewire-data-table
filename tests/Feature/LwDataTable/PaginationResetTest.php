@@ -34,14 +34,14 @@ it('resets page when updating columnsSearch nested values', function () {
 });
 
 it('resets page when updating perPage', function () {
-    $component = Livewire::test(LwDataTable::class);
+    // The rows per page must be one of the table's options
+    $component = Livewire::test(LwDataTable::class, ['dataTable' => new DataTable(perPage: '10,20')]);
     $originalPage = $component->get('paginators.page');
-    $originalPerPage = $component->get('perPage');
 
     $component->set('paginators', ['page' => 3]);
     expect($component->get('paginators.page'))->toBe(3);
 
-    $component->set('perPage', $originalPerPage + 1);
+    $component->set('perPage', '20');
     expect($component->get('paginators.page'))->toBe($originalPage);
 });
 
