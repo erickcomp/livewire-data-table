@@ -40,7 +40,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | T3 Bulk actions | T1, T2 | T0 | ☑ |
 | T4 "Limpar tudo" + evento de recarga | — | T2 | ☑ |
 | T5 Ações por linha + clique na linha | T1, T3 | T0 | ☑ |
-| T6 Estado na URL (`perPage`) + lembrar o estado na sessão | — | T2 | ☐ |
+| T6 Estado na URL (`perPage`) + lembrar o estado na sessão | — | T2 | ☑ |
 | T7 Exportação (adapters OpenSpout / PhpSpreadsheet) | T1 | T2 | ☐ |
 | T8 Edição inline (uma linha) | T1, T3 | T5 | ☐ |
 
@@ -110,6 +110,19 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
   - Clique na linha: o `<tr>` só ganha os atributos quando a ação do `row-click` está disponível para aquela linha. O clique "clica" no próprio elemento da ação na linha (link, botão do form ou botão do servidor), então confirmação, form e chamada ao servidor são os mesmos do menu. Ctrl/Cmd+clique no `row-click-url` abre outra aba, e cliques com texto selecionado são ignorados. Um `row-click` com nome inexistente falha no mount.
   - Presets novos: `table.row-actions.{links,link,form,menu-container,menu-button(+icon),menu,menu-item}` e `table.tbody.tr.clickable.class`. No vanilla, o menu reaproveita as classes do menu de seleção.
   - A demo ganhou "View" (rota; também é o `row-click`), "Delete" (handler com confirmação) e "Discard" (form DELETE com confirmação), e o workbench ganhou as rotas `demo.products.show`/`demo.products.destroy`. `tests/Browser/RowActionsTest.php` cobre o dropdown, a confirmação aceita e recusada, o form DELETE e o clique na linha (inclusive que o clique no checkbox não conta como clique na linha).
+- **T6:**
+  - O `perPage` é sanitizado no início de todo `render()`. Um valor fora das opções, venha do mount, da URL ou do navegador, volta para a primeira opção. Isso resolve o bug do `per-page="10,25,50"` (a tabela mostrava 15). **Mudança de comportamento:** tabelas não-Eloquent sem `per-page`, com um preset sem `pagination.default-per-page-for-non-eloquent-data-sources` (é o caso do `empty`, o preset padrão), passam a mostrar todas as linhas (`['all']`, o padrão configurado) em vez de 15.
+  - `perPageOptionsForSelect()` passou a manter a ordem declarada. Antes, `max` e `all` iam para o fim da lista, então a "primeira opção" não era a primeira declarada.
+  - Dois bugs que o alinhamento expôs, corrigidos:
+    - A opção "all" quebrava em fontes Eloquent e query builder (`paginate(perPage: '___all___')`). Agora as fontes paginam via `LwDataRetrievalParams::paginate()` e métodos irmãos, que tratam "all" como uma página só. Isso tirou 9 entradas do baseline do PHPStan.
+    - Em coleção vazia, "all" dividia por zero.
+  - `except` nos parâmetros de URL (`''`/`[]`/primeira opção): valores padrão ficam fora da URL e, no Livewire 4, um valor restaurado aparece nela ao carregar.
+  - O Livewire 3 só reflete na URL, ao carregar, os parâmetros em modo `replace` (sortBy/sortDir); os em modo `push` (busca, filtros, buscas por coluna, per-page) só depois de mudarem. Por isso, quando o estado é restaurado, o primeiro render emite um `<script>` inline que escreve os parâmetros na URL com `history.replaceState` antes de o Livewire iniciar. Nas duas versões, o Livewire então os trata como valores vindos da URL, e o voltar do navegador continua coerente.
+  - A restauração acontece no `mountDataTable()`, que roda antes de o Livewire ler a URL, e só quando a URL não traz nenhum parâmetro da tabela (busca, filtros, buscas por coluna, sortBy, sortDir, per-page, página). O estado salvo é comparado com o da sessão (em vez de um hash) e gravado só quando muda.
+  - `state-key` aceita só letras, dígitos, `-` e `_` (a chave da sessão usa ponto como separador).
+  - Corrigido de passagem: `columnsSearchUrlParam()` lia do preset a chave `query-string-cols-search`, mas os presets e a config usam `query-string-param-cols-search`.
+  - Ajustes em testes antigos: `PaginationTypeTest` e `PaginationResetTest` usavam `perPage` fora das opções (`'2'`, `'15' + 1`), o que só funcionava por causa da brecha; agora declaram as opções.
+  - Nos testes de navegador, a sessão usa o driver `cookie` (`BrowserTestCase`): com o `array` do `phpunit.xml`, nada persiste entre as requisições do navegador. A demo aceita `?per-page-options=` e `?remember=1`.
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
