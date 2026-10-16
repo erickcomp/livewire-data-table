@@ -288,6 +288,14 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                                 @endif
                             </span>
                         @endforeach
+
+                        @if (count($this->appliedFiltersData()) + (\trim($search) !== '' ? 1 : 0) > 0)
+                            <button type="button"
+                                x-on:click="clearAllFilters()"
+                                @class($this->preset()->get('applied-filters.button-clear-all.class', []))>
+                                {{ __('erickcomp_lw_data_table::messages.clear_all_filters_label') }}
+                            </button>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -621,6 +629,13 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 
                 this.inputSearch = '';
                 this.applySearch(wireHandler);
+            },
+
+            clearAllFilters(wireHandler) {
+                this.inputSearch = '';
+                this.inputFilters = {{ Illuminate\Support\Js::from($this->emptyFilterInputs()) }};
+
+                wireHandler.clearAllFilters();
             },
 
             removeFilter(wireHandler, filter) {

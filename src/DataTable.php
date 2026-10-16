@@ -32,6 +32,10 @@ use Illuminate\View\ComponentAttributeBag;
 use Livewire\Wireable;
 //use ErickComp\LivewireDataTable\Builders\Column\DataColumn;
 
+/**
+ * @property-read ?string $id The "id" attribute of the table, if any (see __get())
+ * @property-read ?string $name The "name" attribute of the table, if any (see __get())
+ */
 class DataTable extends BaseDataTableComponent //implements Wireable
 {
     use FillsComponentAttributeBags;

@@ -178,6 +178,9 @@ return [
                     'class' => ['applied-filter-remove-button'],
                     'content' => 'x',
                 ],
+                'button-clear-all' => [
+                    'class' => ['lw-dt-applied-filters-clear-all'],
+                ],
             ],
 
             'table' => [
@@ -485,6 +488,16 @@ return [
                     .lw-dt .lw-dt-actions-row .lw-dt-applied-filters-container .applied-filter-item {
                         padding: 0.25rem;
                         font-weight: bold;
+                    }
+
+                    .lw-dt .lw-dt-actions-row .lw-dt-applied-filters-container .lw-dt-applied-filters-clear-all {
+                        padding: 0.25rem;
+                        border: none;
+                        background: none;
+                        color: inherit;
+                        font: inherit;
+                        text-decoration: underline;
+                        cursor: pointer;
                     }
 
                     @media (max-width: 1024px) {
@@ -831,6 +844,9 @@ return [
                     'class' => ['btn', 'btn-sm bg-info', 'm-0', 'p-1', 'rounded-left-0', 'applied-filter-remove-button'],
                     'position' => 'right',
                     'content' => '&times;',
+                ],
+                'button-clear-all' => [
+                    'class' => ['btn', 'btn-sm', 'btn-link', 'p-0', 'ml-1'],
                 ],
             ],
 
@@ -1336,6 +1352,9 @@ return [
                     'class' => ['bg-gray-400', 'hover:bg-gray-500', 'text-white', 'text-sm', 'm-0', 'p-1', 'rounded-e', 'applied-filter-remove-button'],
                     'position' => 'right',
                     'content' => '&times;',
+                ],
+                'button-clear-all' => [
+                    'class' => ['ml-1', 'text-sm', 'font-semibold', 'text-indigo-600', 'hover:underline', 'dark:text-indigo-400'],
                 ],
             ],
 

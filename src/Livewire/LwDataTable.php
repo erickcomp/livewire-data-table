@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Js;
 use Illuminate\Support\LazyCollection;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component as LivewireComponent;
 use Livewire\WithPagination;
@@ -231,6 +232,10 @@ class LwDataTable extends LivewireComponent
 
             removeFilter(filter) {
                 this.dtData().removeFilter(\$wire, filter);
+            },
+
+            clearAllFilters() {
+                this.dtData().clearAllFilters(\$wire);
             },
 
             toggleFiltersContainer(event) {
@@ -572,17 +577,72 @@ class LwDataTable extends LivewireComponent
         $this->resetSelectionAfterFilterChange();
     }
 
+    /**
+     * Drops the search and all the filters at once (the "Clear all" button next to the active filters)
+     */
+    public function clearAllFilters(): void
+    {
+        $this->search = '';
+        $this->filters = [];
+        $this->rawFilters = [];
+
+        $this->resetPage($this->pageNameUrlParam());
+        $this->resetSelectionAfterFilterChange();
+    }
+
+    /**
+     * Re-renders the table, e.g. after its rows were changed elsewhere on the page:
+     *
+     *     Livewire.dispatch('lw-dt-refresh', { table: 'products' })   // in the browser
+     *     $this->dispatch('lw-dt-refresh', table: 'products');        // in another Livewire component
+     *
+     * Without a table, every table on the page re-renders; with one, only the table with that id or name does.
+     */
+    #[On('lw-dt-refresh')]
+    public function refreshTable(?string $table = null): void
+    {
+        if ($table !== null && !\in_array($table, [$this->dataTable->id, $this->dataTable->name], true)) {
+            $this->skipRender();
+
+            return;
+        }
+
+        // Rows may have come or gone: render() only recounts them when the rows tell their total
+        if ($this->selectionMode === Selection::MODE_ALL) {
+            $this->matchingTotal = $this->makeSelection(Selection::MODE_ALL)->count();
+        }
+    }
+
     public function computeInitialFilters()
     {
         $fullFilters = [];
         foreach ($this->dataTable->filters?->filtersItems ?? [] as $filterItem) {
             $filterValue = $this->filters[$filterItem->dataField][$filterItem->name]
-                ?? ($filterItem->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '');
+                ?? static::emptyFilterInputValue($filterItem);
 
             $fullFilters[$filterItem->dataField][$filterItem->name] = $filterValue;
         }
 
         return $fullFilters;
+    }
+
+    /**
+     * The filter inputs with no value, as computeInitialFilters() shapes them
+     */
+    protected function emptyFilterInputs(): array
+    {
+        $emptyFilters = [];
+
+        foreach ($this->dataTable->filters->filtersItems ?? [] as $filterItem) {
+            $emptyFilters[$filterItem->dataField][$filterItem->name] = static::emptyFilterInputValue($filterItem);
+        }
+
+        return $emptyFilters;
+    }
+
+    protected static function emptyFilterInputValue(Filter $filter): string|array
+    {
+        return $filter->mode === Filter::MODE_RANGE ? ['from' => '', 'to' => ''] : '';
     }
 
     public function shouldShowFiltersContainer(): bool

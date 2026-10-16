@@ -12,6 +12,7 @@ return [
     'range_filter_label_from' => 'From',
     'range_filter_label_to' => 'To',
     'apply_filters_button_label' => 'Apply filters',
+    'clear_all_filters_label' => 'Clear all',
     'multi_select_filter_label_final_glue' => ', and ',
     'reload_required' => "This page needs to be refreshed before executing this action.\n\nPress OK to continue",
     'bulk_actions_label' => 'Actions',

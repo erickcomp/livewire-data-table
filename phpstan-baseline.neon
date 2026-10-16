@@ -187,12 +187,6 @@ parameters:
 			path: src/DataTable.php
 
 		-
-			message: '#^Access to an undefined property ErickComp\\LivewireDataTable\\DataTable\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/DataTable.php
-
-		-
 			message: '#^Call to method modelPerPage\(\) on an unknown class ErickComp\\LivewireDataTable\\EloquentBuilderDataSource\.$#'
 			identifier: class.notFound
 			count: 1

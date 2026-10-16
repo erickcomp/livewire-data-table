@@ -12,6 +12,7 @@ return [
     'range_filter_label_from' => 'De',
     'range_filter_label_to' => 'Até',
     'apply_filters_button_label' => 'Aplicar filtros',
+    'clear_all_filters_label' => 'Limpar tudo',
     'multi_select_filter_label_final_glue' => ' e ',
     'reload_required' => "Esta página precisa ser atualizada antes de executar esta ação.\n\nPressione OK para continuar",
     'bulk_actions_label' => 'Ações',

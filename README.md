@@ -24,6 +24,7 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 - **Row-level customization** — dynamic `@rowClass`, `@rowStyle`, and `@rowAttributes` directives
 - **Custom footer** — arbitrary footer content via `<x-data-table.footer>`
 - **Query string sync** — search, filters, sorting, and pagination state reflected in the URL
+- **Clear all and refresh** — a button to drop the search and filters at once, and an `lw-dt-refresh` event to re-render a table from anywhere on the page
 - **Internationalization** — ships with English and Brazilian Portuguese translations
 - **Eloquent customization interfaces** — override search, filtering, sorting, and query building at the model level
 - **Auto-discovery** — zero-config service provider registration
@@ -239,6 +240,8 @@ mounts (like `x-mask`) doesn't fire a request when the page opens.
     <x-data-table.column title="Date" data-field="created_at" sortable />
 </x-data-table>
 ```
+
+The search and the filters in use show up above the table as chips, each with a button to remove it, followed by a **Clear all** button that removes them all at once (the column searches are left as they are).
 
 #### Filter Input Types
 
@@ -590,6 +593,22 @@ Other details:
 ],
 ```
 
+### Refreshing the Table
+
+The rows are fetched again on every request the table makes. When they change elsewhere on the page (a form in a modal, another component), dispatch the `lw-dt-refresh` event to show the change right away:
+
+```js
+// In the browser
+Livewire.dispatch('lw-dt-refresh', { table: 'products' })
+```
+
+```php
+// In another Livewire component
+$this->dispatch('lw-dt-refresh', table: 'products');
+```
+
+`table` is the `id` or `name` given to the `<x-data-table>`; without it, every table on the page refreshes. The search, filters, sorting, page and selection are kept, and the count of a **Select all** is brought up to date.
+
 ### Pagination
 
 The component supports multiple pagination types via the `data-src-pagination` attribute:
@@ -938,7 +957,7 @@ Each preset can configure:
 - `actions` — search, filters, per-page, records counter and bulk actions container
 - `search` — search input and button styling (with icon configuration)
 - `filters` — filter container, toggle button, apply button, individual filter items, and input styling per type
-- `applied-filters` — active filter badges and removal buttons
+- `applied-filters` — active filter badges, removal buttons and the "Clear all" button (`button-clear-all`)
 - `table` — wrapper, thead, tbody (including the selected row class), tfoot, th sorting indicators, and the selection column, checkboxes and menu (`table.selection`)
 - `loader-overlay` — loading spinner template and CSS
 - `pagination` — views, container classes, per-page defaults
