@@ -7,20 +7,8 @@ parameters:
 			path: src/Data/BuildsDataTableQuery.php
 
 		-
-			message: '#^Call to function is_callable\(\) with non\-empty\-list\<mixed\>&callable\(\)\: mixed will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: src/Data/CallableDataSource.php
-
-		-
 			message: '#^PHPDoc tag @var for property ErickComp\\LivewireDataTable\\Data\\CallableDataSource\:\:\$dataSource with type \(callable\)\|string is not subtype of native type array\|object\|string\.$#'
 			identifier: property.phpDocType
-			count: 1
-			path: src/Data/CallableDataSource.php
-
-		-
-			message: '#^Ternary operator condition is always true\.$#'
-			identifier: ternary.alwaysTrue
 			count: 1
 			path: src/Data/CallableDataSource.php
 
