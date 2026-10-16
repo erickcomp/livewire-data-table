@@ -34,7 +34,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | Tarefa | Depende de | Integra com (se já existir) | Status |
 |---|---|---|---|
 | T0 Infra: workbench + testes de navegador | — | — | ☑ |
-| T0.1 Correção: montagem da tabela no Livewire 3 | — | T0 | ☐ |
+| T0.1 Correção: montagem da tabela no Livewire 3 | — | T0 | ☑ |
 | T1 Seleção no servidor (`Selection` + dados não paginados) | — | — | ☐ |
 | T2 Seleção de linhas na UI + contador | T1 | T0 | ☐ |
 | T3 Bulk actions | T1, T2 | T0 | ☐ |
@@ -50,6 +50,11 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
   - A suíte `Browser` ficou fora das suítes padrão (`defaultTestSuite="Unit,Feature"` no `phpunit.xml`). Por isso `composer test`/`vendor/bin/pest` seguem sem Node, e os testes de navegador rodam com `composer test:browser`.
   - O `pestphp/pest-plugin-browser` 4.3 exige Playwright ≥ 1.59.1 (`package.json` + `package-lock.json`).
   - Achado 1: com **Livewire 3** (3.8.10), 46 testes Feature já falham no código do `master` e a tabela da demo aparecia vazia ("No data found"). A investigação mostrou que a tabela vazia vinha de views compiladas no Livewire 4 que ficaram no cache; no uso normal com Livewire 3, ela funciona. O problema real virou a tarefa **T0.1**.
+- **T0.1:**
+  - O hook monta a tabela a partir das 4 formas. Um valor que não seja `DataTable` continua dando `TypeError` em `mountDataTable()`, como antes.
+  - `tests/Feature/LwDataTable/MountTest.php` renderiza `@livewire('lw-data-table', [...])` com as duas chaves e chama `Livewire::test()` com as duas. Sem a correção, falha nos dois casos cruzados de cada versão; com ela, a suíte passa inteira no Livewire 3.8 e no 4.4 (309 testes + 4 de navegador).
+  - CI: duas entradas com Livewire 3 na matriz `tests` (PHP 8.3/Laravel 12 e PHP 8.4/Laravel 13), e o job `browser` virou matriz Livewire 3/4.
+  - No Livewire 3, o PHPStan acusa 2 erros que já existiam: `parent::withHtmlAttributes()` só existe no Livewire 4 (o Livewire 3 nunca chama o método) e uma entrada do baseline fica sem uso. O job de PHPStan do CI roda no Livewire 4, por isso não é afetado.
   - Achado 2 (é o problema do `perPage` da T6, confirmado no navegador): com `per-page="10,25,50"` o select mostra 10, mas a tabela traz 15 linhas. A demo usa `per-page="15,30,60"` para não depender disso; a T6 deve trocar para valores que exponham o problema e cobri-lo com um teste de navegador.
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
