@@ -37,6 +37,6 @@ it('filters the rows with the global search', function () {
 it('navigates between pages', function () {
     visit('/demo')
         ->click('[wire\\:click^="gotoPage(2,"]')
-        ->assertSeeIn('tbody > tr:first-child > td:first-child', '16')
+        ->assertSeeIn('tbody > tr:first-child > td:nth-child(2)', '16')
         ->assertNoJavaScriptErrors();
 });

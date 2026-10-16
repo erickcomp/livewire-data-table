@@ -17,6 +17,7 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 - **Sorting** — clickable column headers with ascending/descending/none toggle cycle
 - **Pagination** — length-aware, simple, and cursor pagination with custom views for Bootstrap and Tailwind
 - **Per-page selector** — configurable options with `max` and `all` special values
+- **Row selection** — a checkbox per row, a page checkbox, a "select all matching rows" menu and a records counter, à la Magento's admin grid
 - **Loading overlay** — built-in spinner overlay with Livewire loading states
 - **Custom column rendering** — use Blade content inside column definitions for full control
 - **Row-level customization** — dynamic `@rowClass`, `@rowStyle`, and `@rowAttributes` directives
@@ -485,6 +486,25 @@ Both types are merged and available in all `Blade::render()` contexts:
 - For non-serializable dependencies, resolve them from the service container inside the template: `{{ app(MyService::class)->method() }}`.
 - View data variables cannot override internal variables (`$__row`, `$loop`, `$attributes`, `$___lwDataTable`). Internal variables always take precedence.
 
+### Row Selection
+
+Add `selectable` to the table to get a column of checkboxes and a selection menu, as in Magento's admin grids:
+
+```blade
+<x-data-table :data-src="App\Models\User::class" preset="tailwind3v1" selectable>
+    <x-data-table.column title="Name" data-field="name" />
+</x-data-table>
+```
+
+- Each row has a checkbox; the one in the header checks or unchecks the whole page, and shows as indeterminate when only part of the page is checked.
+- The menu next to it offers **Select all (N)** (every row matching the current search and filters, across all pages), **Deselect all**, **Select all on this page** and **Deselect all on this page**. After **Select all**, the rows you uncheck are left out.
+- Rows are identified by the `data-identity-column` (`id` by default). Checked rows stay checked as you move between pages, sort the table or change the number of rows per page.
+- Changing the search, the filters or a column search drops the selection, since it may no longer match the rows. With `preserve-selection-on-filter`, the rows checked one by one stay checked (a **Select all** is still dropped).
+- The counter above the table reads "120 records found (2 selected)". It shows on selectable tables, and on any other table with `records-count` (or hide it with `records-count="false"`). Simple and cursor paginators do not know the total, so only the selected count shows then.
+- Checking rows needs no request to the server: the selection travels with the next one. It holds at most `max-selected-ids` ids (config, 10000 by default).
+
+The selection column takes attributes with the `selection-th-`, `selection-td-` and `selection-checkbox-` prefixes. A custom `<x-data-table.footer>` should account for the extra column in its `colspan`s.
+
 ### Pagination
 
 The component supports multiple pagination types via the `data-src-pagination` attribute:
@@ -563,6 +583,9 @@ For large datasets, you can increase the memory limit per table:
 | `pagination-view` | `string` | Preset default | Custom pagination view |
 | `loading-delay-modifier` | `string` | `null` | Livewire loading delay modifier |
 | `disable-loader-overlay` | `bool` | `false` | Disable the preset's loading spinner overlay for this table |
+| `selectable` | `bool` | `false` | Adds row selection: a column of checkboxes and the selection menu |
+| `preserve-selection-on-filter` | `bool` | `false` | Keep the rows checked one by one when the search or the filters change |
+| `records-count` | `bool` | Same as `selectable` | Show the "N records found (M selected)" counter |
 | `data-identity-column` | `string` | `'id'` | Row identity column |
 | `php-max-memory` | `string` | `null` | PHP memory_limit override |
 | `dynamic-view-data` | `array` | `[]` | Per-user/per-request variables passed to Blade renderers (encrypted, travels over the wire) |
@@ -581,6 +604,9 @@ HTML attributes prefixed with specific namespaces are forwarded to internal elem
 | `thead-search-th-` | Column search `<th>` |
 | `th-` | Header `<th>` |
 | `tbody-` | `<tbody>` |
+| `selection-th-` | Selection column `<th>` |
+| `selection-td-` | Selection column `<td>` |
+| `selection-checkbox-` | Selection checkboxes |
 | `tbody-tr-` | Body `<tr>` |
 | _(no prefix)_ | `<table>` |
 
@@ -796,11 +822,11 @@ Presets are resolved from two config locations (first match wins):
 Each preset can configure:
 
 - `main-container` — wrapper element classes
-- `actions` — search, filters, per-page, and bulk actions container
+- `actions` — search, filters, per-page, records counter and bulk actions container
 - `search` — search input and button styling (with icon configuration)
 - `filters` — filter container, toggle button, apply button, individual filter items, and input styling per type
 - `applied-filters` — active filter badges and removal buttons
-- `table` — wrapper, thead, tbody, tfoot, th sorting indicators
+- `table` — wrapper, thead, tbody (including the selected row class), tfoot, th sorting indicators, and the selection column, checkboxes and menu (`table.selection`)
 - `loader-overlay` — loading spinner template and CSS
 - `pagination` — views, container classes, per-page defaults
 - `reload-alert` — behavior when the serialized component cache expires

@@ -7,6 +7,8 @@ return [
     'query-string-search' => 'search',
     'query-string-filters' => 'filters',
     'query-string-param-cols-search' => 'cols-search',
+    // Most ids a row selection may hold (selected rows, or rows left out of "select all")
+    'max-selected-ids' => 10000,
     'presets' => [
         'empty' => [
             'extends' => null,
@@ -53,6 +55,9 @@ return [
                     ],
                     'per-page-select' => [
                         'class' => ['lw-dt-per-page-select'],
+                    ],
+                    'records-count' => [
+                        'class' => ['lw-dt-records-count'],
                     ],
                 ],
             ],
@@ -235,7 +240,22 @@ return [
                         'nodatafound' => [
                             'class' => ['lw-dt-nodatafound-td'],
                         ],
+                        'selected' => [
+                            'class' => ['lw-dt-selected-row'],
+                        ],
                     ],
+                ],
+                'selection' => [
+                    'th' => ['class' => ['lw-dt-selection-th']],
+                    'td' => ['class' => ['lw-dt-selection-td']],
+                    'checkbox' => ['class' => ['lw-dt-selection-checkbox']],
+                    'menu-container' => ['class' => ['lw-dt-selection-menu-container']],
+                    'menu-button' => [
+                        'class' => ['lw-dt-selection-menu-button'],
+                        'icon' => '&#9662;',
+                    ],
+                    'menu' => ['class' => ['lw-dt-selection-menu']],
+                    'menu-item' => ['class' => ['lw-dt-selection-menu-item']],
                 ],
                 'tfoot' => [
                     'class' => ['lw-dt-tfoot'],
@@ -503,6 +523,67 @@ return [
                         align-items: flex-end;
                         gap: 10px;
                     }
+
+                    .lw-dt .lw-dt-bulk-actions-and-per-page-container {
+                        display: flex;
+                        flex-wrap: wrap;
+                        justify-content: space-between;
+                        align-items: center;
+                        gap: 10px;
+                    }
+
+                    .lw-dt .lw-dt-records-count {
+                        display: flex;
+                        gap: 0.25rem;
+                    }
+
+                    .lw-dt .lw-dt-selection-th,
+                    .lw-dt .lw-dt-selection-td {
+                        width: 1%;
+                        white-space: nowrap;
+                    }
+
+                    .lw-dt .lw-dt-selection-menu-button {
+                        padding: 0 0.25rem;
+                        border: none;
+                        background: none;
+                        font: inherit;
+                        cursor: pointer;
+                    }
+
+                    .lw-dt .lw-dt-selection-menu {
+                        min-width: 14rem;
+                        margin: 0.25rem 0 0;
+                        padding: 0.25rem 0;
+                        list-style: none;
+                        background: #fff;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                        font-weight: normal;
+                        text-align: left;
+                    }
+
+                    .lw-dt .lw-dt-selection-menu-item {
+                        display: block;
+                        width: 100%;
+                        padding: 0.375rem 1rem;
+                        border: none;
+                        background: none;
+                        font: inherit;
+                        text-align: left;
+                        white-space: nowrap;
+                        cursor: pointer;
+                    }
+
+                    .lw-dt .lw-dt-selection-menu-item:hover,
+                    .lw-dt .lw-dt-selection-menu-item:focus {
+                        background: #f0f0f0;
+                    }
+
+                    .lw-dt tr.lw-dt-selected-row {
+                        background: #eef4ff;
+                    }
                 </style>
                 CSS,
             ],
@@ -541,6 +622,9 @@ return [
                         'select' => [
                             'class' => ['form-control'],
                         ],
+                    ],
+                    'records-count' => [
+                        'class' => ['d-flex', 'align-items-center', 'text-muted', 'mr-3'],
                     ],
 
                 ],
@@ -744,7 +828,22 @@ return [
                         'nodatafound' => [
                             'class' => ['lw-dt-nodatafound-td', 'text-center', 'font-weight-bold'],
                         ],
+                        'selected' => [
+                            'class' => ['table-active'],
+                        ],
                     ],
+                ],
+                'selection' => [
+                    'th' => ['class' => ['text-nowrap']],
+                    'td' => ['class' => ['text-nowrap']],
+                    'checkbox' => ['class' => ['align-middle']],
+                    'menu-container' => ['class' => ['dropdown', 'd-inline-block']],
+                    'menu-button' => [
+                        'class' => ['btn', 'btn-link', 'btn-sm', 'p-0', 'ml-1', 'text-reset', 'dropdown-toggle'],
+                        'icon' => '',
+                    ],
+                    'menu' => ['class' => ['dropdown-menu', 'show', 'font-weight-normal']],
+                    'menu-item' => ['class' => ['dropdown-item']],
                 ],
                 'tfoot' => [
                     'class' => ['lw-dt-tfoot'],
@@ -950,6 +1049,9 @@ return [
                                 'dark:border-gray-600',
                             ],
                         ],
+                    ],
+                    'records-count' => [
+                        'class' => ['flex', 'items-center', 'gap-1', 'text-sm', 'text-gray-600', 'dark:text-gray-300'],
                     ],
                 ],
             ],
@@ -1218,7 +1320,20 @@ return [
                     'tr' => [
                         'td' => ['class' => ['px-3', 'py-2', 'dark:text-gray-200']],
                         'nodatafound' => ['class' => ['text-center', 'font-semibold', 'text-gray-500', 'dark:text-gray-400', 'py-4']],
+                        'selected' => ['class' => ['bg-indigo-50', 'dark:bg-gray-700']],
                     ],
+                ],
+                'selection' => [
+                    'th' => ['class' => ['w-px', 'whitespace-nowrap']],
+                    'td' => ['class' => ['w-px', 'whitespace-nowrap']],
+                    'checkbox' => ['class' => ['rounded', 'border-gray-300', 'text-indigo-600', 'focus:ring-indigo-500', 'dark:border-gray-600', 'dark:bg-gray-700']],
+                    'menu-container' => ['class' => ['inline-block']],
+                    'menu-button' => [
+                        'class' => ['ml-1', 'px-1', 'text-gray-500', 'hover:text-gray-700', 'dark:text-gray-400', 'dark:hover:text-gray-200'],
+                        'icon' => '&#9662;',
+                    ],
+                    'menu' => ['class' => ['mt-1', 'w-56', 'py-1', 'rounded-md', 'bg-white', 'dark:bg-gray-800', 'shadow-lg', 'ring-1', 'ring-black/5', 'text-left', 'font-normal']],
+                    'menu-item' => ['class' => ['block', 'w-full', 'px-4', 'py-2', 'text-left', 'text-sm', 'text-gray-700', 'dark:text-gray-200', 'hover:bg-gray-100', 'dark:hover:bg-gray-700']],
                 ],
                 'tfoot' => [
                     'class' => ['bg-gray-50', 'text-xs', 'text-gray-600'],

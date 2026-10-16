@@ -5,6 +5,7 @@ namespace Tests\Fixtures;
 use ErickComp\LivewireDataTable\Livewire\LwDataRetrievalParams;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
 /**
@@ -29,6 +30,11 @@ class TestSelectionDataProvider
     public function paginatedBuilder(LwDataRetrievalParams $params): LengthAwarePaginator
     {
         return $params->applyAndPaginate(TestProduct::query());
+    }
+
+    public function simplePaginatedBuilder(LwDataRetrievalParams $params): Paginator
+    {
+        return $params->applyAndSimplePaginate(TestProduct::query());
     }
 
     public function collection(LwDataRetrievalParams $params): Collection

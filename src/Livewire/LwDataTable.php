@@ -67,7 +67,29 @@ class LwDataTable extends LivewireComponent
     #[Locked]
     public string $dt;
 
+    /** One of the Selection::MODE_* constants. Only actions change it (selectAllMatching(), deselectAll()) */
+    #[Locked]
+    public string $selectionMode = Selection::MODE_IDS;
+
+    /**
+     * The ids of the rows picked in the "ids" selection mode, or of the ones left out in the "all" mode. The browser
+     * changes it as rows are (un)checked, without a request: it travels with the next one.
+     *
+     * @var string[]
+     */
+    public array $selectedIds = [];
+
+    /** How many rows the "all" selection mode covers, before exclusions */
+    #[Locked]
+    public ?int $matchingTotal = null;
+
     protected DataTable $dataTable;
+
+    /**
+     * Set when an update changes the search or the filters. The selection is dropped once all the updates of the request
+     * are in: the same request may carry rows (un)checked meanwhile, applied after the search or before it.
+     */
+    protected bool $selectionResetPending = false;
 
     //protected string $preset = 'vanilla';
     protected array $processedFilters = [];
@@ -81,6 +103,7 @@ class LwDataTable extends LivewireComponent
 
     public function render()
     {
+        $this->applyPendingSelectionReset();
         $this->setupMaxMemory();
         $this->processFilters();
         //$this->setupSearchAttributes();
@@ -94,6 +117,11 @@ class LwDataTable extends LivewireComponent
             $this->paginators[$rows->getPageName()] = $rows->lastPage();
 
             $rows = $this->getTableData();
+        }
+
+        // When the rows tell how many match, the count of the "all" selection is kept current for free
+        if ($this->selectionMode === Selection::MODE_ALL && ($recordsTotal = $this->recordsTotal($rows)) !== null) {
+            $this->matchingTotal = $recordsTotal;
         }
 
         $viewData = [
@@ -193,7 +221,7 @@ class LwDataTable extends LivewireComponent
 
             toggleFiltersContainer(event) {
                 this.dtData().toggleFiltersContainer(\$wire);
-            }
+            }{$this->selectionXData()}
         };";
 
         return $xData;
@@ -205,11 +233,115 @@ class LwDataTable extends LivewireComponent
         // return \trim($xData);
     }
 
+    /**
+     * The Alpine methods behind the row selection, added to xData() when rows can be selected
+     */
+    protected function selectionXData(): string
+    {
+        if (!$this->dataTable->selectable) {
+            return '';
+        }
+
+        $selectAllMode = Selection::MODE_ALL;
+
+        return ",
+
+            /* Row selection: \$wire.selectedIds lists the selected rows, or the ones left out in the 'all' mode. Changes
+               to it travel with the next request. */
+            isRowSelected(id) {
+                const listed = \$wire.selectedIds.includes(id);
+
+                return \$wire.selectionMode === '{$selectAllMode}' ? !listed : listed;
+            },
+
+            toggleRow(id) {
+                this.setRowsSelected([id], !this.isRowSelected(id));
+            },
+
+            selectPage(ids) {
+                this.setRowsSelected(ids, true);
+            },
+
+            deselectPage(ids) {
+                this.setRowsSelected(ids, false);
+            },
+
+            setRowsSelected(ids, selected) {
+                const listed = \$wire.selectionMode === '{$selectAllMode}' ? !selected : selected;
+                const others = \$wire.selectedIds.filter(id => !ids.includes(id));
+
+                \$wire.selectedIds = listed ? [...others, ...ids] : others;
+            },
+
+            pageSelectionState(ids) {
+                const selected = ids.filter(id => this.isRowSelected(id)).length;
+
+                return selected === 0 ? 'none' : (selected === ids.length ? 'all' : 'some');
+            },
+
+            get selectedCount() {
+                return \$wire.selectionMode === '{$selectAllMode}'
+                    ? Math.max((\$wire.matchingTotal ?? 0) - \$wire.selectedIds.length, 0)
+                    : \$wire.selectedIds.length;
+            },
+
+            selectAllMatching() {
+                \$wire.selectAllMatching();
+            },
+
+            deselectAll() {
+                if (\$wire.selectionMode === '{$selectAllMode}') {
+                    \$wire.deselectAll();
+                } else {
+                    \$wire.selectedIds = [];
+                }
+            }";
+    }
+
     public function updating(string $property, $value)
     {
         if (\in_array($property, ['search', 'filters', 'perPage']) || \str_starts_with($property, 'columnsSearch.')) {
             $this->resetPage($this->pageNameUrlParam());
         }
+
+        if (\in_array($property, ['search', 'filters', 'columnsSearch']) || \str_starts_with($property, 'filters.') || \str_starts_with($property, 'columnsSearch.')) {
+            $this->selectionResetPending = true;
+        }
+    }
+
+    /**
+     * Selects every row matching the current search and filters, across all pages. Rows unchecked afterwards are
+     * listed in $selectedIds as exclusions.
+     */
+    public function selectAllMatching(): void
+    {
+        if (!$this->dataTable->selectable) {
+            return;
+        }
+
+        $this->applyPendingSelectionReset();
+
+        $this->selectionMode = Selection::MODE_ALL;
+        $this->selectedIds = [];
+        $this->matchingTotal = $this->makeSelection(Selection::MODE_ALL)->count();
+    }
+
+    public function deselectAll(): void
+    {
+        $this->selectionMode = Selection::MODE_IDS;
+        $this->selectedIds = [];
+        $this->matchingTotal = null;
+    }
+
+    /**
+     * $selectedIds is written by the browser, possibly one index at a time within a request: it is cleaned up once
+     * all the updates and actions of the request are done.
+     */
+    public function dehydrate(): void
+    {
+        $this->applyPendingSelectionReset();
+
+        $this->selectedIds = $this->normalizedSelectedIds();
     }
 
     /**
@@ -285,6 +417,8 @@ class LwDataTable extends LivewireComponent
 
         $this->rawFilters = $inputFilters;
         $this->filters = $filteredFilters;
+
+        $this->resetSelectionAfterFilterChange();
     }
 
     public function computeInitialFilters()
@@ -599,6 +733,95 @@ class LwDataTable extends LivewireComponent
         $this->processFilters();
 
         return new Selection($dataSource, $this->buildRetrievalParams(), $this->dataTable->dataIdentityColumn, $mode, $ids);
+    }
+
+    /**
+     * The rows the user picked. Not public on purpose (see makeSelection()): actions get it injected.
+     */
+    protected function selection(): Selection
+    {
+        $this->applyPendingSelectionReset();
+
+        return $this->makeSelection($this->selectionMode, $this->normalizedSelectedIds());
+    }
+
+    protected function selectedCount(): int
+    {
+        return $this->selection()->count();
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function normalizedSelectedIds(): array
+    {
+        $maxSelectedIds = (int) \config('erickcomp-livewire-data-table.max-selected-ids', 10000);
+
+        return \array_slice(Selection::normalizeIds($this->selectedIds), 0, \max($maxSelectedIds, 0));
+    }
+
+    /**
+     * Rows picked under other search terms or filters may no longer be among the table's rows: the selection is
+     * dropped, as in Magento's grids. With preserve-selection-on-filter, rows picked one by one stay selected (the
+     * data source still leaves out the ones that no longer match); a selection of "all" the rows always goes, since
+     * "all" now means other rows.
+     */
+    protected function applyPendingSelectionReset(): void
+    {
+        if ($this->selectionResetPending) {
+            $this->selectionResetPending = false;
+            $this->resetSelectionAfterFilterChange();
+        }
+    }
+
+    protected function resetSelectionAfterFilterChange(): void
+    {
+        if ($this->selectionMode === Selection::MODE_IDS && $this->dataTable->preserveSelectionOnFilter) {
+            return;
+        }
+
+        $this->deselectAll();
+    }
+
+    /**
+     * The identity of each row on the current page, as the browser refers to them
+     *
+     * @return string[]
+     */
+    protected function pageRowsIds(mixed $rows): array
+    {
+        $rows = $rows instanceof PaginatorContract || $rows instanceof CursorPaginatorContract
+            ? $rows->items()
+            : $rows;
+
+        $ids = [];
+
+        foreach ($rows as $row) {
+            $ids[] = $this->rowSelectionId($row);
+        }
+
+        return Selection::normalizeIds($ids);
+    }
+
+    protected function rowSelectionId(mixed $row): string
+    {
+        $id = \data_get($row, $this->dataTable->dataIdentityColumn);
+
+        return \is_scalar($id) || $id instanceof \Stringable ? (string) $id : '';
+    }
+
+    /**
+     * How many rows match the current search and filters, when the rows tell (a length-aware paginator, or all the
+     * rows at once). Simple and cursor paginators do not know it.
+     */
+    protected function recordsTotal(mixed $rows): ?int
+    {
+        return match (true) {
+            $rows instanceof LengthAwarePaginatorContract => $rows->total(),
+            $rows instanceof Collection, $rows instanceof LazyCollection => $rows->count(),
+            \is_array($rows) => \count($rows),
+            default => null,
+        };
     }
 
     protected function sanitizeSortBy(string $sortBy): string

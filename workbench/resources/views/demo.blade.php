@@ -26,7 +26,7 @@
     </nav>
 
     <main style="padding: 1rem;">
-        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" per-page="15,30,60" id="products">
+        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" per-page="15,30,60" id="products" selectable>
             <x-data-table.search data-fields="name,category" />
 
             <x-data-table.filters>

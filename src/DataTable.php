@@ -101,6 +101,18 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     public ComponentAttributeBag $thAttributes;
     public ComponentAttributeBag $tbodyAttributes;
     public ComponentAttributeBag $tbodyTrAttributes;
+    public ComponentAttributeBag $selectionThAttributes;
+    public ComponentAttributeBag $selectionTdAttributes;
+    public ComponentAttributeBag $selectionCheckboxAttributes;
+
+    /** Whether rows can be selected: adds a column of checkboxes and the selection menu */
+    public bool $selectable;
+
+    /** Whether ids picked one by one stay selected when the search or the filters change */
+    public bool $preserveSelectionOnFilter;
+
+    /** Whether the "N records found (M selected)" counter shows up */
+    public bool $showRecordsCount;
     //public ComponentAttributeBag $tbodyTdAttributes;
     //public ComponentAttributeBag $tfootAttributes;
     //public ComponentAttributeBag $tfootTrAttributes;
@@ -184,6 +196,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         public string $dataIdentityColumn = 'id',
         ?string $loadingDelayModifier = null,
         public bool $disableLoaderOverlay = false,
+        bool|string $selectable = false,
+        bool|string $preserveSelectionOnFilter = false,
+        bool|string|null $recordsCount = null,
 
 
         public array $actions = [],
@@ -266,6 +281,12 @@ class DataTable extends BaseDataTableComponent //implements Wireable
 
         $this->perPageOptions = $perPage;
 
+        $this->selectable = static::parseBooleanAttribute('selectable', $selectable);
+        $this->preserveSelectionOnFilter = static::parseBooleanAttribute('preserve-selection-on-filter', $preserveSelectionOnFilter);
+        $this->showRecordsCount = $recordsCount === null
+            ? $this->selectable
+            : static::parseBooleanAttribute('records-count', $recordsCount);
+
         // $this->searchable = match (true) {
         //     $searchable === false => [],
         //     \is_string($searchable) => \array_map(fn($item) => \trim($item), \explode(',', $searchable)),
@@ -286,6 +307,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         $this->thAttributes = new ComponentAttributeBag();
         $this->tbodyAttributes = new ComponentAttributeBag();
         $this->tbodyTrAttributes = new ComponentAttributeBag();
+        $this->selectionThAttributes = new ComponentAttributeBag();
+        $this->selectionTdAttributes = new ComponentAttributeBag();
+        $this->selectionCheckboxAttributes = new ComponentAttributeBag();
     }
 
     public function allViewData(): array
@@ -386,7 +410,8 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     {
         return $this->isSearchable()
             || $this->isFilterable()
-            || $this->hasPerPageOptions();
+            || $this->hasPerPageOptions()
+            || $this->showRecordsCount;
     }
 
     public function preset(): Preset
@@ -821,6 +846,9 @@ class DataTable extends BaseDataTableComponent //implements Wireable
     {
         return [
             0 => 'tableAttributes', //default
+            'selection-th-' => 'selectionThAttributes',
+            'selection-td-' => 'selectionTdAttributes',
+            'selection-checkbox-' => 'selectionCheckboxAttributes',
             'table-wrapper-' => 'tableWrapperAttributes',
             'container-' => 'containerAttributes',
             'thead-tr-' => 'theadTrAttributes',
@@ -832,6 +860,26 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             'tbody-' => 'tbodyAttributes',
         ];
     }
+
+    /**
+     * Boolean component attributes come as true when given with no value (<x-data-table selectable>) and as strings
+     * otherwise (selectable="false")
+     */
+    protected static function parseBooleanAttribute(string $attribute, bool|string $value): bool
+    {
+        if (\is_bool($value)) {
+            return $value;
+        }
+
+        $parsed = \filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+
+        if ($parsed === null) {
+            throw new \ValueError("Invalid value for the attribute [$attribute]: \"$value\". It must be a boolean (true, false, 1, 0, yes, no, on or off)");
+        }
+
+        return $parsed;
+    }
+
     protected function getDefaultPerPageOptions(): array
     {
         // if (\is_a($this->dataSrc, EloquentModel::class, true)) {

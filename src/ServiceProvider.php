@@ -67,6 +67,7 @@ class ServiceProvider extends LaravelAbstractServiceProvider
     protected function registerPaginationViews()
     {
         $this->loadViewsFrom(__DIR__ . '/DataTable/Pagination/Views', DataTable::VIEWS_NAMESPACE);
+        $this->loadViewsFrom(__DIR__ . '/Livewire/Partials', DataTable::VIEWS_NAMESPACE);
     }
 
     protected function registerEarlyBladeDirectives()

@@ -9,6 +9,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Js;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
@@ -23,6 +24,10 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
 };
 
 ?>
+@php
+    $isSelectable = $this->dataTable->selectable;
+    $recordsTotal = $isSelectable || $this->dataTable->showRecordsCount ? $this->recordsTotal($rows) : null;
+@endphp
 <div {{ $this->dataTable->containerAttributes->class([...($this->preset()->get('main-container.class') ?? []), 'lw-dt']) }}
     x-data="{!! $this->xData() !!}">
     @if($this->dataTable->hasTableActions())
@@ -279,8 +284,16 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 </div>
             @endif
 
-            @if (count($this->dataTable->perPageOptions) > 1)
+            @if (count($this->dataTable->perPageOptions) > 1 || $this->dataTable->showRecordsCount)
                 <div @class($this->preset()->get('actions.bulk-actions-and-per-page.container.class', []))>
+                    @if ($this->dataTable->showRecordsCount)
+                        @include('erickcomp_lw_data_table::records-count', [
+                            'recordsTotal' => $recordsTotal,
+                            'selectable' => $isSelectable,
+                            'preset' => $this->preset(),
+                        ])
+                    @endif
+
                     @if(count($this->dataTable->perPageOptions) > 1)
                         <div @class($this->preset()->get('actions.bulk-actions-and-per-page.per-page.container.class', []))>
 
@@ -317,6 +330,17 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
         <table {{ $this->dataTable->tableAttributes->class($this->preset()->get('table.class')) }}>
             <thead {{ $this->dataTable->theadAttributes->class($this->preset()->get('table.thead.class')) }}>
                 <tr {{ $this->dataTable->theadTrAttributes->class($this->preset()->get('table.thead.tr.class')) }}>
+                    @if ($isSelectable)
+                        @include('erickcomp_lw_data_table::selection-header', [
+                            'thAttributes' => $this->dataTable->selectionThAttributes
+                                ->class($this->preset()->get('table.thead.tr.th.class', []))
+                                ->class($this->preset()->get('table.selection.th.class', [])),
+                            'checkboxAttributes' => $this->dataTable->selectionCheckboxAttributes,
+                            'pageRowsIds' => $this->pageRowsIds($rows),
+                            'recordsTotal' => $recordsTotal,
+                            'preset' => $this->preset(),
+                        ])
+                    @endif
                     @foreach ($this->dataTable->columns as $column)
                         <th {{ $column->buildThAttributes($this->preset()->get('table.thead.tr.th.class'), $shouldAllowSorting) }}>
                             {{ $column->title }}
@@ -338,6 +362,9 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                 
                 @if($this->dataTable->hasSearchableColumns() && $this->hasRows($rows) || !empty(\array_filter($columnsSearch)))
                     <tr {{ $this->dataTable->theadSearchTrAttributes->class($this->preset()->get('table.thead.tr.search.class')) }}>
+                        @if ($isSelectable)
+                            <th {{ $this->dataTable->selectionThAttributes->class($this->preset()->get('table.thead.tr.search.th.class', []))->class($this->preset()->get('table.selection.th.class', [])) }}></th>
+                        @endif
                         @foreach ($this->dataTable->columns as $column)
                             <th {{ $column->buildSearchThAttributes($this->preset()->get('table.thead.tr.search.th.class'), $this->dataTable->theadSearchThAttributes) }}>
                                 @if ($column->isSearchable())
@@ -369,9 +396,31 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                     // cache, whose name is the md5 of the serialized DataTable.
                     $tdPresetClass = $this->preset()->get('table.tbody.tr.td.class');
                     $columnsTdAttributes = [];
+
+                    if ($isSelectable) {
+                        $selectionTdAttributes = $this->dataTable->selectionTdAttributes
+                            ->class($tdPresetClass ?? [])
+                            ->class($this->preset()->get('table.selection.td.class', []));
+                        $selectionCheckboxAttributes = $this->dataTable->selectionCheckboxAttributes
+                            ->class($this->preset()->get('table.selection.checkbox.class', []));
+                        $selectedRowClass = Arr::toCssClasses($this->preset()->get('table.tbody.tr.selected.class', []));
+                    }
                 @endphp
                 @forelse ($rows as $row)
-                    <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}">
+                    @php
+                        $rowSelectionId = $isSelectable ? $this->rowSelectionId($row) : null;
+                    @endphp
+                    <tr {{ $this->dataTable->getTrAttributesForRow($this, $row, $loop) }} wire:key="{{ \data_get($row, $this->dataTable->dataIdentityColumn) }}"
+                        @if ($isSelectable && $selectedRowClass !== '') x-bind:class="{ {{ Js::from($selectedRowClass) }}: isRowSelected({{ Js::from($rowSelectionId) }}) }" @endif>
+                        @if ($isSelectable)
+                            <td {{ $selectionTdAttributes }}>
+                                <input type="checkbox" {{ $selectionCheckboxAttributes }}
+                                    value="{{ $rowSelectionId }}"
+                                    aria-label="{{ __('erickcomp_lw_data_table::messages.select_row') }}"
+                                    x-bind:checked="isRowSelected({{ Js::from($rowSelectionId) }})"
+                                    x-on:change="toggleRow({{ Js::from($rowSelectionId) }})" />
+                            </td>
+                        @endif
                         @foreach ($this->dataTable->columns as $columnKey => $column)
                             @php
                                 // Each cell gets its own copy: a custom renderer receives the bag as $attributes
@@ -409,7 +458,7 @@ $thAttributes = function ($columnThAttributes, $tableThAttributes): ComponentAtt
                     </tr>
                 @empty
                     <tr {{ $this->dataTable->tbodyTrAttributes->class($this->preset()->get('table.tbody.tr.nodatafound.class')) }}>
-                        <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns), 1]) }}">
+                        <td class="lw-dt-nodatafound-td" colspan="{{ max([count($this->dataTable->columns) + ($isSelectable ? 1 : 0), 1]) }}">
                             {{ __('erickcomp_lw_data_table::messages.no_data_found_table_td_text')  }}
                         </td>
                     </tr>
