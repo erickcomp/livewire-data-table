@@ -37,7 +37,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | T0.1 Correção: montagem da tabela no Livewire 3 | — | T0 | ☑ |
 | T1 Seleção no servidor (`Selection` + dados não paginados) | — | — | ☑ |
 | T2 Seleção de linhas na UI + contador | T1 | T0 | ☑ |
-| T3 Bulk actions | T1, T2 | T0 | ☐ |
+| T3 Bulk actions | T1, T2 | T0 | ☑ |
 | T4 "Limpar tudo" + evento de recarga | — | T2 | ☐ |
 | T5 Ações por linha + clique na linha | T1, T3 | T0 | ☐ |
 | T6 Estado na URL (`perPage`) + lembrar o estado na sessão | — | T2 | ☐ |
@@ -83,6 +83,18 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
   - Com o atributo funcionando, apareceu um bug que ele escondia: a paginação por cursor não saía da primeira página. O Livewire guarda o cursor na mesma chave que o número da página, e o `buildRetrievalParams()` chamava `Paginator::resolveCurrentPage()`, cujo resolver troca por 1 qualquer valor que não seja número. Agora `LwDataTable::currentPage()` devolve null em paginação por cursor.
   - A demo aceita `?pagination=`. `tests/Browser/PaginationTest.php` cobre os 4 tipos no navegador e `tests/Feature/LwDataTable/PaginationTypeTest.php` cobre o atributo e a navegação.
   - O `assertCount()` do plugin de browser do Pest para de contar em 100 elementos; para contagens maiores, use `assertScript("document.querySelectorAll(...).length", N)`.
+- **T3:**
+  - `ServerCallable` (`src/Support`) assumiu o parse do `CallableDataSource`, que guarda no cache o mesmo formato de antes (tipo + callable normalizado). Novos: o tipo `invokable_class` (nome de classe invocável) e a detecção por reflection (métodos públicos; os outros só via `__call`/`__callStatic`). Saíram 2 entradas do baseline do PHPStan, e nenhuma entrou.
+  - O retorno de mensagem é `ErickComp\LivewireDataTable\Support\ActionResult` (`success|error|info`), não `BulkActionResult`: a T5 reaproveita a mesma classe e o mesmo `ActionResultHandler` (que também converte `ErrorMessageForUserException` em mensagem de erro, pelo `run()`).
+  - O handler recebe `selection`/`Selection::class`, `option` e `action`/`BulkAction::class`: o `action` é a definição (`BulkAction`), não o nome. O nome está em `$action->name`, e uma string no parâmetro `action` impediria um handler de pedir `BulkAction $action`.
+  - Ordem em `executeBulkAction()`: ação e opção, **gate**, seleção não vazia. O gate vem antes da seleção, para não consultar os dados sem autorização. Ação inexistente ou opção inválida viram mensagem de erro (`bulk_action_invalid`). Gate negado dá 403. As ações que o usuário não pode executar ficam fora do dropdown.
+  - `:count` é trocado pelo total selecionado nas mensagens, tanto as do handler quanto a padrão (`bulk_action_done`). Uma ação por evento despacha `action`, `option`, `ids` e `count`, e não gera mensagem. Uma mensagem de erro mantém a seleção.
+  - `$flash` é `#[Locked]` (o navegador não escreve mensagens) e é limpo no `hydrate()` do request seguinte. Assim, fechar uma mensagem é só esconder no Alpine, sem request; o `wire:key` aleatório evita que uma mensagem nova herde o estado "fechada".
+  - Placeholder: reaproveitei a tradução `bulk_actions_label`, que já existia sem uso, em vez de criar `bulk_actions_placeholder`. Novas chaves: `bulk_actions_no_selection`, `bulk_action_invalid`, `bulk_action_done`, `confirm_default_title`, `confirm_default_message` e `dismiss_message`. Novas chaves de preset: `messages.{container,success,error,info,button-dismiss}.class` e `confirm-dialog` (nenhum preset define o `confirm-dialog`, então vale o `window.confirm`).
+  - O `@assets` do Livewire é deduplicado pela posição na view, não pelo conteúdo: só a primeira tabela da página emite o bloco. Por isso a função de confirmação é emitida por toda tabela, mesmo sem bulk actions (como já acontecia com o `reload-alert`).
+  - `ComponentAttributeBag` não escapa valores ao imprimir. O partial escapa os atributos com `e($valor, false)`, para não codificar de novo o que o Blade já escapou nos atributos com `:`.
+  - O componente `x-data-table.bulk-action` com conteúdo lança erro, e a mensagem não pode conter a tag literal (`<x-...>`): o compilador de componentes do Blade tentaria compilá-la.
+  - A demo do workbench ganhou "Delete" (com confirmação) e "Move to" (com opções). `tests/Browser/BulkActionsTest.php` cobre confirmar e recusar, opções, o modo "todos" com exclusões, a falta de seleção e o fechamento da mensagem. O Playwright fecha os diálogos nativos sozinho, por isso os testes substituem `window.confirm`/`window.alert`.
 
 Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
