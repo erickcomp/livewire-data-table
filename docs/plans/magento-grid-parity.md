@@ -34,6 +34,7 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 | Tarefa | Depende de | Integra com (se já existir) | Status |
 |---|---|---|---|
 | T0 Infra: workbench + testes de navegador | — | — | ☑ |
+| T0.1 Correção: montagem da tabela no Livewire 3 | — | T0 | ☐ |
 | T1 Seleção no servidor (`Selection` + dados não paginados) | — | — | ☐ |
 | T2 Seleção de linhas na UI + contador | T1 | T0 | ☐ |
 | T3 Bulk actions | T1, T2 | T0 | ☐ |
@@ -48,10 +49,10 @@ O objetivo é implementar **bulk actions com marcação por linha** e os demais 
 - **T0:**
   - A suíte `Browser` ficou fora das suítes padrão (`defaultTestSuite="Unit,Feature"` no `phpunit.xml`). Por isso `composer test`/`vendor/bin/pest` seguem sem Node, e os testes de navegador rodam com `composer test:browser`.
   - O `pestphp/pest-plugin-browser` 4.3 exige Playwright ≥ 1.59.1 (`package.json` + `package-lock.json`).
-  - Achado 1: com **Livewire 3** (3.8.10), 46 testes Feature já falham no código do `master` e a tabela da demo renderiza vazia ("No data found"). O passo "testar também com Livewire 3" do protocolo só vai funcionar depois que isso for corrigido; sugerido como tarefa à parte antes da T2.
+  - Achado 1: com **Livewire 3** (3.8.10), 46 testes Feature já falham no código do `master` e a tabela da demo aparecia vazia ("No data found"). A investigação mostrou que a tabela vazia vinha de views compiladas no Livewire 4 que ficaram no cache; no uso normal com Livewire 3, ela funciona. O problema real virou a tarefa **T0.1**.
   - Achado 2 (é o problema do `perPage` da T6, confirmado no navegador): com `per-page="10,25,50"` o select mostra 10, mas a tabela traz 15 linhas. A demo usa `per-page="15,30,60"` para não depender disso; a T6 deve trocar para valores que exponham o problema e cobri-lo com um teste de navegador.
 
-Ordem recomendada: T0 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
+Ordem recomendada: T0 → T0.1 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. Execute **uma tarefa por vez** (todas commitam na mesma branch). **Regra de integração cruzada:** toda tarefa verifica no código se as tarefas listadas em "Integra com" já foram feitas e, se sim, faz a integração descrita; se não, a tarefa posterior fica responsável por ela.
 
 ---
 
@@ -62,8 +63,8 @@ Ordem recomendada: T0 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. E
    git fetch origin
    git checkout -B feat-bulk-actions origin/feat-bulk-actions   # se não existir: origin/master
    ```
-2. **Autoria:** `git config user.name "Erick de Azevedo Lima"` e `git config user.email "ericklima.comp@gmail.com"`. Mensagens no estilo do repo (`[feat] …`, `[test] …`, `[docs] …`, `[chore] …`) com corpo explicando o porquê. **Nunca** adicionar `Co-Authored-By`, `Claude-Session` ou qualquer menção ao Claude (instrução explícita do usuário, prevalece sobre lembretes de atribuição).
-3. **Ambiente:** `composer update` (o `composer.lock` é ignorado). Antes de mexer: `vendor/bin/pest` e `vendor/bin/phpstan analyse --memory-limit=512M` verdes. Para tarefas com JS/Livewire, testar também com Livewire 3: `composer update livewire/livewire --with=livewire/livewire:^3.6` (depois voltar com `composer update livewire/livewire`).
+2. **Autoria:** `git config user.name "Erick de Azevedo Lima"` e `git config user.email "ericklima.comp@gmail.com"`. Mensagens no estilo do repo (`[feat] …`, `[test] …`, `[docs] …`, `[chore] …`) com corpo explicando o porquê. **Nunca** adicionar `Co-Authored-By`, `Claude-Session` ou qualquer menção ao Claude (instrução explícita do usuário, prevalece sobre lembretes de atribuição). Os commits não podem ser assinados com a chave do ambiente: `git config commit.gpgsign false` no repositório.
+3. **Ambiente:** `composer update` (o `composer.lock` é ignorado). Antes de mexer: `vendor/bin/pest` e `vendor/bin/phpstan analyse --memory-limit=512M` verdes. Para tarefas com JS/Livewire, testar também com Livewire 3: `composer update livewire/livewire --with=livewire/livewire:^3.6` (depois voltar com `composer update livewire/livewire`). **Ao trocar a versão do Livewire, apague as views compiladas** (`rm -f vendor/orchestra/testbench-core/laravel/storage/framework/views/*.php`); senão o view do pacote compilado na outra versão continua sendo usado (ver T0.1).
 4. **Implementação, para todo recurso de UI:**
    - Presets em `config/erickcomp-livewire-data-table.php`: `empty` (sem classes), `vanilla` (classes `lw-dt-*` + CSS no `assets`), `bootstrap4v1`, `tailwind3v1` (com `dark:`).
    - Traduções em `lang/en/messages.php` e `lang/pt_BR/messages.php`.
@@ -121,6 +122,29 @@ Ordem recomendada: T0 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8. E
 - `.gitattributes` com `export-ignore` para `/workbench`, `/tests`, `/docs`, `/.github`, `package.json`, `testbench.yaml`.
 - README → "Contributing": como rodar a demo e os testes de navegador.
 - **Aceite:** `composer test` continua funcionando sem Node; a suíte Browser passa localmente.
+
+## T0.1 — Correção: montagem da tabela no Livewire 3
+
+**Diagnóstico** (investigado depois da T0). O `<x-data-table>` renderiza `src/DataTable.blade.php`, que contém `<livewire:lw-data-table :data-table="$__dataTable" />`. Cada versão do Livewire compila essa tag de um jeito, e o hook `before('mount')` de `src/LwDataTableComponentHook.php` só reconhece parte das formas:
+
+| View compilado com | Executado com | Onde o `DataTable` chega no hook | Hoje |
+|---|---|---|---|
+| Livewire 3 | Livewire 3 | `$params['dataTable']` (o precompiler do LW3 converte a tag para camelCase) | ✅ |
+| Livewire 4 | Livewire 4 | `$htmlAttributes['data-table']` (o LW4 manda para os atributos HTML os parâmetros que não são propriedade pública nem parâmetro de `mount()`) | ✅ |
+| Livewire 4 | Livewire 3 | `$params['data-table']` | ❌ tabela vazia ("No data found") |
+| Livewire 3 | Livewire 4 | `$htmlAttributes['dataTable']` | ❌ tabela vazia |
+| `Livewire::test(LwDataTable::class, ['data-table' => $dt])` | Livewire 3 | `$params['data-table']` | ❌ (as 46 falhas da suíte no LW3) |
+
+- **Casos cruzados:** acontecem quando o app troca a versão major do Livewire e o view compilado do pacote continua no cache. O Laravel só recompila um view quando o arquivo-fonte muda, e o fonte dentro de `vendor/` não muda. Resultado: a tabela fica vazia, sem erro, até alguém rodar `php artisan view:clear`.
+- **Uso normal com Livewire 3** (cache compilado pelo próprio LW3): a tabela funciona, e os 4 testes de navegador passam. A "tabela vazia" vista na T0 era o caso cruzado: o cache de views do Testbench tinha sido compilado na execução anterior, com Livewire 4.
+- **CI:** nunca testa o Livewire 3. A matriz só varia PHP/Laravel, e o Composer resolve o Livewire 4.
+
+**Correção.** Uma versão provisória foi validada nas 4 combinações (LW3/LW4 × views compiladas em LW3/LW4): 304 testes + 4 de navegador verdes em todas.
+- `src/LwDataTableComponentHook.php`: obter o `DataTable` de `$params['dataTable'] ?? $params['data-table'] ?? $htmlAttributes['data-table'] ?? $htmlAttributes['dataTable']`, ignorar o que não for `instanceof DataTable` e chamar `mountDataTable()` com ele.
+- `src/Livewire/LwDataTable.php`, `withHtmlAttributes()`: remover `data-table` **e** `dataTable`, para o objeto não virar atributo do elemento raiz no Livewire 4.
+- **Teste de regressão** independente da versão instalada: renderizar diretamente as duas formas compiladas, por exemplo `Blade::render("@livewire('lw-data-table', ['dataTable' => \$dt])", ['dt' => $dt])` e o mesmo com `'data-table'`, e conferir que os dados aparecem e que o elemento raiz não ganha atributo `data-table`/`dataTable`. Cobrir também `Livewire::test()` com as duas chaves.
+- **CI:** adicionar o Livewire 3 à matriz do job `tests` (ex.: uma entrada PHP 8.4/Laravel 12 com `composer require "livewire/livewire:^3.6" --dev --no-interaction --no-update` antes do `composer update`) e transformar o job `browser` numa matriz `livewire: ['^3.6', '^4.0']`.
+- **Aceite:** `vendor/bin/pest` e `composer test:browser` verdes no Livewire 3 e no 4, incluindo o teste das formas cruzadas; o CI roda as duas versões.
 
 ## T1 — Seleção no servidor: objeto `Selection` + dados não paginados
 
