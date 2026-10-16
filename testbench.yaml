@@ -1,0 +1,29 @@
+laravel: '@testbench'
+
+providers:
+  - Livewire\LivewireServiceProvider
+  - ErickComp\RawBladeComponents\RawBladeComponentsServiceProvider
+  - ErickComp\LivewireDataTable\ServiceProvider
+  - Workbench\App\Providers\WorkbenchServiceProvider
+
+migrations:
+  - tests/database/migrations
+
+seeders:
+  - Workbench\Database\Seeders\DatabaseSeeder
+
+workbench:
+  start: '/demo'
+  install: true
+  health: false
+  discovers:
+    web: false
+    api: false
+    commands: false
+    components: false
+    factories: false
+    views: false
+  build:
+    - create-sqlite-db
+    - db-wipe
+    - migrate-fresh

@@ -37,7 +37,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, mbstring
+          extensions: dom, mbstring, sockets
           coverage: none
 
       - name: Cache Composer dependencies
@@ -73,7 +73,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: dom, mbstring
+          extensions: dom, mbstring, sockets
           coverage: none
 
       - name: Cache Composer dependencies
@@ -88,3 +88,50 @@ jobs:
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+
+  browser:
+    runs-on: ubuntu-latest
+    name: Browser tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, mbstring, sockets
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: composer-browser-${{ hashFiles('composer.json') }}
+          restore-keys: composer-browser-
+
+      - name: Install dependencies
+        run: |
+          composer update --prefer-dist --no-interaction --no-progress
+          npm ci
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser tests
+        run: vendor/bin/pest --testsuite=Browser --colors=always
+
+      - name: Upload screenshots of failed browser tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-screenshots
+          path: tests/Browser/Screenshots
+          if-no-files-found: ignore

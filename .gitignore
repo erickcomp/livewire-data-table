@@ -3,3 +3,6 @@
 composer.lock
 vendor/
 .vscode
+.phpunit.result.cache
+node_modules/
+tests/Browser/Screenshots/

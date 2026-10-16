@@ -817,6 +817,26 @@ Static analysis with [PHPStan](https://phpstan.org/) (level 5):
 composer analyse
 ```
 
+### Demo App and Browser Tests
+
+The repository ships a [Testbench workbench](https://packages.tools/testbench) app (`workbench/`) with a demo page listing 120 seeded products. To try the table in a browser:
+
+```bash
+composer serve
+```
+
+Then open `http://127.0.0.1:8000/demo`, `/demo/bootstrap4v1` or `/demo/tailwind3v1` (the last two load Bootstrap and Tailwind from a CDN).
+
+The same app backs the browser tests in `tests/Browser`, written with [Pest's browser testing plugin](https://pestphp.com/docs/browser-testing). They need Node and Playwright, so they are not part of `composer test`:
+
+```bash
+npm install
+npx playwright install chromium
+composer test:browser
+```
+
+Screenshots of failed browser tests are saved to `tests/Browser/Screenshots`.
+
 ## Contributing
 
 Contributions are welcome! Please:
@@ -824,7 +844,7 @@ Contributions are welcome! Please:
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Write tests for your changes
-4. Run the test suite (`./vendor/bin/pest`)
+4. Run the test suite (`composer test`), plus the browser tests (`composer test:browser`) for UI changes
 5. Submit a pull request
 
 ## License

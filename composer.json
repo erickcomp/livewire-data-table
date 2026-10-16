@@ -28,7 +28,9 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
         }
     },
     "minimum-stability": "stable",
@@ -48,11 +50,19 @@
         "pestphp/pest": "^4.7",
         "orchestra/testbench": "^10.0|^11.0",
         "larastan/larastan": "^3.0",
-        "laravie/serialize-queries": "^3.3"
+        "laravie/serialize-queries": "^3.3",
+        "pestphp/pest-plugin-browser": "^4.3"
     },
     "scripts": {
         "test": "vendor/bin/pest",
-        "analyse": "vendor/bin/phpstan analyse --memory-limit=512M"
+        "test:browser": "vendor/bin/pest --testsuite=Browser",
+        "analyse": "vendor/bin/phpstan analyse --memory-limit=512M",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve --ansi"
+        ]
     },
     "config": {
         "allow-plugins": {
