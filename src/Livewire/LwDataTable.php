@@ -2,9 +2,11 @@
 
 namespace ErickComp\LivewireDataTable\Livewire;
 
+use ErickComp\LivewireDataTable\Data\ProvidesUnpaginatedData;
 use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable;
 use ErickComp\LivewireDataTable\DataTable\Filter;
+use ErickComp\LivewireDataTable\Selection\Selection;
 use Illuminate\Contracts\Pagination\CursorPaginator as CursorPaginatorContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Contracts\Pagination\Paginator as CursorPaginationContract;
@@ -554,24 +556,49 @@ class LwDataTable extends LivewireComponent
             return [];
         }
 
-        $sortBy = $this->sanitizeSortBy($this->sortBy);
-        $columnsSearch = $this->sanitizeColumnsSearch($this->columnsSearch);
+        return $this->dataTable->dataSrc->getData($this->buildRetrievalParams());
+    }
 
-        $params = new LwDataRetrievalParams(
+    /**
+     * The current search, filters, columns search, sorting and page, as handed to the data source. The filters are
+     * the ones processFilters() left in $processedFilters.
+     */
+    protected function buildRetrievalParams(): LwDataRetrievalParams
+    {
+        return new LwDataRetrievalParams(
             page: Paginator::resolveCurrentPage($this->pageNameUrlParam()),
             perPage: $this->perPage,
             pageName: $this->pageNameUrlParam(),
             search: $this->search,
             //searchDataFields: $this->dataTable?->search->dataFields ?? [],
-            columnsSearch: $columnsSearch,
+            columnsSearch: $this->sanitizeColumnsSearch($this->columnsSearch),
             filters: $this->processedFilters,
-            sortBy: $sortBy,
+            sortBy: $this->sanitizeSortBy($this->sortBy),
             sortDir: $this->sortDir,
             collectionsSortingFlags: $this->dataTable->collectionSortingFlags,
             dataTable: $this->dataTable,
         );
+    }
 
-        return $this->dataTable->dataSrc->getData($params);
+    /**
+     * The rows picked with the given ids (see Selection), resolved against the data source with the table's current
+     * search, filters and columns search. Not public on purpose: Livewire lets the browser call public methods.
+     *
+     * @param string $mode One of the Selection::MODE_* constants
+     * @param iterable<mixed> $ids The selected ids in the "ids" mode, the excluded ones in the "all" mode
+     */
+    protected function makeSelection(string $mode, iterable $ids = []): Selection
+    {
+        $dataSource = $this->dataTable->dataSrc;
+
+        if (!$dataSource instanceof ProvidesUnpaginatedData) {
+            throw new \LogicException('Cannot select rows from a data source of type [' . \get_debug_type($dataSource) . ']: it does not implement [' . ProvidesUnpaginatedData::class . ']');
+        }
+
+        // An action may run before render(), the only other place filters are processed
+        $this->processFilters();
+
+        return new Selection($dataSource, $this->buildRetrievalParams(), $this->dataTable->dataIdentityColumn, $mode, $ids);
     }
 
     protected function sanitizeSortBy(string $sortBy): string

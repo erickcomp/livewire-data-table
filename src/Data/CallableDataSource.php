@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\LazyCollection;
 
-class CallableDataSource implements DataSource
+class CallableDataSource implements DataSource, ProvidesUnpaginatedData
 {
     protected const CALLABLE_TYPE_INVALID = 'invalid';
     protected const CALLABLE_TYPE_CLOSURE = 'closure';
@@ -167,6 +167,23 @@ class CallableDataSource implements DataSource
         return $data instanceof LazyCollection
             ? $data
             : $this->paginate($data, $params);
+    }
+
+    /**
+     * Calls the callable with params whose pagination helpers return every row (see
+     * LwDataRetrievalParams::withoutPagination()), so a callable that paginates through them, like
+     * applyAndPaginate(), hands over all the matching rows. A callable that paginates on its own gets only one page:
+     * it can check $params->isPaginationDisabled() to skip it.
+     */
+    public function getUnpaginatedData(LwDataRetrievalParams $params): EloquentBuilder|QueryBuilder|Collection|LazyCollection
+    {
+        $data = $this->getDataFromCallable($params->withoutPagination());
+
+        if ($data instanceof Paginator || $data instanceof LengthAwarePaginator || $data instanceof CursorPaginator) {
+            return collect($data->items());
+        }
+
+        return $data;
     }
 
     protected function paginate(

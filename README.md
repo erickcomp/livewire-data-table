@@ -742,6 +742,21 @@ When using a callable data source, the `LwDataRetrievalParams` object provides c
 | `paginate($data)` | Paginate without applying search/sort/filter |
 | `simplePaginate($data)` | Simple paginate without applying params |
 | `cursorPaginate($data)` | Cursor paginate without applying params |
+| `withoutPagination()` | A copy of the params whose pagination methods above return every row in a single page |
+| `isPaginationDisabled()` | Whether the params come from `withoutPagination()` |
+
+The data table sometimes needs every row matching the current search and filters, not just the current page (to resolve rows selected across pages, for instance). It then calls your callable with `withoutPagination()` params, so a callable that paginates through these methods returns all the rows. A callable that paginates on its own should check `$params->isPaginationDisabled()` and skip pagination in that case:
+
+```php
+public function getUsers(LwDataRetrievalParams $params)
+{
+    $query = $params->apply(User::query());
+
+    return $params->isPaginationDisabled()
+        ? $query->get()
+        : $query->paginate($params->perPage);
+}
+```
 
 ### Available Properties
 

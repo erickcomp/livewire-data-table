@@ -14,7 +14,7 @@ use Illuminate\Support\Traits\EnumeratesValues;
 use Livewire\Wireable;
 use ErickComp\LivewireDataTable\DataTable\Filter;
 
-class IterableDataSource implements StaticDataDataSource, Wireable
+class IterableDataSource implements StaticDataDataSource, ProvidesUnpaginatedData, Wireable
 {
     use AppliesDataRetrievalParamsOnCollections;
     use PaginatesCollections;
@@ -50,6 +50,11 @@ class IterableDataSource implements StaticDataDataSource, Wireable
     public function getStaticData(): Collection
     {
         return $this->data;
+    }
+
+    public function getUnpaginatedData(LwDataRetrievalParams $params): Collection
+    {
+        return $this->applyDataRetrievalParamsOnCollection($this->data, $params);
     }
 
     public function getData(LwDataRetrievalParams $params): Paginator|LengthAwarePaginator|CursorPaginator|Collection

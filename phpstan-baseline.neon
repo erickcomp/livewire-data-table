@@ -259,13 +259,13 @@ parameters:
 			path: src/DataTable/Search.php
 
 		-
-			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:102\:\:\$originalType\.$#'
+			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:123\:\:\$originalType\.$#'
 			identifier: property.notFound
 			count: 3
 			path: src/Livewire/LwDataRetrievalParams.php
 
 		-
-			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:72\:\:\$resolvedModelInstance\.$#'
+			message: '#^Access to an undefined property class@anonymous/Livewire/LwDataRetrievalParams\.php\:93\:\:\$resolvedModelInstance\.$#'
 			identifier: property.notFound
 			count: 2
 			path: src/Livewire/LwDataRetrievalParams.php
@@ -285,12 +285,6 @@ parameters:
 		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:applyDataTableSorting\(\)\.$#'
 			identifier: method.notFound
-			count: 1
-			path: src/Livewire/LwDataRetrievalParams.php
-
-		-
-			message: '#^Instanceof between Illuminate\\Support\\Collection and Illuminate\\Database\\Query\\Builder will always evaluate to false\.$#'
-			identifier: instanceof.alwaysFalse
 			count: 1
 			path: src/Livewire/LwDataRetrievalParams.php
 
@@ -331,7 +325,7 @@ parameters:
 			path: src/Livewire/LwDataRetrievalParams.php
 
 		-
-			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:paginate\(\) expects int\|null, string\|null given\.$#'
+			message: '#^Parameter \$perPage of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:paginate\(\) expects Closure\|int\|null, string\|null given\.$#'
 			identifier: argument.type
 			count: 1
 			path: src/Livewire/LwDataRetrievalParams.php

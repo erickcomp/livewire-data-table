@@ -12,7 +12,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Laravie\SerializesQuery\Query as QueryBuilderSerializer;
 
-class QueryBuilderDataSource implements DataSource
+class QueryBuilderDataSource implements DataSource, ProvidesUnpaginatedData
 {
     use AppliesDataRetrievalParamsOnQueryBuilder;
 
@@ -58,6 +58,11 @@ class QueryBuilderDataSource implements DataSource
             DataSourcePaginationType::Cursor => $this->getDataQuery($params)->cursorPaginate(perPage: $params->perPage, cursorName: $params->pageName),
             DataSourcePaginationType::Simple => $this->getDataQuery($params)->simplePaginate(perPage: $params->perPage, pageName: $params->pageName, page: $params->page),
         };
+    }
+
+    public function getUnpaginatedData(LwDataRetrievalParams $params): QueryBuilder
+    {
+        return $this->getDataQuery($params);
     }
 
     public function getDataQuery(LwDataRetrievalParams $params): QueryBuilder

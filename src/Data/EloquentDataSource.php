@@ -16,7 +16,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
-class EloquentDataSource implements DataSource
+class EloquentDataSource implements DataSource, ProvidesUnpaginatedData
 {
     use AppliesDataRetrievalParamsOnEloquentBuilder;
 
@@ -48,6 +48,16 @@ class EloquentDataSource implements DataSource
     public function getQuery(LwDataRetrievalParams $params): EloquentBuilder
     {
         return $this->applyDataRetrievalParamsOnEloquentBuilder($this->newQuery(), $params);
+    }
+
+    /**
+     * The query behind the table's rows, with the search, filters and sorting applied but not paginated. It is built
+     * from dataTableQuery() when the model implements CustomizesDataTableQuery, but a model implementing
+     * CustomizesDataTableResults is not asked for it, since its dataTableData() returns rows, not a query.
+     */
+    public function getUnpaginatedData(LwDataRetrievalParams $params): EloquentBuilder
+    {
+        return $this->getQuery($params);
     }
 
     /**

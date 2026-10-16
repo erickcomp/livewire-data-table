@@ -21,6 +21,9 @@ use Illuminate\Support\LazyCollection;
 class LwDataRetrievalParams
 {
     use PaginatesCollections;
+
+    protected bool $paginationDisabled = false;
+
     /**
      * @param string[] $searchDataFields
      */
@@ -37,6 +40,24 @@ class LwDataRetrievalParams
         public int $collectionsSortingFlags,
         protected DataTable $dataTable,
     ) {}
+
+    /**
+     * A copy of these params whose pagination helpers (paginate(), simplePaginate(), cursorPaginate() and the
+     * applyAnd*() ones) return every item in a single page. Used to reach all the rows matching the current search,
+     * filters and sorting, e.g. to resolve a selection that spans several pages.
+     */
+    public function withoutPagination(): static
+    {
+        $params = clone $this;
+        $params->paginationDisabled = true;
+
+        return $params;
+    }
+
+    public function isPaginationDisabled(): bool
+    {
+        return $this->paginationDisabled;
+    }
 
     public function chosenPaginationIsAll(): bool
     {
@@ -107,9 +128,15 @@ class LwDataRetrievalParams
         return $dataRetriever->applyDataRetrievalParamsOnCollection($data, $this);
     }
 
-    public function paginate(Collection|EloquentBuilder $data): LengthAwarePaginator
+    public function paginate(Collection|QueryBuilder|EloquentBuilder $data): LengthAwarePaginator
     {
         if ($data instanceof EloquentBuilder || $data instanceof QueryBuilder) {
+            if ($this->paginationDisabled) {
+                $items = $data->get();
+
+                return new LengthAwarePaginator($items, $items->count(), \max($items->count(), 1), 1, $this->paginatorOptions());
+            }
+
             return $data->paginate(perPage: $this->perPage, pageName: $this->pageName, page: $this->page);
         }
 
@@ -124,6 +151,12 @@ class LwDataRetrievalParams
     public function simplePaginate(Collection|QueryBuilder|EloquentBuilder $data): Paginator
     {
         if ($data instanceof EloquentBuilder || $data instanceof QueryBuilder) {
+            if ($this->paginationDisabled) {
+                $items = $data->get();
+
+                return new Paginator($items, \max($items->count(), 1), 1, $this->paginatorOptions());
+            }
+
             return $data->simplePaginate(perPage: $this->perPage, pageName: $this->pageName, page: $this->page);
         }
 
@@ -137,6 +170,15 @@ class LwDataRetrievalParams
 
     public function cursorPaginate(QueryBuilder|EloquentBuilder $data): CursorPaginator
     {
+        if ($this->paginationDisabled) {
+            $items = $data->get();
+
+            return new CursorPaginator($items, \max($items->count(), 1), null, [
+                'path' => Paginator::resolveCurrentPath(),
+                'cursorName' => $this->pageName,
+            ]);
+        }
+
         return $data->cursorPaginate(perPage: $this->perPage, cursorName: $this->pageName);
     }
 
@@ -156,5 +198,13 @@ class LwDataRetrievalParams
     {
         $data = $this->apply($data);
         return $this->cursorPaginate($data);
+    }
+
+    protected function paginatorOptions(): array
+    {
+        return [
+            'path' => Paginator::resolveCurrentPath(),
+            'pageName' => $this->pageName,
+        ];
     }
 }
