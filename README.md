@@ -866,7 +866,7 @@ The repository ships a [Testbench workbench](https://packages.tools/testbench) a
 composer serve
 ```
 
-Then open `http://127.0.0.1:8000/demo`, `/demo/bootstrap4v1` or `/demo/tailwind3v1` (the last two load Bootstrap and Tailwind from a CDN).
+Then open `http://127.0.0.1:8000/demo`, `/demo/bootstrap4v1` or `/demo/tailwind3v1` (the last two load Bootstrap and Tailwind from a CDN). Add `?pagination=simple`, `cursor` or `none` to try the other pagination types.
 
 The same app backs the browser tests in `tests/Browser`, written with [Pest's browser testing plugin](https://pestphp.com/docs/browser-testing). They need Node and Playwright, so they are not part of `composer test`:
 

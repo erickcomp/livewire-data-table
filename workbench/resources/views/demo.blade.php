@@ -21,12 +21,18 @@
 <body>
     <nav class="demo-nav">
         @foreach (['vanilla', 'bootstrap4v1', 'tailwind3v1'] as $demoPreset)
-            <a href="{{ route('demo', ['preset' => $demoPreset]) }}" @class(['active' => $demoPreset === $preset])>{{ $demoPreset }}</a>
+            <a href="{{ route('demo', ['preset' => $demoPreset, 'pagination' => $pagination]) }}" @class(['active' => $demoPreset === $preset])>{{ $demoPreset }}</a>
+        @endforeach
+
+        <span>|</span>
+
+        @foreach (\ErickComp\LivewireDataTable\Data\DataSourcePaginationType::values() as $demoPagination)
+            <a href="{{ route('demo', ['preset' => $preset, 'pagination' => $demoPagination]) }}" @class(['active' => $demoPagination === $pagination])>{{ $demoPagination }}</a>
         @endforeach
     </nav>
 
     <main style="padding: 1rem;">
-        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" per-page="15,30,60" id="products" selectable>
+        <x-data-table :data-src="Tests\Fixtures\TestProduct::class" :preset="$preset" :data-src-pagination="$pagination" per-page="15,30,60" id="products" selectable>
             <x-data-table.search data-fields="name,category" />
 
             <x-data-table.filters>

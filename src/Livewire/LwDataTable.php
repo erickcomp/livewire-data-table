@@ -2,6 +2,7 @@
 
 namespace ErickComp\LivewireDataTable\Livewire;
 
+use ErickComp\LivewireDataTable\Data\DataSourcePaginationType;
 use ErickComp\LivewireDataTable\Data\ProvidesUnpaginatedData;
 use ErickComp\LivewireDataTable\Data\StaticDataDataSource;
 use ErickComp\LivewireDataTable\DataTable;
@@ -700,7 +701,7 @@ class LwDataTable extends LivewireComponent
     protected function buildRetrievalParams(): LwDataRetrievalParams
     {
         return new LwDataRetrievalParams(
-            page: Paginator::resolveCurrentPage($this->pageNameUrlParam()),
+            page: $this->currentPage(),
             perPage: $this->perPage,
             pageName: $this->pageNameUrlParam(),
             search: $this->search,
@@ -712,6 +713,27 @@ class LwDataTable extends LivewireComponent
             collectionsSortingFlags: $this->dataTable->collectionSortingFlags,
             dataTable: $this->dataTable,
         );
+    }
+
+    /**
+     * The current page number, or null under cursor pagination. Livewire keeps the cursor in the same paginator key
+     * as page numbers, and its page resolver replaces any value that is not a page number with 1: resolving the page
+     * would send a cursor paginated table back to its first page.
+     */
+    protected function currentPage(): ?int
+    {
+        if ($this->dataTable->dataSrcPaginationType === DataSourcePaginationType::Cursor) {
+            return null;
+        }
+
+        $pageName = $this->pageNameUrlParam();
+        $page = $this->paginators[$pageName] ?? null;
+
+        if (\is_string($page) && $page !== '' && \filter_var($page, FILTER_VALIDATE_INT) === false) {
+            return null;
+        }
+
+        return Paginator::resolveCurrentPage($pageName);
     }
 
     /**

@@ -211,6 +211,7 @@ class DataTable extends BaseDataTableComponent //implements Wireable
         ?string $rowLevelAttributesCode = null,
     ) {
 
+        $this->dataSrcPaginationType = static::parsePaginationType($dataSrcPagination);
         $this->dataSrc = DataSourceFactory::new()->make($dataSrc, $this->dataSrcPaginationType);
         //$this->dataSrc = $dataSrc;
         //$this->dataProviderGetDataMethod = $dataProviderGetDataMethod;
@@ -859,6 +860,25 @@ class DataTable extends BaseDataTableComponent //implements Wireable
             'tbody-tr-' => 'tbodyTrAttributes',
             'tbody-' => 'tbodyAttributes',
         ];
+    }
+
+    protected static function parsePaginationType(?string $dataSrcPagination): DataSourcePaginationType
+    {
+        $dataSrcPagination = \trim($dataSrcPagination ?? '');
+
+        if ($dataSrcPagination === '') {
+            return DataSource::PAGINATION_DEFAULT;
+        }
+
+        $paginationType = DataSourcePaginationType::tryFromIgnoreCase($dataSrcPagination);
+
+        if ($paginationType === null) {
+            $validValues = Arr::join(DataSourcePaginationType::values(), ', ', ' and ');
+
+            throw new \ValueError("Invalid value for the attribute [data-src-pagination]: \"$dataSrcPagination\". The valid values are: $validValues");
+        }
+
+        return $paginationType;
     }
 
     /**
