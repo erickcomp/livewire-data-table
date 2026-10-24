@@ -77,3 +77,33 @@ it('renders the bootstrap 5 pagination view without bootstrap 4 only classes', f
         ->not->toContain('font-weight-bold')
         ->not->toContain('text-muted');
 });
+
+it('scrolls to the table only after Livewire has rendered the new page', function (string $view, bool $simple) {
+    $html = renderPaginationView($view, $simple);
+
+    // `$wire.<action>()` resolves after the response is applied; a `wire:click` plus an immediate scrollIntoView() on
+    // click would aim at the old page and be clamped to its height.
+    expect($html)
+        ->not->toContain('wire:click=')
+        ->toContain('$wire.nextPage(&#039;page&#039;).then(() =&gt; target?.scrollIntoView())')
+        ->toContain('closest(&#039;body&#039;)');
+})->with([
+    'bootstrap4' => ['bootstrap4', false],
+    'bootstrap5' => ['bootstrap5', false],
+    'simple-bootstrap4' => ['simple-bootstrap4', true],
+    'simple-bootstrap5' => ['simple-bootstrap5', true],
+    'tailwind3' => ['tailwind3', false],
+    'simple-tailwind3' => ['simple-tailwind3', true],
+]);
+
+it('does not scroll at all when $scrollTo is false', function () {
+    $html = (string) view(DataTable::VIEWS_NAMESPACE . '::bootstrap5', [
+        'paginator' => new LengthAwarePaginator(range(1, 2), 30, 2, 2),
+        'elements' => [[1 => '#', 2 => '#', 3 => '#']],
+        'scrollTo' => false,
+    ])->render();
+
+    expect($html)
+        ->toContain('x-on:click="$wire.nextPage(&#039;page&#039;)"')
+        ->not->toContain('scrollIntoView');
+});
