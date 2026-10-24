@@ -10,12 +10,12 @@ A Blade-centric, reactive data table component for Laravel + Livewire. Define yo
 
 - **Blade-first API** — define tables, columns, search, filters, and footers entirely in Blade templates using `<x-data-table>` and its sub-components
 - **Multiple data sources** — Eloquent models, Eloquent/Query builders, collections, arrays, callables, and custom data providers
-- **Preset-based theming** — ships with `vanilla`, `bootstrap4v1`, and `tailwind3v1` presets; fully customizable via config
+- **Preset-based theming** — ships with `vanilla`, `bootstrap4v1`, `bootstrap5v1`, and `tailwind3v1` presets; fully customizable via config
 - **Global search** — full-table search with configurable modes (contains, starts_with, ends_with, exact, fulltext)
 - **Per-column search** — individual column search inputs with debounce support
 - **Filters** — text, number, date, datetime, select, select-multiple, and range filters with collapsible UI
 - **Sorting** — clickable column headers with ascending/descending/none toggle cycle
-- **Pagination** — length-aware, simple, and cursor pagination with custom views for Bootstrap and Tailwind
+- **Pagination** — length-aware, simple, and cursor pagination with custom views for Bootstrap (4 and 5) and Tailwind
 - **Per-page selector** — configurable options with `max` and `all` special values
 - **Loading overlay** — built-in spinner overlay with Livewire loading states
 - **Custom column rendering** — use Blade content inside column definitions for full control
@@ -75,7 +75,7 @@ php artisan vendor:publish --tag=erickcomp-livewire-data-table-lang
 The configuration file (`config/erickcomp-livewire-data-table.php`) contains:
 
 - **Global defaults** — `columns-search-debounce-ms`, query string parameter names
-- **Presets** — full theme definitions for `empty`, `vanilla`, `bootstrap4v1`, and `tailwind3v1`
+- **Presets** — full theme definitions for `empty`, `vanilla`, `bootstrap4v1`, `bootstrap5v1`, and `tailwind3v1`
 
 Each preset defines CSS classes, icons, transitions, loader overlays, pagination views, and asset styles for every table element. Presets support inheritance via the `extends` key.
 
@@ -560,7 +560,7 @@ For large datasets, you can increase the memory limit per table:
 | `filters-name` | `string` | `'filters'` | Query string parameter for filters |
 | `columns-search-name` | `string` | `'cols-search'` | Query string parameter for column search |
 | `columns-search-debounce` | `int` | `250` | Debounce in ms for column search |
-| `pagination-view` | `string` | Preset default | Custom pagination view |
+| `pagination-view` | `string` | Preset default | Custom pagination view (see [Pagination Views](#pagination-views)) |
 | `loading-delay-modifier` | `string` | `null` | Livewire loading delay modifier |
 | `disable-loader-overlay` | `bool` | `false` | Disable the preset's loading spinner overlay for this table |
 | `data-identity-column` | `string` | `'id'` | Row identity column |
@@ -765,9 +765,12 @@ Presets define the complete visual appearance of the data table. The package shi
 | `empty` | Bare minimum — no styles, serves as a base for other presets |
 | `vanilla` | Minimal CSS with `lw-dt-*` class names and built-in styles |
 | `bootstrap4v1` | Bootstrap 4 compatible classes and components |
+| `bootstrap5v1` | Bootstrap 5.3+ compatible classes and components (`ms-*`/`me-*`, `fw-bold`, `form-select`, `text-body-secondary`, `visually-hidden`, native `gap-*`) |
 | `tailwind3v1` | Tailwind CSS 3 utility classes with dark mode support |
 
 Presets support single inheritance via the `extends` key, allowing you to override only the parts you need.
+
+> **Bootstrap versions:** `bootstrap4v1` and `bootstrap5v1` are not interchangeable — Bootstrap 5 renamed or replaced several utilities used by the table (e.g. `ml-*` → `ms-*`, `font-weight-bold` → `fw-bold`, `form-control` on `<select>` → `form-select`, `sr-only` → `visually-hidden`). Use the preset that matches the Bootstrap version loaded by your application. `bootstrap5v1` targets Bootstrap 5.3 and above.
 
 ### Preset Resolution
 
@@ -791,6 +794,31 @@ Each preset can configure:
 - `reload-alert` — behavior when the serialized component cache expires
 - `assets` — CSS `<style>` blocks injected with the table
 - `scripts` — additional JavaScript
+
+### Pagination Views
+
+The package ships its own pagination views, registered under the `erickcomp_lw_data_table` namespace. Presets reference them through the `pagination.view` (length-aware / cursor) and `pagination.simple-view` (simple) keys.
+
+| View | Used by | Description |
+|---|---|---|
+| `bootstrap4` / `simple-bootstrap4` | `bootstrap4v1` | Bootstrap 4 markup |
+| `bootstrap5` / `simple-bootstrap5` | `bootstrap5v1` | Bootstrap 5.3+ markup |
+| `tailwind3` / `simple-tailwind3` | `tailwind3v1` | Tailwind CSS 3 markup |
+| `bootstrap` / `simple-bootstrap` | `vanilla` | Aliases for the current Bootstrap version (**Bootstrap 5**) |
+| `tailwind` / `simple-tailwind` | — | Aliases for the current Tailwind version (Tailwind 3) |
+
+To use one of them in a custom preset (or in a data table with its own `pagination-view`), refer to it with the namespace:
+
+```php
+'pagination' => [
+    'view' => 'erickcomp_lw_data_table::bootstrap5',
+    'simple-view' => 'erickcomp_lw_data_table::simple-bootstrap5',
+],
+```
+
+> **Note:** the bare `pagination-view="bootstrap"` / `pagination-view="tailwind"` attribute values on `<x-data-table>` resolve to Livewire's own `livewire::bootstrap` / `livewire::tailwind` views, not to the package's. Use the namespaced name above to select the package's views.
+
+> **Upgrading to 1.6.0:** the unversioned aliases `bootstrap` and `simple-bootstrap` now point to the Bootstrap 5 views (they used to point to Bootstrap 4). If you reference `erickcomp_lw_data_table::bootstrap` / `::simple-bootstrap` with a Bootstrap 4 application, switch to `::bootstrap4` / `::simple-bootstrap4`.
 
 ## Internationalization
 
