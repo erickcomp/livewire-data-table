@@ -18,8 +18,10 @@ function renderPaginationView(string $view, bool $simple, int $currentPage = 2):
 dataset('pagination views', [
     'bootstrap' => ['bootstrap', false],
     'bootstrap4' => ['bootstrap4', false],
+    'bootstrap5' => ['bootstrap5', false],
     'simple-bootstrap' => ['simple-bootstrap', true],
     'simple-bootstrap4' => ['simple-bootstrap4', true],
+    'simple-bootstrap5' => ['simple-bootstrap5', true],
     'tailwind' => ['tailwind', false],
     'tailwind3' => ['tailwind3', false],
     'simple-tailwind' => ['simple-tailwind', true],
@@ -57,4 +59,21 @@ it('uses the translated labels for previous and next pagination links', function
         ->toContain('Próxima página')
         ->toContain('Navegação da Paginação')
         ->not->toContain('Pagination Navigation');
+});
+
+it('points the bootstrap aliases to the bootstrap 5 views', function (string $alias, bool $simple, string $target) {
+    expect(renderPaginationView($alias, $simple))->toBe(renderPaginationView($target, $simple));
+})->with([
+    'bootstrap' => ['bootstrap', false, 'bootstrap5'],
+    'simple-bootstrap' => ['simple-bootstrap', true, 'simple-bootstrap5'],
+]);
+
+it('renders the bootstrap 5 pagination view without bootstrap 4 only classes', function () {
+    $html = renderPaginationView('bootstrap5', false);
+
+    expect($html)
+        ->toContain('fw-bold')
+        ->toContain('text-body-secondary')
+        ->not->toContain('font-weight-bold')
+        ->not->toContain('text-muted');
 });

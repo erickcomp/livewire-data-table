@@ -149,3 +149,20 @@ it('has no parent when the preset does not declare extends', function () {
         ->and($preset->get('table.class'))->toBe(['no-extends'])
         ->and($preset->get('nonexistent.deep.key', 'fallback'))->toBe('fallback');
 });
+
+it('ships a bootstrap5v1 preset that uses the bootstrap 5 pagination views and class names', function () {
+    $preset = Preset::loadFromName('bootstrap5v1');
+
+    expect($preset->get('pagination.view'))->toBe('erickcomp_lw_data_table::bootstrap5')
+        ->and($preset->get('pagination.simple-view'))->toBe('erickcomp_lw_data_table::simple-bootstrap5')
+        ->and($preset->get('actions.bulk-actions-and-per-page.per-page.select.class'))->toBe(['form-select'])
+        ->and($preset->get('actions.bulk-actions-and-per-page.per-page.container.class'))->toContain('ms-auto')
+        ->and($preset->get('table.class'))->toBe(['table']);
+
+    $legacy = ['ml-auto', 'mr-2', 'font-weight-bold', 'rounded-left', 'sr-only'];
+    $serialized = json_encode($preset->get());
+
+    foreach ($legacy as $class) {
+        expect($serialized)->not->toContain($class);
+    }
+});
